@@ -55,3 +55,27 @@ WRITE_SPEC = ContextSpec(
     include_plot_threads=False,
     prior_stages=["plan"],
 )
+
+
+CHECK_SPEC = ContextSpec(
+    entity_scope=EntityScope.ACTIVE,
+    narrative_mode=NarrativeMode.FULL,
+    narrative_window=2,
+    include_style=False,
+    include_rules=True,
+    include_plot_threads=True,
+    include_foreshadowing=True,
+    prior_stages=["plan", "write"],
+)
+
+
+REVISE_SPEC = ContextSpec(
+    entity_scope=EntityScope.ACTIVE,
+    narrative_mode=NarrativeMode.FULL,
+    narrative_window=2,
+    include_style=True,
+    include_character_voices=True,
+    include_anti_patterns=True,
+    include_rules=False,
+    prior_stages=["plan", "write", "check"],
+)
