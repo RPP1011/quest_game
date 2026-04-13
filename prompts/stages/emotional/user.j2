@@ -25,7 +25,7 @@
 
 {% if characters %}
 {% for ch in characters %}
-- **{{ ch.name }}** ({{ ch.id }}){% if ch.data.description %}: {{ ch.data.description }}{% endif %}
+- **{{ ch.name }}** ({{ ch.id }}){% if ch.data.get("description") %}: {{ ch.data.get("description") }}{% endif %}
 
 {% endfor %}
 {% else %}

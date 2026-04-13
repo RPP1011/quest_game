@@ -29,7 +29,10 @@ from app.world.db import open_db
 
 
 PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
+CRAFT_DATA_DIR = Path(__file__).parent / "craft" / "data"
 WEB_DIR = Path(__file__).parent.parent / "web"
+
+_DEFAULT_STRUCTURE_ID = "three_act"
 
 
 class CreateQuestRequest(BaseModel):
@@ -46,11 +49,41 @@ def _make_client(server_url: str) -> InferenceClient:
     return InferenceClient(base_url=server_url, retries=1)
 
 
+def _load_craft_library():
+    """Load the CraftLibrary from the bundled data directory."""
+    from app.craft.library import CraftLibrary
+    return CraftLibrary(CRAFT_DATA_DIR)
+
+
+def _build_planners(client, renderer, craft_library):
+    """Instantiate all four hierarchical planners."""
+    from app.planning.arc_planner import ArcPlanner
+    from app.planning.dramatic_planner import DramaticPlanner
+    from app.planning.emotional_planner import EmotionalPlanner
+    from app.planning.craft_planner import CraftPlanner
+    return (
+        ArcPlanner(client, renderer),
+        DramaticPlanner(client, renderer, craft_library),
+        EmotionalPlanner(client, renderer),
+        CraftPlanner(client, renderer, craft_library),
+    )
+
+
 def create_app(*, quests_dir: Path, server_url: str) -> FastAPI:
     quests_dir = Path(quests_dir)
     quests_dir.mkdir(parents=True, exist_ok=True)
     renderer = PromptRenderer(PROMPTS_DIR)
     client = _make_client(server_url)
+
+    # Load craft library and build planners at startup
+    try:
+        craft_library = _load_craft_library()
+        arc_planner, dramatic_planner, emotional_planner, craft_planner = _build_planners(
+            client, renderer, craft_library
+        )
+    except Exception:
+        craft_library = None
+        arc_planner = dramatic_planner = emotional_planner = craft_planner = None
 
     app = FastAPI(title="Quest Game")
 
@@ -115,6 +148,26 @@ def create_app(*, quests_dir: Path, server_url: str) -> FastAPI:
                 ))
         return out
 
+    def _extract_choices_from_trace(trace) -> list[Choice]:
+        """Pull choices from the dramatic stage; fall back to the old plan stage."""
+        # Try dramatic stage first (new hierarchical pipeline)
+        for stage in trace.stages:
+            if stage.stage_name == "dramatic":
+                po = stage.parsed_output
+                if isinstance(po, dict):
+                    raw = po.get("suggested_choices", []) or []
+                    return _raw_choices_to_models(raw)
+                break
+        # Fall back to old plan stage (legacy traces)
+        for stage in trace.stages:
+            if stage.stage_name == "plan":
+                po = stage.parsed_output
+                if isinstance(po, dict):
+                    raw = po.get("suggested_choices", []) or []
+                    return _raw_choices_to_models(raw)
+                break
+        return []
+
     @app.get("/api/quests/{qid}/chapters")
     def list_chapters(qid: str) -> list[ChapterSummary]:
         sm, store = _open(qid)
@@ -124,13 +177,7 @@ def create_app(*, quests_dir: Path, server_url: str) -> FastAPI:
             if n.pipeline_trace_id:
                 try:
                     trace = store.load(n.pipeline_trace_id)
-                    for stage in trace.stages:
-                        if stage.stage_name == "plan":
-                            po = stage.parsed_output
-                            if isinstance(po, dict):
-                                raw = po.get("suggested_choices", []) or []
-                                choices = _raw_choices_to_models(raw)
-                            break
+                    choices = _extract_choices_from_trace(trace)
                 except (FileNotFoundError, Exception):
                     choices = []
             results.append(ChapterSummary(
@@ -174,7 +221,43 @@ def create_app(*, quests_dir: Path, server_url: str) -> FastAPI:
     async def advance(qid: str, req: AdvanceRequest) -> AdvanceResponse:
         sm, store = _open(qid)
         cb = ContextBuilder(sm, renderer, TokenBudget())
-        pipeline = Pipeline(sm, cb, client)
+
+        # Load quest_config from config.json (written at bootstrap)
+        paths = _quest_paths(quests_dir, qid)
+        config_path = paths["root"] / "config.json"
+        quest_config: dict = {}
+        if config_path.is_file():
+            try:
+                quest_config = json.loads(config_path.read_text())
+            except Exception:
+                quest_config = {}
+
+        # Resolve structure from arc state
+        structure = None
+        if craft_library is not None:
+            try:
+                arc_state = sm.get_arc(qid, "main")
+                structure = craft_library.structure(arc_state.structure_id)
+            except Exception:
+                structure = None
+                # Try default structure
+                try:
+                    structure = craft_library.structure(_DEFAULT_STRUCTURE_ID)
+                except Exception:
+                    structure = None
+
+        pipeline = Pipeline(
+            sm, cb, client,
+            arc_planner=arc_planner,
+            dramatic_planner=dramatic_planner,
+            emotional_planner=emotional_planner,
+            craft_planner=craft_planner,
+            craft_library=craft_library,
+            structure=structure,
+            quest_config=quest_config,
+            quest_id=qid,
+            arc_id="main",
+        )
         records = sm.list_narrative(limit=10_000)
         update_number = (max((r.update_number for r in records), default=0)) + 1
         try:

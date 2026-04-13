@@ -6,16 +6,113 @@ from fastapi.testclient import TestClient
 from app.server import create_app
 
 
+# ---------------------------------------------------------------------------
+# Canned JSON responses for each schema name used by the hierarchical pipeline
+# ---------------------------------------------------------------------------
+
+_CANNED = {
+    "ArcDirective": json.dumps({
+        "current_phase": "act_1",
+        "phase_assessment": "Early stage.",
+        "theme_priorities": [],
+        "plot_objectives": [],
+        "character_arcs": [],
+        "tension_range": [0.3, 0.7],
+        "hooks_to_plant": [],
+        "hooks_to_pay_off": [],
+        "parallels_to_schedule": [],
+    }),
+    "DramaticPlan": json.dumps({
+        "action_resolution": {"kind": "success", "narrative": "The action succeeds."},
+        "scenes": [
+            {
+                "scene_id": 1,
+                "dramatic_question": "Will the hero prevail?",
+                "outcome": "The hero prevails.",
+                "beats": ["beat1"],
+                "dramatic_function": "inciting_incident",
+            }
+        ],
+        "update_tension_target": 0.5,
+        "ending_hook": "A door creaks open.",
+        "suggested_choices": [{"title": "Go", "description": "Depart.", "tags": []}],
+        "tools_selected": [],
+        "thread_advances": [],
+        "questions_opened": [],
+        "questions_closed": [],
+    }),
+    "EmotionalPlan": json.dumps({
+        "scenes": [
+            {
+                "scene_id": 1,
+                "primary_emotion": "anticipation",
+                "intensity": 0.5,
+                "entry_state": "calm",
+                "exit_state": "resolved",
+                "transition_type": "escalation",
+                "emotional_source": "player_action",
+            }
+        ],
+        "update_emotional_arc": "rising",
+        "contrast_strategy": "juxtapose calm with tension",
+    }),
+    "CraftPlan": json.dumps({
+        "scenes": [
+            {
+                "scene_id": 1,
+                "temporal": {"description": "linear present-scene"},
+                "register": {
+                    "sentence_variance": "medium",
+                    "concrete_abstract_ratio": 0.6,
+                    "interiority_depth": "medium",
+                    "sensory_density": "moderate",
+                    "dialogue_ratio": 0.3,
+                    "pace": "measured",
+                },
+                "passage_register_overrides": [],
+                "motif_instructions": [],
+                "narrator_focus": [],
+                "narrator_withholding": [],
+                "sensory_palette": {},
+                "voice_notes": [],
+                "parallel_instruction": None,
+                "negative_space": [],
+                "opening_instruction": None,
+                "closing_instruction": None,
+            }
+        ],
+        "briefs": [{"scene_id": 1, "brief": "Write the scene with clarity."}],
+    }),
+    "CheckOutput": json.dumps({"issues": []}),
+    "StateDelta": json.dumps({
+        "entity_creates": [],
+        "entity_updates": [],
+        "relationship_changes": [],
+        "foreshadowing_updates": [],
+        "plot_thread_updates": [],
+        "timeline_events": [],
+    }),
+    # Legacy BeatSheet schema (flat pipeline)
+    "BeatSheet": json.dumps({
+        "beats": ["beat1"],
+        "suggested_choices": [{"title": "Go", "description": "Depart.", "tags": []}],
+    }),
+}
+
+
 @pytest.fixture
 def app_factory(tmp_path: Path, monkeypatch):
     # No real llama-server — we inject a fake client.
     from app.runtime.client import InferenceClient
 
     class FakeClient:
-        async def chat_structured(self, *, messages, json_schema, schema_name, **kw):
-            return '{"beats": ["beat1"], "suggested_choices": [{"title": "Go", "description": "Depart."}]}'
+        async def chat_structured(self, messages=None, *, json_schema=None, schema_name="", **kw):
+            return _CANNED.get(
+                schema_name,
+                '{"beats": ["beat1"], "suggested_choices": [{"title": "Go", "description": "Depart.", "tags": []}]}',
+            )
 
-        async def chat(self, *, messages, **kw):
+        async def chat(self, messages=None, **kw):
             return "Prose."
 
     def _make_app(url):
@@ -111,10 +208,10 @@ def test_scene_endpoint_returns_current_state(tmp_path: Path, monkeypatch):
     from app.world.schema import ArcPosition, PlotThread
 
     class FakeClient:
-        async def chat_structured(self, *, messages, json_schema, schema_name, **kw):
-            return '{"beats": ["b1"], "suggested_choices": []}'
+        async def chat_structured(self, messages=None, *, json_schema=None, schema_name="", **kw):
+            return _CANNED.get(schema_name, '{"beats": ["b1"], "suggested_choices": []}')
 
-        async def chat(self, *, messages, **kw):
+        async def chat(self, messages=None, **kw):
             return "It was a quiet evening."
 
     def _make_app(url):

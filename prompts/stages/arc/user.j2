@@ -1,9 +1,9 @@
 ## Quest Configuration
 
-**Genre:** {{ quest_config.genre | default("unspecified") }}
-**Premise:** {{ quest_config.premise | default("unspecified") }}
-{% if quest_config.themes %}
-**Themes:** {{ quest_config.themes | join(", ") }}
+**Genre:** {{ quest_config.get("genre") or "unspecified" }}
+**Premise:** {{ quest_config.get("premise") or "unspecified" }}
+{% if quest_config.get("themes") %}
+**Themes:** {{ quest_config.get("themes") | join(", ") }}
 {% endif %}
 
 ---
