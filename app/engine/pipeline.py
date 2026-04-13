@@ -15,6 +15,56 @@ from .stages import StageError, StageResult
 from .trace import PipelineTrace
 
 
+_BEAT_KEYS = ("beats", "beat_sheet", "beatsheet", "plan", "outline", "steps", "scenes")
+_CHOICE_KEYS = ("suggested_choices", "suggestedchoices", "choices", "options", "actions")
+
+
+def _normalize_beat_sheet(data: dict) -> dict:
+    """Accept common key aliases produced by weaker/non-strict models.
+
+    Handles case variants (beatSheet vs beat_sheet), list-of-dicts (extracts a
+    string field), and falls back to scanning any list-of-strings value.
+    """
+    lowered = {k.lower().replace("_", ""): v for k, v in data.items()}
+    beats = _coerce_string_list(_pick(lowered, _BEAT_KEYS))
+    if not beats:
+        # Last resort: first list-of-something field in the dict.
+        for v in data.values():
+            beats = _coerce_string_list(v)
+            if beats:
+                break
+    choices = _coerce_string_list(_pick(lowered, _CHOICE_KEYS))
+    return {"beats": beats, "suggested_choices": choices}
+
+
+def _pick(lowered: dict, keys: tuple[str, ...]):
+    for k in keys:
+        norm = k.lower().replace("_", "")
+        if norm in lowered:
+            return lowered[norm]
+    return None
+
+
+def _coerce_string_list(value) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    out: list[str] = []
+    for item in value:
+        if isinstance(item, str):
+            out.append(item)
+        elif isinstance(item, dict):
+            # Prefer conventional fields, else fall back to concatenating values.
+            for key in ("beat", "text", "description", "summary", "name", "content"):
+                if isinstance(item.get(key), str):
+                    out.append(item[key])
+                    break
+            else:
+                parts = [str(v) for v in item.values() if isinstance(v, (str, int, float))]
+                if parts:
+                    out.append(" — ".join(parts))
+    return out
+
+
 BEAT_SHEET_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
@@ -74,8 +124,11 @@ class Pipeline:
         errors: list[StageError] = []
         try:
             plan_parsed = OutputParser.parse_json(plan_raw)
-            if not isinstance(plan_parsed, dict) or "beats" not in plan_parsed:
+            if not isinstance(plan_parsed, dict):
                 raise ParseError(f"beat sheet malformed: {plan_parsed!r}")
+            plan_parsed = _normalize_beat_sheet(plan_parsed)
+            if not plan_parsed["beats"]:
+                raise ParseError(f"beat sheet has no beats: {plan_raw!r}")
         except ParseError as e:
             errors.append(StageError(kind="parse_error", message=str(e)))
             trace.add_stage(StageResult(

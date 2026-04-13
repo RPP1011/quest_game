@@ -1,7 +1,34 @@
 from pathlib import Path
 import pytest
 from app.engine import ContextBuilder, PLAN_SPEC, PromptRenderer, TokenBudget, WRITE_SPEC
-from app.engine.pipeline import Pipeline, PipelineOutput
+from app.engine.pipeline import Pipeline, PipelineOutput, _normalize_beat_sheet
+
+
+def test_normalize_accepts_beats_key():
+    assert _normalize_beat_sheet({"beats": ["a", "b"], "suggested_choices": ["x"]}) == {
+        "beats": ["a", "b"], "suggested_choices": ["x"],
+    }
+
+
+def test_normalize_camelcase_and_snakecase_aliases():
+    assert _normalize_beat_sheet({"beatSheet": ["a"], "choices": ["x"]}) == {
+        "beats": ["a"], "suggested_choices": ["x"],
+    }
+    assert _normalize_beat_sheet({"beat_sheet": ["a"]}) == {
+        "beats": ["a"], "suggested_choices": [],
+    }
+
+
+def test_normalize_list_of_dicts_extracts_beat_field():
+    result = _normalize_beat_sheet({"beats": [
+        {"beat": "Intro", "details": "x"},
+        {"text": "Climb the stairs"},
+    ]})
+    assert result["beats"] == ["Intro", "Climb the stairs"]
+
+
+def test_normalize_fallback_scans_any_list():
+    assert _normalize_beat_sheet({"unknown": ["step 1", "step 2"]})["beats"] == ["step 1", "step 2"]
 from app.world import (
     Entity, EntityType, PlotThread, ArcPosition,
     StateDelta, WorldStateManager,
