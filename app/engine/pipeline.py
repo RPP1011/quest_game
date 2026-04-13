@@ -168,6 +168,69 @@ def _make_minimal_arc_directive() -> "Any":
     )
 
 
+def _make_minimal_dramatic_plan(player_action: str) -> "Any":
+    """Synthetic DramaticPlan for when the model's output can't be parsed.
+    Produces a single scene that just acknowledges the player action."""
+    from app.planning.schemas import (
+        ActionResolution, DramaticPlan, DramaticScene,
+    )
+    scene = DramaticScene(
+        scene_id=1,
+        dramatic_question=f"How does the protagonist respond to: {player_action}",
+        outcome="The action plays out; its consequences ripple forward.",
+        beats=[player_action],
+        dramatic_function="Advance the story in response to the player's action.",
+    )
+    return DramaticPlan(
+        action_resolution=ActionResolution(kind="partial", narrative=player_action),
+        scenes=[scene],
+        update_tension_target=0.5,
+        ending_hook="What happens next?",
+        suggested_choices=[],
+    )
+
+
+def _make_minimal_emotional_plan(dramatic) -> "Any":
+    """Synthetic EmotionalPlan with one entry per dramatic scene."""
+    from app.planning.schemas import EmotionalPlan, EmotionalScenePlan
+    scenes = [
+        EmotionalScenePlan(
+            scene_id=s.scene_id,
+            primary_emotion="focused",
+            intensity=0.5,
+            entry_state="alert",
+            exit_state="resolved",
+            transition_type="shift",
+            emotional_source="The stakes of the moment.",
+        )
+        for s in dramatic.scenes
+    ]
+    return EmotionalPlan(
+        scenes=scenes,
+        update_emotional_arc="Steady. Tension holds.",
+        contrast_strategy="Hold on the moment rather than pushing variety.",
+    )
+
+
+def _make_minimal_craft_plan(dramatic) -> "Any":
+    """Synthetic CraftPlan with a minimal brief per scene."""
+    from app.planning.schemas import CraftBrief, CraftPlan, CraftScenePlan
+    scenes = [CraftScenePlan(scene_id=s.scene_id) for s in dramatic.scenes]
+    briefs = [
+        CraftBrief(
+            scene_id=s.scene_id,
+            brief=(
+                f"Write this scene in second person, past tense. "
+                f"Focus on the dramatic question: {s.dramatic_question}. "
+                f"End with the outcome: {s.outcome}. "
+                "Prose should be concrete, sensory, unrushed. Trust the moment."
+            ),
+        )
+        for s in dramatic.scenes
+    ]
+    return CraftPlan(scenes=scenes, briefs=briefs)
+
+
 class InferenceClientLike(Protocol):
     async def chat_structured(self, *, messages, json_schema, schema_name, **kw) -> str: ...
     async def chat(self, *, messages, **kw) -> str: ...
@@ -366,6 +429,7 @@ class Pipeline:
                 active_entity_ids={e.id for e in self._world.list_entities()},
                 valid_tool_ids=self._get_valid_tool_ids(),
             ),
+            fallback=lambda: _make_minimal_dramatic_plan(player_action),
         )
 
         # ---- EMOTIONAL layer ----
@@ -381,6 +445,7 @@ class Pipeline:
                 recent_prose=recent_prose,
             ),
             validator=lambda plan: critics.validate_emotional(plan, dramatic),
+            fallback=lambda: _make_minimal_emotional_plan(dramatic),
         )
 
         # ---- CRAFT layer ----
@@ -393,6 +458,7 @@ class Pipeline:
                 style_register_id=None,
             ),
             validator=lambda plan: critics.validate_craft(plan, dramatic),
+            fallback=lambda: _make_minimal_craft_plan(dramatic),
         )
 
         # Synthesize plan_like_dict for CHECK/REVISE/EXTRACT compat
@@ -432,12 +498,24 @@ class Pipeline:
                         structure_id=self._structure.id,
                         scale=self._structure.scales[0],
                     )
-                directive = await self._arc_planner.plan(
-                    quest_config=self._quest_config,
-                    arc_state=arc_state,
-                    world_snapshot=self._world,
-                    structure=self._structure,
-                )
+                try:
+                    directive = await self._arc_planner.plan(
+                        quest_config=self._quest_config,
+                        arc_state=arc_state,
+                        world_snapshot=self._world,
+                        structure=self._structure,
+                    )
+                except Exception as e:
+                    directive = _make_minimal_arc_directive()
+                    trace.add_stage(StageResult(
+                        stage_name="arc", input_prompt="", raw_output="",
+                        parsed_output=json.loads(directive.model_dump_json()),
+                        errors=[StageError(kind="arc_fallback", message=str(e)[:300])],
+                    ))
+                    directive_dict = json.loads(directive.model_dump_json())
+                    arc_state_updated = arc_state.model_copy(update={"last_directive": directive_dict})
+                    self._world.upsert_arc(arc_state_updated)
+                    return directive
                 directive_dict = json.loads(directive.model_dump_json())
                 arc_state_updated = arc_state.model_copy(
                     update={"last_directive": directive_dict}
@@ -490,11 +568,30 @@ class Pipeline:
         stage_name: str,
         generator,
         validator,
+        fallback=None,
     ) -> "Any":
-        """Call generator, validate, record StageResult. Retry once on errors."""
+        """Call generator, validate, record StageResult. Retry once on errors.
+
+        If the generator itself raises (ParseError, validation failure against
+        the schema, etc.) and a ``fallback`` factory is provided, record the
+        crash as a stage error and return ``fallback()``. This keeps weak
+        models from breaking the whole pipeline.
+        """
         import inspect
 
-        result = await generator(hint=None)
+        try:
+            result = await generator(hint=None)
+        except Exception as e:
+            if fallback is None:
+                raise
+            result = fallback()
+            trace.add_stage(StageResult(
+                stage_name=stage_name, input_prompt="",
+                raw_output="",
+                parsed_output=json.loads(result.model_dump_json()) if hasattr(result, "model_dump_json") else {},
+                errors=[StageError(kind=f"{stage_name}_fallback", message=str(e)[:300])],
+            ))
+            return result
         issues = validator(result)
         errors = [
             StageError(

@@ -434,3 +434,112 @@ def validate_voice_blend(
     Placeholder for future LLM-based voice-blend critic (P10.3).
     """
     return []
+
+
+# ---- Heuristic quality critics (from voter-rollout experiment findings) ----
+
+_SECOND_PERSON_RE = __import__("re").compile(r"\b(you|your|yours)\b", __import__("re").I)
+_FIRST_PERSON_RE = __import__("re").compile(r"\b(I|me|my|mine)\b")
+
+
+def validate_pov_adherence(
+    prose: str,
+    expected_pov: str = "second_person",
+    min_ratio: float = 0.7,
+) -> list[ValidationIssue]:
+    """Warn when prose drifts out of its configured POV.
+
+    For second-person POV (SV-quest default), compute
+    ``|you|/(|you| + |I|)``. Ratios below ``min_ratio`` indicate drift.
+
+    Based on the voter-rollout experiment: small models routinely collapse
+    to first person under certain context conditions (e.g. action verbs
+    like "confront" seemed to trigger it). This catches it.
+    """
+    issues: list[ValidationIssue] = []
+    if expected_pov != "second_person":
+        return issues  # only 2nd-person covered for v1
+    yous = len(_SECOND_PERSON_RE.findall(prose))
+    firsts = len(_FIRST_PERSON_RE.findall(prose))
+    if yous + firsts == 0:
+        return issues  # prose has neither; probably prose is all narration
+    ratio = yous / (yous + firsts)
+    if ratio < min_ratio:
+        issues.append(ValidationIssue(
+            severity="warning",
+            message=(
+                f"POV drift: 2nd-person ratio {ratio:.2f} below threshold "
+                f"{min_ratio:.2f} ({yous} 'you', {firsts} 'I')."
+            ),
+        ))
+    return issues
+
+
+def validate_named_entity_presence(
+    prose: str,
+    active_entity_names: list[str],
+    min_hits: int = 1,
+) -> list[ValidationIssue]:
+    """Warn when prose mentions zero active named characters/locations.
+
+    Small models sometimes produce purely atmospheric prose that never
+    names the entities present in the scene. That's a quality failure:
+    the world is supposed to be occupied, not suggestive.
+    """
+    if not active_entity_names:
+        return []
+    import re as _re
+    hits = [
+        n for n in active_entity_names
+        if _re.search(r"\b" + _re.escape(n) + r"\b", prose, _re.I)
+    ]
+    if len(hits) < min_hits:
+        return [ValidationIssue(
+            severity="warning",
+            message=(
+                f"No active named entity appears in prose "
+                f"(expected at least {min_hits}; candidates: {active_entity_names})."
+            ),
+        )]
+    return []
+
+
+_STOPWORDS = {
+    "about", "with", "from", "this", "that", "have", "were", "will", "been",
+    "they", "your", "their", "them", "through", "while", "because", "should",
+    "would", "could",
+}
+
+
+def validate_action_fidelity(
+    prose: str,
+    player_action: str,
+    min_ratio: float = 0.25,
+) -> list[ValidationIssue]:
+    """Warn when the prose fails to execute the proposed player action.
+
+    Extracts content words (≥4 chars, non-stopword) from the action and
+    checks how many appear in the prose. Zero-hit means the pipeline
+    produced a generic chapter that ignored what the player chose.
+    """
+    import re as _re
+    tokens = [
+        w.lower() for w in _re.findall(r"\b[A-Za-z]{4,}\b", player_action)
+        if w.lower() not in _STOPWORDS
+    ]
+    if not tokens:
+        return []
+    hits = [
+        w for w in tokens
+        if _re.search(r"\b" + _re.escape(w) + r"\b", prose, _re.I)
+    ]
+    ratio = len(hits) / len(tokens)
+    if ratio < min_ratio:
+        return [ValidationIssue(
+            severity="warning",
+            message=(
+                f"Action fidelity {ratio:.2f} below threshold {min_ratio:.2f}: "
+                f"only {len(hits)}/{len(tokens)} action tokens appear in prose."
+            ),
+        )]
+    return []
