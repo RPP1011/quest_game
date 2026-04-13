@@ -161,9 +161,16 @@ class Pipeline:
         ))
         trace.outcome = outcome
 
-        # EXTRACT stage: only when not critical.
+        # EXTRACT stage: only when not critical. Best-effort — any failure
+        # is recorded in the trace but never breaks the chapter commit.
         if not check_out.has_critical:
-            await self._run_extract(trace, plan_parsed, prose, update_number)
+            try:
+                await self._run_extract(trace, plan_parsed, prose, update_number)
+            except Exception as e:  # pragma: no cover - defensive
+                trace.add_stage(StageResult(
+                    stage_name="extract", input_prompt="", raw_output="",
+                    errors=[StageError(kind="extract_crash", message=str(e))],
+                ))
 
         return PipelineOutput(
             prose=prose,

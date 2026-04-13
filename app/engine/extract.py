@@ -181,11 +181,20 @@ def build_delta(
             ),
         ))
 
+    _VALID_FS_STATUSES = {"planted", "referenced", "paid_off", "abandoned"}
     foreshadowing_updates: list[FSUpdate] = []
     for item in extracted.get("foreshadowing_updates", []):
+        status = item.get("new_status", "referenced")
+        if status not in _VALID_FS_STATUSES:
+            issues.append(ValidationIssue(
+                severity="warning",
+                message=f"extract: dropped foreshadowing update with invalid status {status!r}",
+                subject=item.get("id"),
+            ))
+            continue
         foreshadowing_updates.append(FSUpdate(
             id=item.get("id", ""),
-            new_status=item.get("new_status", "referenced"),
+            new_status=status,
             add_reference=item.get("add_reference"),
         ))
 
