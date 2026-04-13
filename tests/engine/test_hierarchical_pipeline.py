@@ -187,8 +187,16 @@ class FakeEmotionalPlanner:
 class FakeCraftPlanner:
     def __init__(self, client: ScriptedClient) -> None:
         self._client = client
+        self.last_kwargs: dict = {}
 
     async def plan(self, *, dramatic, emotional, style_register_id=None, narrator=None, active_parallels=None, active_motifs=None, characters=None, world=None):
+        self.last_kwargs = {
+            "characters": characters,
+            "narrator": narrator,
+            "active_parallels": active_parallels,
+            "active_motifs": active_motifs,
+            "world": world,
+        }
         from app.planning.schemas import CraftPlan
         raw = await self._client.chat_structured(
             messages=[], json_schema={}, schema_name="CraftPlan"
@@ -458,6 +466,55 @@ async def test_hierarchical_is_hierarchical_requires_all_four_planners(world):
                   craft_planner=object(),
                   craft_library=cl)
     assert p4.is_hierarchical
+
+
+async def test_hierarchical_pipeline_threads_pov_entities_to_craft_planner(world):
+    """Regression: pipeline must pass POV character entities to the craft
+    planner so G3/G9/G10 grounding fires (without this, the backfills silently
+    no-op'd in production)."""
+    dramatic_with_pov = json.dumps({
+        "action_resolution": {"kind": "success", "narrative": "..."},
+        "scenes": [
+            {
+                "scene_id": 1,
+                "dramatic_question": "q",
+                "outcome": "o",
+                "beats": ["b"],
+                "dramatic_function": "escalation",
+                "pov_character_id": "hero",
+            }
+        ],
+        "ending_hook": "h",
+        "suggested_choices": [
+            {"title": "a", "description": "d", "tags": []},
+            {"title": "b", "description": "d", "tags": []},
+        ],
+    })
+
+    scripted = ScriptedClient([
+        {"kind": "structured", "content": dramatic_with_pov},
+        {"kind": "structured", "content": _EMOTIONAL_JSON},
+        {"kind": "structured", "content": _CRAFT_JSON},
+        {"kind": "chat", "content": _PROSE_SCENE_1},
+        {"kind": "structured", "content": _CHECK_CLEAN},
+        {"kind": "structured", "content": _EMPTY_EXTRACT},
+    ])
+
+    craft_planner = FakeCraftPlanner(scripted)
+    pipeline = Pipeline(
+        world, _cb(world), scripted,
+        dramatic_planner=FakeDramaticPlanner(scripted),
+        emotional_planner=FakeEmotionalPlanner(scripted),
+        craft_planner=craft_planner,
+        craft_library=FakeCraftLibrary(),
+    )
+
+    await pipeline.run(player_action="go", update_number=2)
+
+    characters = craft_planner.last_kwargs.get("characters")
+    assert characters is not None, "pipeline must pass characters dict"
+    assert "hero" in characters, "POV entity must be in characters dict"
+    assert characters["hero"].id == "hero"
 
 
 async def test_hierarchical_pipeline_persists_emotional_beats_post_commit(world):
