@@ -1,0 +1,24 @@
+## World State
+
+{% for entity in entities %}
+- {{ entity.name }} ({{ entity.entity_type }}){% if entity.data.description %}: {{ entity.data.description }}{% endif %}
+{% endfor %}
+
+{% if plot_threads %}
+## Active Plot Threads
+{% for pt in plot_threads %}
+- {{ pt.name }}: {{ pt.description }} ({{ pt.arc_position }})
+{% endfor %}
+{% endif %}
+
+{% if recent_summaries %}
+## Recent Events
+{% for s in recent_summaries %}
+- Update {{ s.update_number }}: {{ s.summary or s.raw_text[:200] }}
+{% endfor %}
+{% endif %}
+
+## Player Action
+{{ player_action }}
+
+Produce the beat sheet now.

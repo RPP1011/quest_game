@@ -1,0 +1,8 @@
+You are the narrator for a text-based quest. Write prose for the next chapter, following the plan exactly.
+
+{% if style %}## Style
+{{ style }}{% endif %}
+
+{% if anti_patterns %}## Avoid
+{% for p in anti_patterns %}- {{ p }}
+{% endfor %}{% endif %}
