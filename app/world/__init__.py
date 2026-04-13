@@ -24,6 +24,7 @@ from .schema import (
     TimelineEvent,
     WorldRule,
 )
+from .retcon import RetconResult, RetconSpec
 from .seed import SeedLoader, SeedPayload
 from .state_manager import (
     EntityNotFoundError,
@@ -52,6 +53,8 @@ __all__ = [
     "ParseError",
     "PlotThread",
     "RelChange",
+    "RetconResult",
+    "RetconSpec",
     "Relationship",
     "RelationshipNotFoundError",
     "SeedLoader",

@@ -25,6 +25,7 @@ from .delta import (
     ValidationResult,
 )
 from .rules_engine import RulesEngine
+from .retcon import RetconSpec, RetconResult
 
 
 class WorldStateError(Exception):
@@ -634,6 +635,89 @@ class WorldStateManager:
         except Exception:
             c.execute("ROLLBACK")
             raise
+
+    def retcon(self, spec: RetconSpec) -> RetconResult:
+        # Determine the new update number (retcons go at the end)
+        row = self._conn.execute(
+            "SELECT MAX(update_number) AS mx FROM timeline"
+        ).fetchone()
+        tl_max = row["mx"] if row and row["mx"] is not None else 0
+
+        nar_row = self._conn.execute(
+            "SELECT MAX(update_number) AS mx FROM narrative"
+        ).fetchone()
+        nar_max = nar_row["mx"] if nar_row and nar_row["mx"] is not None else 0
+
+        new_update_number = max(tl_max, nar_max, spec.target_update) + 1
+
+        # Apply the delta (raises InvalidDeltaError if invalid)
+        self.apply_delta(spec.delta, update_number=new_update_number)
+
+        # Collect touched entity names (for substring match) and touched entity ids
+        # (for relationship source/target matching)
+        touched_entity_ids: set[str] = set()
+        for op in spec.delta.entity_creates:
+            touched_entity_ids.add(op.entity.id)
+        for op in spec.delta.entity_updates:
+            touched_entity_ids.add(op.id)
+        for op in spec.delta.relationship_changes:
+            touched_entity_ids.add(op.relationship.source_id)
+            touched_entity_ids.add(op.relationship.target_id)
+
+        # Resolve entity names for touched ids
+        touched_names: set[str] = set()
+        for eid in touched_entity_ids:
+            try:
+                entity = self.get_entity(eid)
+                touched_names.add(entity.name)
+            except EntityNotFoundError:
+                pass
+
+        # Build set of (source_id, target_id) pairs from changed relationships
+        touched_rel_pairs: set[tuple[str, str]] = {
+            (op.relationship.source_id, op.relationship.target_id)
+            for op in spec.delta.relationship_changes
+        }
+
+        # Find narrative records >= target_update that mention touched entities
+        affected_update_numbers: list[int] = []
+        all_narrative = self._conn.execute(
+            "SELECT update_number, raw_text FROM narrative WHERE update_number >= ?",
+            (spec.target_update,),
+        ).fetchall()
+        for nar_row in all_narrative:
+            raw_text = nar_row["raw_text"] or ""
+            # Check entity name substring match
+            if any(name in raw_text for name in touched_names):
+                affected_update_numbers.append(nar_row["update_number"])
+                continue
+            # Check relationship source/target id substring match
+            if any(sid in raw_text or tid in raw_text for sid, tid in touched_rel_pairs):
+                affected_update_numbers.append(nar_row["update_number"])
+
+        # Create a timeline event describing the retcon
+        # Find next event_index for the new update
+        ei_row = self._conn.execute(
+            "SELECT MAX(event_index) AS mx FROM timeline WHERE update_number=?",
+            (new_update_number,),
+        ).fetchone()
+        next_event_index = (ei_row["mx"] + 1) if ei_row and ei_row["mx"] is not None else 0
+
+        from .schema import TimelineEvent
+        retcon_event = TimelineEvent(
+            update_number=new_update_number,
+            event_index=next_event_index,
+            description=f"[retcon] {spec.reason}",
+            involved_entities=list(touched_entity_ids),
+            causal_links=[],
+        )
+        self.append_timeline_event(retcon_event)
+
+        return RetconResult(
+            applied_update=spec.target_update,
+            new_update_number=new_update_number,
+            affected_narrative=sorted(affected_update_numbers),
+        )
 
     def snapshot(self) -> WorldSnapshot:
         return WorldSnapshot(
