@@ -27,6 +27,10 @@ def _normalize_beat_sheet(data: dict) -> dict:
     Handles case variants (beatSheet vs beat_sheet), list-of-dicts (extracts a
     string field), nested wrappers (``beat_sheet: {key_actions: [...]}``), and
     falls back to scanning any list-of-strings value.
+
+    ``suggested_choices`` is always emitted as a list of dicts with keys
+    ``title``, ``description``, and ``tags``.  Plain strings are coerced to
+    ``{title: str, description: "", tags: []}``.
     """
     lowered = {k.lower().replace("_", ""): v for k, v in data.items()}
     beats = _extract_list(_pick(lowered, _BEAT_KEYS), _BEAT_KEYS)
@@ -35,17 +39,56 @@ def _normalize_beat_sheet(data: dict) -> dict:
             beats = _extract_list(v, _BEAT_KEYS)
             if beats:
                 break
-    choices = _extract_list(_pick(lowered, _CHOICE_KEYS), _CHOICE_KEYS)
-    if not choices:
+    raw_choices = _pick(lowered, _CHOICE_KEYS)
+    if raw_choices is None:
         # Some models nest suggested_choices inside beat_sheet dict; scan one
         # level into any dict value.
         for v in data.values():
             if isinstance(v, dict):
                 inner = {k.lower().replace("_", ""): vv for k, vv in v.items()}
-                choices = _coerce_string_list(_pick(inner, _CHOICE_KEYS))
-                if choices:
+                raw_choices = _pick(inner, _CHOICE_KEYS)
+                if raw_choices:
                     break
+    choices = _coerce_choice_list(raw_choices)
     return {"beats": beats, "suggested_choices": choices}
+
+
+def _coerce_choice_list(value) -> list[dict]:
+    """Coerce a raw value into a list of choice dicts.
+
+    Each output dict has ``title`` (str), ``description`` (str), and
+    ``tags`` (list[str]).  Input items may be plain strings or dicts.
+    """
+    if not isinstance(value, list):
+        return []
+    out: list[dict] = []
+    for item in value:
+        if isinstance(item, str):
+            out.append({"title": item, "description": "", "tags": []})
+        elif isinstance(item, dict):
+            # Resolve title from common aliases.
+            title = ""
+            for key in ("title", "text", "choice", "name"):
+                if isinstance(item.get(key), str):
+                    title = item[key]
+                    break
+            if not title:
+                # Fall back to concatenating string values.
+                parts = [str(v) for v in item.values() if isinstance(v, (str, int, float))]
+                title = " -- ".join(parts)
+            # Resolve description from common aliases.
+            description = ""
+            for key in ("description", "flavor", "detail"):
+                if isinstance(item.get(key), str):
+                    description = item[key]
+                    break
+            # Resolve tags.
+            raw_tags = item.get("tags")
+            tags: list[str] = []
+            if isinstance(raw_tags, list):
+                tags = [t for t in raw_tags if isinstance(t, str)]
+            out.append({"title": title, "description": description, "tags": tags})
+    return out
 
 
 def _extract_list(value, nested_keys: tuple[str, ...]) -> list[str]:
@@ -92,7 +135,24 @@ BEAT_SHEET_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
         "beats": {"type": "array", "items": {"type": "string"}},
-        "suggested_choices": {"type": "array", "items": {"type": "string"}},
+        "suggested_choices": {
+            "type": "array",
+            "items": {
+                "oneOf": [
+                    {"type": "string"},
+                    {
+                        "type": "object",
+                        "properties": {
+                            "title": {"type": "string"},
+                            "description": {"type": "string"},
+                            "tags": {"type": "array", "items": {"type": "string"}},
+                        },
+                        "required": ["title", "description"],
+                        "additionalProperties": False,
+                    },
+                ]
+            },
+        },
     },
     "required": ["beats", "suggested_choices"],
     "additionalProperties": False,
@@ -107,7 +167,7 @@ class InferenceClientLike(Protocol):
 @dataclass
 class PipelineOutput:
     prose: str
-    choices: list[str]
+    choices: list[dict]
     beats: list[str]
     trace: PipelineTrace
 

@@ -6,13 +6,15 @@ from app.engine.pipeline import Pipeline, PipelineOutput, _normalize_beat_sheet
 
 def test_normalize_accepts_beats_key():
     assert _normalize_beat_sheet({"beats": ["a", "b"], "suggested_choices": ["x"]}) == {
-        "beats": ["a", "b"], "suggested_choices": ["x"],
+        "beats": ["a", "b"],
+        "suggested_choices": [{"title": "x", "description": "", "tags": []}],
     }
 
 
 def test_normalize_camelcase_and_snakecase_aliases():
     assert _normalize_beat_sheet({"beatSheet": ["a"], "choices": ["x"]}) == {
-        "beats": ["a"], "suggested_choices": ["x"],
+        "beats": ["a"],
+        "suggested_choices": [{"title": "x", "description": "", "tags": []}],
     }
     assert _normalize_beat_sheet({"beat_sheet": ["a"]}) == {
         "beats": ["a"], "suggested_choices": [],
@@ -39,7 +41,53 @@ def test_normalize_nested_beat_sheet_with_key_actions():
     }}
     r = _normalize_beat_sheet(data)
     assert r["beats"] == ["Approach.", "Retreat."]
-    assert r["suggested_choices"] == ["Approach.", "Retreat."]
+    assert r["suggested_choices"] == [
+        {"title": "Approach.", "description": "", "tags": []},
+        {"title": "Retreat.", "description": "", "tags": []},
+    ]
+
+
+def test_normalize_object_choices_preserved():
+    """Object choices keep their title, description, and tags."""
+    data = {
+        "beats": ["Scene starts."],
+        "suggested_choices": [
+            {"title": "Go left.", "description": "A dark path.", "tags": ["stealth"]},
+        ],
+    }
+    r = _normalize_beat_sheet(data)
+    assert r["suggested_choices"] == [
+        {"title": "Go left.", "description": "A dark path.", "tags": ["stealth"]},
+    ]
+
+
+def test_normalize_string_choices_coerced():
+    """Plain string choices become dicts with empty description and tags."""
+    data = {
+        "beats": ["Setup."],
+        "suggested_choices": ["Run away.", "Stand firm."],
+    }
+    r = _normalize_beat_sheet(data)
+    assert r["suggested_choices"] == [
+        {"title": "Run away.", "description": "", "tags": []},
+        {"title": "Stand firm.", "description": "", "tags": []},
+    ]
+
+
+def test_normalize_mixed_choice_list():
+    """Mixed string/object choice lists are handled correctly."""
+    data = {
+        "beats": ["Setup."],
+        "suggested_choices": [
+            "Flee.",
+            {"title": "Negotiate.", "description": "Talk it out.", "tags": ["diplomacy"]},
+        ],
+    }
+    r = _normalize_beat_sheet(data)
+    assert r["suggested_choices"] == [
+        {"title": "Flee.", "description": "", "tags": []},
+        {"title": "Negotiate.", "description": "Talk it out.", "tags": ["diplomacy"]},
+    ]
 
 
 from app.world import (
@@ -95,7 +143,10 @@ async def test_pipeline_runs_plan_and_write(world):
     result = await p.run(player_action="Greet the stranger.", update_number=2)
     assert isinstance(result, PipelineOutput)
     assert "Alice looked up" in result.prose
-    assert result.choices == ["Ask who they are", "Leave"]
+    assert result.choices == [
+        {"title": "Ask who they are", "description": "", "tags": []},
+        {"title": "Leave", "description": "", "tags": []},
+    ]
     assert [s.stage_name for s in result.trace.stages] == ["plan", "write", "check", "extract"]
     assert result.trace.outcome == "committed"
 
