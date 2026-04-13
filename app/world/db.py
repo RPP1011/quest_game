@@ -108,6 +108,20 @@ CREATE TABLE IF NOT EXISTS emotional_beats (
 CREATE INDEX IF NOT EXISTS idx_emotional_beats_quest_update_scene
     ON emotional_beats (quest_id, update_number, scene_index);
 
+CREATE TABLE IF NOT EXISTS parallels (
+    id TEXT PRIMARY KEY,
+    quest_id TEXT NOT NULL,
+    source_update INTEGER NOT NULL,
+    source_description TEXT NOT NULL,
+    inversion_axis TEXT NOT NULL,
+    target_description TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'planted',
+    target_update_range_min INTEGER,
+    target_update_range_max INTEGER,
+    theme_ids TEXT NOT NULL DEFAULT '[]',
+    delivered_at_update INTEGER
+);
+
 CREATE TABLE IF NOT EXISTS arcs (
     quest_id TEXT NOT NULL,
     arc_id TEXT NOT NULL,

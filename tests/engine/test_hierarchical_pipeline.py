@@ -188,7 +188,7 @@ class FakeCraftPlanner:
     def __init__(self, client: ScriptedClient) -> None:
         self._client = client
 
-    async def plan(self, *, dramatic, emotional, style_register_id=None, narrator=None):
+    async def plan(self, *, dramatic, emotional, style_register_id=None, narrator=None, active_parallels=None):
         from app.planning.schemas import CraftPlan
         raw = await self._client.chat_structured(
             messages=[], json_schema={}, schema_name="CraftPlan"
@@ -317,6 +317,85 @@ async def test_hierarchical_pipeline_commits_chapter(world):
         {"title": "Investigate the shadow", "description": "Risky.", "tags": ["danger"]},
         {"title": "Keep moving", "description": "Pragmatic.", "tags": []},
     ]
+
+
+_CRAFT_JSON_WITH_PARALLEL_PLANT = json.dumps({
+    "scenes": [
+        {
+            "scene_id": 1,
+            "temporal": {"description": "linear present-scene"},
+            "register": {
+                "sentence_variance": "medium",
+                "concrete_abstract_ratio": 0.6,
+                "interiority_depth": "medium",
+                "sensory_density": "moderate",
+                "dialogue_ratio": 0.3,
+                "pace": "measured",
+            },
+            "parallel_instruction": {
+                "parallel_id": "par:crown",
+                "source_description": "Hero refuses the crown in triumph.",
+                "inversion_axis": "power reversed",
+                "execution_guidance": "Later, hero accepts the crown in defeat.",
+            },
+        }
+    ],
+    "briefs": [
+        {"scene_id": 1, "brief": "Tense, grounded prose as the hero crosses."},
+    ],
+})
+
+
+async def test_hierarchical_pipeline_plants_parallel_post_commit(world):
+    """A CraftPlan with a parallel_instruction plants a parallel row after commit."""
+    scripted = ScriptedClient([
+        {"kind": "structured", "content": _DRAMATIC_JSON},
+        {"kind": "structured", "content": _EMOTIONAL_JSON},
+        {"kind": "structured", "content": _CRAFT_JSON_WITH_PARALLEL_PLANT},
+        {"kind": "chat", "content": _PROSE_SCENE_1},
+        {"kind": "structured", "content": _CHECK_CLEAN},
+        {"kind": "structured", "content": _EMPTY_EXTRACT},
+    ])
+
+    pipeline = Pipeline(
+        world, _cb(world), scripted,
+        dramatic_planner=FakeDramaticPlanner(scripted),
+        emotional_planner=FakeEmotionalPlanner(scripted),
+        craft_planner=FakeCraftPlanner(scripted),
+        craft_library=FakeCraftLibrary(),
+    )
+
+    result = await pipeline.run(player_action="Cross the bridge.", update_number=2)
+    assert result.trace.outcome == "committed"
+
+    parallels = world.list_parallels()
+    assert len(parallels) == 1
+    p = parallels[0]
+    assert p.id == "par:crown"
+    assert p.status.value == "planted"
+    assert p.source_update == 2
+    assert p.inversion_axis == "power reversed"
+
+    # Second run with same parallel_id: should mark delivered
+    scripted2 = ScriptedClient([
+        {"kind": "structured", "content": _DRAMATIC_JSON},
+        {"kind": "structured", "content": _EMOTIONAL_JSON},
+        {"kind": "structured", "content": _CRAFT_JSON_WITH_PARALLEL_PLANT},
+        {"kind": "chat", "content": _PROSE_SCENE_1},
+        {"kind": "structured", "content": _CHECK_CLEAN},
+        {"kind": "structured", "content": _EMPTY_EXTRACT},
+    ])
+    pipeline2 = Pipeline(
+        world, _cb(world), scripted2,
+        dramatic_planner=FakeDramaticPlanner(scripted2),
+        emotional_planner=FakeEmotionalPlanner(scripted2),
+        craft_planner=FakeCraftPlanner(scripted2),
+        craft_library=FakeCraftLibrary(),
+    )
+    await pipeline2.run(player_action="Return.", update_number=3)
+    delivered = world.get_parallel("par:crown")
+    assert delivered.status.value == "delivered"
+    assert delivered.delivered_at_update == 3
 
 
 async def test_hierarchical_falls_back_to_flat_when_not_configured(world):

@@ -94,6 +94,30 @@ class ForeshadowingHook(BaseModel):
     references: list[int] = Field(default_factory=list)
 
 
+class ParallelStatus(str, Enum):
+    PLANTED = "planted"
+    SCHEDULED = "scheduled"
+    DELIVERED = "delivered"
+    ABANDONED = "abandoned"
+
+
+class Parallel(BaseModel):
+    """A structural/parallel rhyme: an A-half (source) mirrored by a B-half
+    (target) elsewhere in the narrative with some inversion axis between them.
+    """
+    id: str
+    quest_id: str
+    source_update: int
+    source_description: str
+    inversion_axis: str
+    target_description: str
+    status: ParallelStatus = ParallelStatus.PLANTED
+    target_update_range_min: int | None = None
+    target_update_range_max: int | None = None
+    theme_ids: list[str] = Field(default_factory=list)
+    delivered_at_update: int | None = None
+
+
 class PlotThread(BaseModel):
     id: str
     name: str
