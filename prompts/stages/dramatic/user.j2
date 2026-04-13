@@ -77,6 +77,35 @@ No narrative history yet — this is the opening of the quest.
 
 ---
 
+{% if reader_state %}
+## Reader Model
+
+- **Updates since major event:** {{ reader_state.updates_since_major_event }}
+- **Updates since revelation:** {{ reader_state.updates_since_revelation }}
+- **Updates since emotional peak:** {{ reader_state.updates_since_emotional_peak }}
+- **Current emotional valence:** {{ "%.2f" | format(reader_state.current_emotional_valence) }}
+
+{% if reader_state.open_questions %}
+### Open Questions (reader is still wondering)
+
+{% for q in reader_state.open_questions %}
+- [opened u{{ q.opened_at_update }}, p{{ q.priority }}] {{ q.text }}
+{% endfor %}
+{% else %}
+_No open questions tracked._
+{% endif %}
+
+{% if reader_state.expectations %}
+### Live Expectations
+
+{% for e in reader_state.expectations %}
+- [{{ e.status.value if e.status.value is defined else e.status }}] {{ e.text }} _(set u{{ e.set_at_update }})_
+{% endfor %}
+{% endif %}
+
+---
+
+{% endif %}
 ## Recommended Craft Tools
 
 {% if tools_with_examples %}

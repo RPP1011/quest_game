@@ -156,6 +156,10 @@ def create_app(*, quests_dir: Path, server_url: str) -> FastAPI:
         )
         sm.upsert_arc(arc_state)
 
+        # Gap G6: bootstrap an empty reader state for this quest.
+        from app.world.schema import ReaderState
+        sm.upsert_reader_state(ReaderState(quest_id=req.id))
+
         # Write config.json with quest metadata derived from seed
         quest_config = _config_from_seed(req.seed)
         config_path = paths["root"] / "config.json"

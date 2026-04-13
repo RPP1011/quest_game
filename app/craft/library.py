@@ -14,6 +14,7 @@ def _score_tool(
     required: set[str],
     recent: set[str],
     gap: float,
+    patience_boost: bool = False,
 ) -> int:
     score = 0
     if tool.id in phase_expected:
@@ -26,6 +27,10 @@ def _score_tool(
         score += 1
     if tool.id in recent:
         score -= 2
+    # Gap G6: if the reader has been waiting too long without a major event,
+    # nudge tools that tend to produce movement (reversal / tension).
+    if patience_boost and tool.category in _HOT_CATEGORIES:
+        score += 1
     return score
 
 
@@ -135,6 +140,8 @@ class CraftLibrary:
         structure: Structure,
         recent_tool_ids: list[str] | None = None,
         limit: int = 5,
+        updates_since_major_event: int | None = None,
+        patience_threshold: int = 3,
     ) -> list[Tool]:
         from .arc import tension_gap as _tension_gap
 
@@ -144,9 +151,18 @@ class CraftLibrary:
         recent = set(recent_tool_ids or [])
         gap = _tension_gap(arc, structure)
 
+        # Gap G6: patience boost when the reader has been waiting too long.
+        patience_boost = (
+            updates_since_major_event is not None
+            and updates_since_major_event > patience_threshold
+        )
+
         scored: list[tuple[int, str, Tool]] = []
         for tool in self.all_tools():
-            score = _score_tool(tool, expected, required, recent, gap)
+            score = _score_tool(
+                tool, expected, required, recent, gap,
+                patience_boost=patience_boost,
+            )
             if score > 0:
                 scored.append((score, tool.id, tool))
 

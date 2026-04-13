@@ -161,7 +161,7 @@ class FakeDramaticPlanner:
         self._client = client
 
     async def plan(self, *, directive, player_action, world, arc, structure,
-                   recent_tool_ids=None):
+                   recent_tool_ids=None, quest_id=None):
         from app.planning.schemas import DramaticPlan
         raw = await self._client.chat_structured(
             messages=[], json_schema={}, schema_name="DramaticPlan"
@@ -202,7 +202,7 @@ class FakeCraftLibrary:
     def tools(self, category=None):
         return []
 
-    def recommend_tools(self, arc, structure, recent_tool_ids=None, limit=5):
+    def recommend_tools(self, arc, structure, recent_tool_ids=None, limit=5, **kwargs):
         return []
 
     def examples_for_tool(self, tool_id):

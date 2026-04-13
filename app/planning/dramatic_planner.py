@@ -37,6 +37,7 @@ class DramaticPlanner:
         arc: Arc,
         structure: Structure,
         recent_tool_ids: list[str] | None = None,
+        quest_id: str | None = None,
     ) -> DramaticPlan:
         """Generate a ``DramaticPlan`` for the current update.
 
@@ -63,9 +64,19 @@ class DramaticPlanner:
         all_narrative = world.list_narrative(limit=10_000)
         recent_narrative = all_narrative[-2:] if all_narrative else []
 
+        # Gap G6: load reader state so the prompt can see open questions,
+        # live expectations, and patience counters. Quest-less (ephemeral)
+        # callers get a fresh default state.
+        reader_state = (
+            world.get_reader_state(quest_id) if quest_id is not None else None
+        )
+
         # Get tool recommendations including examples
         recommended_tools = self._craft_library.recommend_tools(
-            arc, structure, recent_tool_ids=recent_tool_ids, limit=5
+            arc, structure, recent_tool_ids=recent_tool_ids, limit=5,
+            updates_since_major_event=(
+                reader_state.updates_since_major_event if reader_state else None
+            ),
         )
         tools_with_examples = []
         for tool in recommended_tools:
@@ -87,6 +98,7 @@ class DramaticPlanner:
                 "plot_threads": plot_threads,
                 "recent_narrative": recent_narrative,
                 "tools_with_examples": tools_with_examples,
+                "reader_state": reader_state,
             },
         )
 

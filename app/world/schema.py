@@ -104,6 +104,46 @@ class PlotThread(BaseModel):
     priority: int = Field(default=5, ge=1, le=10)
 
 
+class ExpectationStatus(str, Enum):
+    PENDING = "pending"
+    CONFIRMED = "confirmed"
+    SUBVERTED = "subverted"
+    ABANDONED = "abandoned"
+
+
+class OpenQuestion(BaseModel):
+    id: str
+    text: str
+    priority: int = Field(default=5, ge=1, le=10)
+    opened_at_update: int
+
+
+class Expectation(BaseModel):
+    id: str
+    text: str
+    confidence: float = Field(default=0.5, ge=0.0, le=1.0)
+    status: ExpectationStatus = ExpectationStatus.PENDING
+    set_at_update: int
+
+
+class ReaderState(BaseModel):
+    """Model of what the reader currently knows / expects / feels.
+
+    One row per quest. Mutated post-commit from the dramatic plan so that
+    subsequent dramatic planning runs have a live picture of open questions,
+    live expectations, and patience counters.
+    """
+    quest_id: str
+    known_fact_ids: list[str] = Field(default_factory=list)
+    open_questions: list[OpenQuestion] = Field(default_factory=list)
+    expectations: list[Expectation] = Field(default_factory=list)
+    attachment_levels: dict[str, float] = Field(default_factory=dict)
+    current_emotional_valence: float = Field(default=0.0, ge=-1.0, le=1.0)
+    updates_since_major_event: int = 0
+    updates_since_revelation: int = 0
+    updates_since_emotional_peak: int = 0
+
+
 class QuestArcState(BaseModel):
     """Persisted arc state (thin — references the craft-level Arc)."""
     arc_id: str                 # matches app.craft.Arc.id
