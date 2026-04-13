@@ -1,0 +1,30 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; background: #111; color: #e8e6df; }
+header { padding: 12px 20px; background: #1a1a1a; border-bottom: 1px solid #333; }
+h1 { margin: 0; font-size: 18px; font-weight: 500; letter-spacing: 0.02em; }
+main { display: grid; grid-template-columns: 260px 1fr 360px; height: calc(100vh - 50px); }
+aside, section { padding: 16px; overflow-y: auto; border-right: 1px solid #222; }
+aside:last-child { border-right: none; border-left: 1px solid #222; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: #999; margin: 0 0 12px; }
+ul { list-style: none; padding: 0; margin: 0; }
+li { padding: 8px 10px; cursor: pointer; border-radius: 4px; margin-bottom: 2px; }
+li:hover { background: #222; }
+li.active { background: #2a3a4a; }
+button { background: #2a3a4a; color: #e8e6df; border: 1px solid #3a4a5a; padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-top: 8px; font-size: 13px; }
+button:hover { background: #3a4a5a; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+#chapters { margin-bottom: 16px; }
+.chapter { margin-bottom: 20px; padding: 12px; background: #1a1a1a; border-radius: 4px; border-left: 3px solid #3a4a5a; }
+.chapter .action { color: #7aa; font-size: 12px; margin-bottom: 6px; }
+.chapter .prose { white-space: pre-wrap; line-height: 1.5; }
+.chapter .choices { margin-top: 8px; font-size: 13px; color: #aaa; }
+.chapter .choices ol { margin: 4px 0 0 20px; }
+#action-form { display: flex; gap: 8px; }
+#action-input { flex: 1; background: #1a1a1a; color: #e8e6df; border: 1px solid #333; padding: 8px 12px; border-radius: 4px; font-size: 14px; }
+#status { font-size: 12px; color: #7a9; margin-top: 8px; min-height: 16px; }
+.stage { margin-bottom: 8px; font-size: 12px; }
+.stage summary { cursor: pointer; padding: 4px 0; color: #aaa; }
+.stage pre { background: #0a0a0a; padding: 8px; border-radius: 4px; overflow-x: auto; max-height: 200px; font-size: 11px; }
+.outcome-committed { color: #7c7; }
+.outcome-flagged_qm { color: #cc7; }
+.outcome-failed { color: #c77; }

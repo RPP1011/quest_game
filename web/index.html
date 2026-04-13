@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Quest Game</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header><h1>Quest Game</h1></header>
+<main>
+  <aside id="quests-panel">
+    <h2>Quests</h2>
+    <ul id="quest-list"></ul>
+    <button id="new-quest-btn">New Quest</button>
+  </aside>
+  <section id="play-panel">
+    <h2 id="quest-title">No quest selected</h2>
+    <div id="chapters"></div>
+    <form id="action-form">
+      <input type="text" id="action-input" placeholder="What do you do?" disabled>
+      <button type="submit" disabled>Advance</button>
+    </form>
+    <div id="status"></div>
+  </section>
+  <aside id="trace-panel">
+    <h2>Traces</h2>
+    <ul id="trace-list"></ul>
+    <div id="trace-detail"></div>
+  </aside>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>
