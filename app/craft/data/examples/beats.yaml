@@ -1,0 +1,144 @@
+examples:
+
+  - id: ex_chekhov_coin
+    tool_ids: [chekhovs_gun]
+    source: original
+    scale: scene
+    snippet: |
+      The stranger paid in a coin the innkeeper had never seen before. He
+      turned it in the lamplight, frowned, dropped it into the jar with the
+      others, and poured another cup. It was only later, when the tax collector
+      came demanding the king's silver and the jar was opened before him, that
+      the coin's face caught the light a second time and was recognized.
+    annotation: >
+      The coin is planted in an incidental action (paid in, frowned at,
+      dropped), with just enough salience that the reader expects it to
+      return. The payoff arrives several beats later, triggered by a
+      second framing — the tax collector's presence — rather than by the
+      narrator announcing the coin's importance.
+
+  - id: ex_chekhov_letter
+    tool_ids: [chekhovs_gun]
+    source: original
+    scale: chapter
+    snippet: |
+      She put the letter, unopened, in the drawer with the winter gloves,
+      and did not think of it again until March.
+    annotation: >
+      Plant and payoff in one sentence. The reader is given two things —
+      the letter and March — and the deferred opening sets up both a
+      later scene and the passage of time between.
+
+  - id: ex_try_fail_siege
+    tool_ids: [try_fail_cycle]
+    source: original
+    scale: chapter
+    snippet: |
+      The first assault broke on the gatehouse; they left a hundred dead
+      in the ditch. The second assault scaled the eastern wall before the
+      oil came down; they left two hundred. For the third, he would not
+      order another assault. He would wait, and dig, and let hunger do
+      the work that steel had not.
+    annotation: >
+      Three tries compressed into a paragraph. Each failure teaches the
+      commander something and raises the cost; the third beat commits to
+      a qualitatively different approach (siege discipline rather than
+      another charge). Rising action without monotony.
+
+  - id: ex_reversal_ally
+    tool_ids: [reversal]
+    source: original
+    scale: scene
+    snippet: |
+      "You've been a friend to me, Tomas," he said.
+      Tomas smiled. "A friend, yes," he said. "To you, and to others."
+      The silence, when it came, was very small, and very complete.
+    annotation: >
+      Reversal by qualification. The response does not contradict the
+      premise — Tomas is a friend — but the addition "and to others"
+      reframes the entire relationship. The silence is the scene's last
+      beat, doing the work that exposition would have ruined.
+
+  - id: ex_sequel_door
+    tool_ids: [scene_sequel]
+    source: original
+    scale: scene
+    snippet: |
+      The door shut behind him. For a long moment she simply stood, her hand
+      still raised as if to call him back. Then she lowered it, and began,
+      slowly, to clear the cups.
+    annotation: >
+      A scene ends on an action (he leaves). The sequel is the pause,
+      the raised hand, the small domestic task. No dialogue, no
+      interiority spelled out, but the reader feels the decision she
+      has just made to let him go.
+
+  - id: ex_midpoint_mirror
+    tool_ids: [midpoint_shift]
+    source: original
+    scale: chapter
+    snippet: |
+      It was while she was washing the blood from her hands that she saw
+      her own face in the water of the basin, and understood, with a cold
+      clarity that no one had given her, that she was going to finish what
+      he had started.
+    annotation: >
+      Midpoint shift via self-recognition. The protagonist's goal inverts
+      from vengeance to continuation of the victim's work. The shift is
+      internal, delivered through a mirror-image (her face in the water),
+      and reframes everything after it.
+
+  - id: ex_false_victory_crown
+    tool_ids: [false_victory]
+    source: original
+    scale: chapter
+    snippet: |
+      They crowned him on the steps, because there was no cathedral left.
+      The horns sounded, the banners came down, and for half an hour he
+      believed he had won. Then the runner from the east arrived, and the
+      smile he wore for the crowd did not reach the throne room.
+    annotation: >
+      Win is presented with full ceremony. The "for half an hour" marks
+      the reader's signal that the victory is bounded. The arrival of
+      the runner is the pivot; what the reader did not yet know will
+      now invalidate the preceding ceremony.
+
+  - id: ex_sequel_cold_room
+    tool_ids: [scene_sequel]
+    source: original
+    scale: scene
+    snippet: |
+      When the others had gone she sat alone in the cold room, and found
+      that she could not remember what she had meant to say to him,
+      or whether she had meant to say anything at all.
+    annotation: >
+      Pure sequel. No action, no decision yet — just the emptying-out
+      of the aftermath. Often follows a charged confrontation scene;
+      earns the next scene's decision by letting this one breathe.
+
+  - id: ex_reversal_fake_map
+    tool_ids: [reversal, chekhovs_gun]
+    source: original
+    scale: chapter
+    snippet: |
+      The map he had carried all summer, that he had consulted at every
+      crossroads, was a forgery; and the man who had given it to him,
+      the old priest at the inn, was laughing at an empty road.
+    annotation: >
+      Reversal compounded with a planted Chekhov's gun (the map and the
+      priest were both present from the opening chapters). The reader
+      recontextualizes every prior navigation beat.
+
+  - id: ex_try_fail_diplomat
+    tool_ids: [try_fail_cycle]
+    source: original
+    scale: scene
+    snippet: |
+      She tried courtesy first; the Duke yawned. She tried appeal to his
+      vanity; the Duke asked for wine. She tried, finally, to threaten,
+      and the Duke, who had been bored, became interested.
+    annotation: >
+      Three tactical tries within a single scene. Each fails in a
+      specific, characterizing way, and the final success is
+      ambiguous — the Duke becomes "interested" rather than compliant,
+      which sets up a new problem.

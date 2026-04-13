@@ -137,3 +137,16 @@ def test_real_tools_load():
     # Categories distributed
     cats = {t.category for t in lib.tools()}
     assert {"foreshadowing", "pacing", "reversal", "structural", "tension"} <= cats
+
+
+def test_real_examples_load_and_link_tools():
+    from app.craft.library import CraftLibrary
+    lib = CraftLibrary(Path(__file__).parent.parent.parent / "app" / "craft" / "data")
+    assert len(lib.all_examples()) >= 10
+    chek = lib.examples_for_tool("chekhovs_gun")
+    assert len(chek) >= 2
+    # Every example references only real tool ids
+    tool_ids = {t.id for t in lib.tools()}
+    for ex in lib.all_examples():
+        for tid in ex.tool_ids:
+            assert tid in tool_ids, f"example {ex.id} references unknown tool {tid}"
