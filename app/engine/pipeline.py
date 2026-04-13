@@ -25,18 +25,39 @@ def _normalize_beat_sheet(data: dict) -> dict:
     """Accept common key aliases produced by weaker/non-strict models.
 
     Handles case variants (beatSheet vs beat_sheet), list-of-dicts (extracts a
-    string field), and falls back to scanning any list-of-strings value.
+    string field), nested wrappers (``beat_sheet: {key_actions: [...]}``), and
+    falls back to scanning any list-of-strings value.
     """
     lowered = {k.lower().replace("_", ""): v for k, v in data.items()}
-    beats = _coerce_string_list(_pick(lowered, _BEAT_KEYS))
+    beats = _extract_list(_pick(lowered, _BEAT_KEYS), _BEAT_KEYS)
     if not beats:
-        # Last resort: first list-of-something field in the dict.
         for v in data.values():
-            beats = _coerce_string_list(v)
+            beats = _extract_list(v, _BEAT_KEYS)
             if beats:
                 break
-    choices = _coerce_string_list(_pick(lowered, _CHOICE_KEYS))
+    choices = _extract_list(_pick(lowered, _CHOICE_KEYS), _CHOICE_KEYS)
+    if not choices:
+        # Some models nest suggested_choices inside beat_sheet dict; scan one
+        # level into any dict value.
+        for v in data.values():
+            if isinstance(v, dict):
+                inner = {k.lower().replace("_", ""): vv for k, vv in v.items()}
+                choices = _coerce_string_list(_pick(inner, _CHOICE_KEYS))
+                if choices:
+                    break
     return {"beats": beats, "suggested_choices": choices}
+
+
+def _extract_list(value, nested_keys: tuple[str, ...]) -> list[str]:
+    """Coerce value to a list of strings. If value is a dict, look inside it
+    for a nested list under any of ``nested_keys``."""
+    direct = _coerce_string_list(value)
+    if direct:
+        return direct
+    if isinstance(value, dict):
+        inner = {k.lower().replace("_", ""): vv for k, vv in value.items()}
+        return _coerce_string_list(_pick(inner, nested_keys + ("keyactions",)))
+    return []
 
 
 def _pick(lowered: dict, keys: tuple[str, ...]):

@@ -29,6 +29,19 @@ def test_normalize_list_of_dicts_extracts_beat_field():
 
 def test_normalize_fallback_scans_any_list():
     assert _normalize_beat_sheet({"unknown": ["step 1", "step 2"]})["beats"] == ["step 1", "step 2"]
+
+
+def test_normalize_nested_beat_sheet_with_key_actions():
+    data = {"beat_sheet": {
+        "objective": "x",
+        "key_actions": ["Approach.", "Retreat."],
+        "suggested_choices": ["Approach.", "Retreat."],
+    }}
+    r = _normalize_beat_sheet(data)
+    assert r["beats"] == ["Approach.", "Retreat."]
+    assert r["suggested_choices"] == ["Approach.", "Retreat."]
+
+
 from app.world import (
     Entity, EntityType, PlotThread, ArcPosition,
     StateDelta, WorldStateManager,
