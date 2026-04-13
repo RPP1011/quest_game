@@ -1,0 +1,50 @@
+## Dramatic Scenes
+
+{% for scene in dramatic.scenes %}
+### Scene {{ scene.scene_id }}{% if scene.location %} — {{ scene.location }}{% endif %}
+
+- **POV character:** {{ scene.pov_character_id or "unspecified" }}
+- **Dramatic question:** {{ scene.dramatic_question }}
+- **Outcome:** {{ scene.outcome }}
+- **Dramatic function:** {{ scene.dramatic_function }}
+{% if scene.characters_present %}
+- **Characters present:** {{ scene.characters_present | join(", ") }}
+{% endif %}
+{% if scene.reveals %}
+- **Reveals:** {{ scene.reveals | join("; ") }}
+{% endif %}
+{% if scene.withholds %}
+- **Withholds:** {{ scene.withholds | join("; ") }}
+{% endif %}
+
+{% endfor %}
+
+---
+
+## Character Roster
+
+{% if characters %}
+{% for ch in characters %}
+- **{{ ch.name }}** ({{ ch.id }}){% if ch.data.description %}: {{ ch.data.description }}{% endif %}
+
+{% endfor %}
+{% else %}
+No characters established yet.
+{% endif %}
+
+---
+
+## Recent Prose (last {{ recent_prose | length }} segments)
+
+{% if recent_prose %}
+{% for segment in recent_prose %}
+> {{ segment | trim }}
+
+{% endfor %}
+{% else %}
+No prior prose — this is the opening of the quest.
+{% endif %}
+
+---
+
+Produce the emotional plan now.
