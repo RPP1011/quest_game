@@ -553,6 +553,7 @@ class Pipeline:
                 narrator=self._narrator,
                 active_parallels=self._world.list_parallels(),
                 active_motifs=self._build_motif_context(update_number),
+                world=self._world,
             ),
             validator=lambda plan: critics.validate_craft(plan, dramatic),
             fallback=lambda: _make_minimal_craft_plan(dramatic),

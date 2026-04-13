@@ -3,6 +3,11 @@ from __future__ import annotations
 from app.craft.library import CraftLibrary
 from app.craft.schemas import Narrator
 from app.engine.prompt_renderer import PromptRenderer
+from app.planning.motives import (
+    UnconsciousMotive,
+    pick_primary_motive,
+    unconscious_motives_for,
+)
 from app.planning.schemas import (
     CharacterMetaphorProfile,
     CharacterVoice,
@@ -10,6 +15,7 @@ from app.planning.schemas import (
     DetailPrinciple,
     DramaticPlan,
     EmotionalPlan,
+    IndirectionInstruction,
     MetaphorProfile,
     PerceptualProfile,
     VoicePermeability,
@@ -30,6 +36,10 @@ from app.planning.voice import (
 from app.runtime.client import ChatMessage, InferenceClient
 from app.world.output_parser import OutputParser
 from app.world.schema import Entity, Parallel
+from app.world.state_manager import (
+    EntityNotFoundError,
+    WorldStateManager,
+)
 
 
 class CraftPlanner:
@@ -71,6 +81,7 @@ class CraftPlanner:
         active_parallels: list[Parallel] | None = None,
         characters: dict[str, Entity] | None = None,
         active_motifs: list[dict] | None = None,
+        world: WorldStateManager | None = None,
     ) -> CraftPlan:
         """Generate a ``CraftPlan`` translating drama + emotion into a prose blueprint.
 
@@ -87,8 +98,12 @@ class CraftPlanner:
         characters:
             Optional map ``{character_id: Entity}`` for characters referenced
             in the dramatic plan. Used to ground free-indirect-style bleed
-            (Gap G3). Each character's voice is read from
-            ``entity.data["voice"]`` (schema: ``CharacterVoice``).
+            (Gap G3), detail perception (G9), and metaphor domains (G10).
+        world:
+            Optional world state. When provided, the planner loads each POV
+            character's active unconscious motives (G13) and renders them
+            into the user prompt so the LLM derives ``IndirectionInstruction``
+            from stored motives rather than inventing new ones.
         """
         # Resolve style register if requested
         style_register = None
@@ -170,6 +185,20 @@ class CraftPlanner:
                     secondary_emotion=secondary_emotion,
                 )
 
+        motives_by_scene: dict[int, list[UnconsciousMotive]] = {}
+        if world is not None:
+            for scene in dramatic.scenes:
+                pov = scene.pov_character_id
+                if not pov:
+                    continue
+                try:
+                    entity = world.get_entity(pov)
+                except EntityNotFoundError:
+                    continue
+                ms = unconscious_motives_for(entity)
+                if ms:
+                    motives_by_scene[scene.scene_id] = ms
+
         schema = CraftPlan.model_json_schema()
 
         system_prompt = self._renderer.render(
@@ -194,6 +223,7 @@ class CraftPlanner:
                 "metaphor_profiles_persistent": metaphor_profiles_persistent,
                 "scene_detail_defaults": scene_detail_defaults,
                 "scene_metaphor_defaults": scene_metaphor_defaults,
+                "motives_by_scene": motives_by_scene,
             },
         )
 
@@ -265,4 +295,78 @@ class CraftPlanner:
             if not pov_entry.forbidden_domains:
                 pov_entry.forbidden_domains = list(default_mp.forbidden_domains)
 
+        if motives_by_scene:
+            pov_by_scene = {s.scene_id: s.pov_character_id for s in dramatic.scenes}
+            for scene in plan.scenes:
+                ms = motives_by_scene.get(scene.scene_id)
+                if not ms:
+                    continue
+                pov = pov_by_scene.get(scene.scene_id)
+                if not pov:
+                    continue
+                primary = pick_primary_motive(ms)
+                if primary is None:
+                    continue
+                _backfill_indirection(scene, pov, primary)
+
         return plan
+
+
+def _is_empty_or_generic(instr: IndirectionInstruction) -> bool:
+    """Return True if an indirection entry is empty or generic enough to
+    warrant replacement with stored-motive content."""
+    if not instr.unconscious_motive.strip():
+        return True
+    if not instr.what_not_to_say and not instr.surface_manifestations:
+        return True
+    return False
+
+
+def _backfill_indirection(
+    scene,
+    pov_character_id: str,
+    motive: UnconsciousMotive,
+) -> None:
+    """Backfill scene.indirection from a stored ``UnconsciousMotive``.
+
+    Rules:
+      * If no entry exists for ``pov_character_id``, append one built from
+        ``motive``.
+      * If an entry exists but is empty / generic, replace its grounded
+        fields (``unconscious_motive``, ``surface_manifestations``,
+        ``detail_tells``, ``what_not_to_say``) with the stored values,
+        preserving any ``reader_should_infer`` the LLM provided.
+    """
+    grounded = IndirectionInstruction(
+        character_id=pov_character_id,
+        unconscious_motive=motive.motive,
+        surface_manifestations=list(motive.surface_manifestations),
+        detail_tells=list(motive.detail_tells),
+        what_not_to_say=list(motive.what_not_to_say),
+        reader_should_infer=(
+            f"The reader should sense that {pov_character_id}'s behaviour is "
+            f"shaped by an unnamed motive, without the narration ever naming it."
+        ),
+    )
+
+    existing_idx = next(
+        (i for i, instr in enumerate(scene.indirection)
+         if instr.character_id == pov_character_id),
+        None,
+    )
+    if existing_idx is None:
+        scene.indirection.append(grounded)
+        return
+
+    existing = scene.indirection[existing_idx]
+    if _is_empty_or_generic(existing):
+        # Preserve reader_should_infer if the LLM provided something concrete.
+        reader_should_infer = existing.reader_should_infer or grounded.reader_should_infer
+        scene.indirection[existing_idx] = IndirectionInstruction(
+            character_id=pov_character_id,
+            unconscious_motive=grounded.unconscious_motive,
+            surface_manifestations=grounded.surface_manifestations,
+            detail_tells=grounded.detail_tells,
+            what_not_to_say=grounded.what_not_to_say,
+            reader_should_infer=reader_should_infer,
+        )

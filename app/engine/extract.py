@@ -11,6 +11,11 @@ from app.world.delta import (
 )
 from app.world.schema import Relationship, TimelineEvent
 
+# TODO(G13): the LLM-side assessment of *when* an unconscious motive has
+# resolved is still a stub. For now, ``motive_resolutions`` is wired only
+# as a persistence path: upstream callers (tests, future LLM emissions)
+# can set resolved_at_update explicitly; no heuristic inference here yet.
+
 EXTRACT_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
@@ -107,6 +112,19 @@ EXTRACT_SCHEMA: dict[str, Any] = {
                 "additionalProperties": False,
             },
         },
+        "motive_resolutions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "character_id": {"type": "string"},
+                    "motive_id": {"type": "string"},
+                    "resolved_at_update": {"type": "integer"},
+                },
+                "required": ["character_id", "motive_id", "resolved_at_update"],
+                "additionalProperties": False,
+            },
+        },
     },
     "required": [
         "entity_updates",
@@ -123,6 +141,8 @@ def build_delta(
     extracted: dict[str, Any],
     update_number: int,
     known_ids: set[str] | None = None,
+    *,
+    world: Any | None = None,
 ) -> tuple[StateDelta, list[ValidationIssue]]:
     """Convert LLM-produced extracted dict into a StateDelta.
 
@@ -212,6 +232,47 @@ def build_delta(
             new_status=status,
             add_reference=item.get("add_reference"),
         ))
+
+    # ---- G13 motive resolutions ----
+    # Group by character_id; for each, read current motives list from world
+    # (if provided), mark matching entries resolved, and append an
+    # EntityUpdate that overwrites the unconscious_motives list on data.
+    resolutions_by_char: dict[str, list[dict[str, Any]]] = {}
+    for item in extracted.get("motive_resolutions", []) or []:
+        cid = item.get("character_id", "")
+        if not cid:
+            continue
+        if valid is not None and cid not in valid:
+            issues.append(ValidationIssue(
+                severity="error",
+                message=f"motive_resolution references unknown character: {cid}",
+                subject=cid,
+            ))
+            continue
+        resolutions_by_char.setdefault(cid, []).append(item)
+
+    if resolutions_by_char and world is not None:
+        # Local import to avoid circular dependency
+        from app.planning.motives import apply_motive_resolutions
+        for cid, items in resolutions_by_char.items():
+            try:
+                entity = world.get_entity(cid)
+            except Exception:
+                issues.append(ValidationIssue(
+                    severity="warning",
+                    message=f"motive_resolution: entity {cid} not found",
+                    subject=cid,
+                ))
+                continue
+            new_data = apply_motive_resolutions(entity.data, items)
+            if new_data is entity.data:
+                continue  # nothing changed
+            # Shallow-merge semantics on data mean we only need to pass the
+            # updated unconscious_motives key.
+            entity_updates.append(EntityUpdate(
+                id=cid,
+                patch={"data": {"unconscious_motives": new_data["unconscious_motives"]}},
+            ))
 
     delta = StateDelta(
         entity_updates=entity_updates,

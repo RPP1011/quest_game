@@ -227,6 +227,32 @@ character's permanent domains plus a small emotion-triggered set — not invente
 
 ---
 {% endif %}
+{% if motives_by_scene %}
+
+## Unconscious Motives (grounded — do NOT invent)
+
+The following unconscious motives are part of persistent world state.
+For each scene with a POV character listed below, produce one
+`IndirectionInstruction` entry whose `unconscious_motive`,
+`surface_manifestations`, `detail_tells`, and `what_not_to_say` are
+drawn from the stored motive — not newly invented. `reader_should_infer`
+should describe how the reader is meant to sense the motive without the
+narration ever naming it.
+
+{% for scene_id, motives in motives_by_scene.items() %}
+### Scene {{ scene_id }}
+
+{% for m in motives %}
+- **motive id:** `{{ m.id }}`
+  - **motive:** {{ m.motive }}
+  - **surface manifestations:** {{ m.surface_manifestations | join("; ") }}
+  - **detail tells:** {{ m.detail_tells | join("; ") }}
+  - **what NOT to say:** {{ m.what_not_to_say | join("; ") }}
+{% endfor %}
+{% endfor %}
+
+---
+{% endif %}
 
 {% if active_parallels %}
 

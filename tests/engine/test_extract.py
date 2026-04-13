@@ -140,3 +140,76 @@ def test_no_known_ids_skips_id_filtering():
     delta, issues = build_delta(extracted, update_number=1, known_ids=None)
     assert issues == []
     assert len(delta.entity_updates) == 1
+
+
+# ---------------------------------------------------------------------------
+# G13 — motive resolutions persistence path
+# ---------------------------------------------------------------------------
+
+
+def _world_with_hero_motive():
+    from app.world.db import open_db
+    from app.world.schema import Entity, EntityType
+    from app.world.state_manager import WorldStateManager
+    conn = open_db(":memory:")
+    world = WorldStateManager(conn)
+    world.create_entity(Entity(
+        id="hero", entity_type=EntityType.CHARACTER, name="Hero",
+        data={"unconscious_motives": [
+            {"id": "um:hero:x", "motive": "m", "active_since_update": 0, "resolved_at_update": None},
+            {"id": "um:hero:y", "motive": "n", "active_since_update": 0, "resolved_at_update": None},
+        ]},
+    ))
+    return world
+
+
+def test_build_delta_motive_resolution_emits_entity_update():
+    world = _world_with_hero_motive()
+    extracted = _merge(motive_resolutions=[
+        {"character_id": "hero", "motive_id": "um:hero:x", "resolved_at_update": 7},
+    ])
+    delta, issues = build_delta(
+        extracted, update_number=7, known_ids={"hero"}, world=world,
+    )
+    assert issues == []
+    # An entity_update with the resolved motive list was emitted
+    assert len(delta.entity_updates) == 1
+    up = delta.entity_updates[0]
+    assert up.id == "hero"
+    motives = up.patch["data"]["unconscious_motives"]
+    by_id = {m["id"]: m for m in motives}
+    assert by_id["um:hero:x"]["resolved_at_update"] == 7
+    assert by_id["um:hero:y"]["resolved_at_update"] is None
+
+
+def test_build_delta_motive_resolution_applies_to_world():
+    from app.planning.motives import unconscious_motives_for
+    world = _world_with_hero_motive()
+    extracted = _merge(motive_resolutions=[
+        {"character_id": "hero", "motive_id": "um:hero:x", "resolved_at_update": 7},
+    ])
+    delta, _ = build_delta(
+        extracted, update_number=7, known_ids={"hero"}, world=world,
+    )
+    world.apply_delta(delta, update_number=7)
+    entity = world.get_entity("hero")
+    active = unconscious_motives_for(entity)
+    # Only um:hero:y remains active
+    assert len(active) == 1
+    assert active[0].id == "um:hero:y"
+
+
+def test_build_delta_motive_resolution_unknown_character_error():
+    extracted = _merge(motive_resolutions=[
+        {"character_id": "ghost", "motive_id": "um:x", "resolved_at_update": 1},
+    ])
+    delta, issues = build_delta(extracted, update_number=1, known_ids={"hero"})
+    assert any("ghost" in i.message for i in issues)
+    assert delta.entity_updates == []
+
+
+def test_extract_schema_has_motive_resolutions():
+    props = EXTRACT_SCHEMA["properties"]
+    assert "motive_resolutions" in props
+    item_props = props["motive_resolutions"]["items"]["properties"]
+    assert set(item_props) >= {"character_id", "motive_id", "resolved_at_update"}

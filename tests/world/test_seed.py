@@ -106,3 +106,38 @@ def test_load_seed_without_narrator_is_none(tmp_path: Path):
     p = _write_seed(tmp_path, {"entities": []})
     payload = SeedLoader.load(p)
     assert payload.narrator is None
+
+
+def test_seed_preserves_unconscious_motives_in_entity_data(tmp_path: Path):
+    """G13: per-character unconscious_motives in seed JSON round-trip via
+    Entity.data without loss."""
+    from app.planning.motives import unconscious_motives_for
+    motives = [
+        {
+            "id": "um:hero:erase",
+            "motive": "needs to disappear into others' purposes",
+            "surface_manifestations": ["defers decisions"],
+            "detail_tells": ["watches hands"],
+            "what_not_to_say": ["erase", "disappear"],
+            "active_since_update": 0,
+            "resolved_at_update": None,
+        }
+    ]
+    p = _write_seed(tmp_path, {
+        "entities": [
+            {
+                "id": "char:hero",
+                "entity_type": "character",
+                "name": "Hero",
+                "data": {"unconscious_motives": motives},
+            },
+        ],
+    })
+    payload = SeedLoader.load(p)
+    assert len(payload.delta.entity_creates) == 1
+    e = payload.delta.entity_creates[0].entity
+    assert e.data["unconscious_motives"] == motives
+    # And the helper finds the active motive
+    active = unconscious_motives_for(e)
+    assert len(active) == 1
+    assert active[0].id == "um:hero:erase"
