@@ -28,8 +28,18 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .outcome-committed { color: #7c7; }
 .outcome-flagged_qm { color: #cc7; }
 .outcome-failed { color: #c77; }
-.choices-bar { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
-.choices-bar button.choice { display: block; width: 100%; text-align: left; background: #1e2e3e; color: #c8d8e8; border: 1px solid #3a5a7a; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; transition: background 0.15s; }
+.choices-bar { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.choices-bar button.choice { display: block; width: 100%; text-align: left; background: #1e2e3e; color: #c8d8e8; border: 1px solid #3a5a7a; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: background 0.15s, border-color 0.15s; }
 .choices-bar button.choice:hover { background: #2a4a6a; border-color: #5a8aaa; }
+.choices-bar button.choice .title { font-weight: 600; margin-bottom: 4px; }
+.choices-bar button.choice .desc { font-size: 12px; color: #9ab; line-height: 1.4; }
+.choices-bar button.choice .tags { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
 .choices-bar button.choice.write-in { background: #1e1e2e; color: #9988cc; border-color: #4a3a6a; font-style: italic; }
 .choices-bar button.choice.write-in:hover { background: #2a2a4a; border-color: #7a6aaa; }
+.tag { display: inline-block; background: #2a3a2a; color: #8b8; border: 1px solid #3a5a3a; border-radius: 3px; padding: 1px 6px; font-size: 10px; font-style: normal; text-transform: lowercase; }
+#scene-panel { background: #141e28; border: 1px solid #2a4a5a; border-radius: 6px; padding: 10px 14px; margin-bottom: 12px; font-size: 12px; }
+.scene-field { display: flex; gap: 8px; margin-bottom: 6px; align-items: baseline; }
+.scene-field:last-child { margin-bottom: 0; }
+.scene-label { color: #6a8a9a; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; min-width: 84px; flex-shrink: 0; }
+.scene-recap { align-items: flex-start; }
+#scene-recap { color: #aaa; line-height: 1.4; white-space: pre-wrap; }

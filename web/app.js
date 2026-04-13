@@ -24,7 +24,24 @@ async function selectQuest(qid) {
   document.getElementById('quest-title').textContent = qid;
   document.getElementById('action-input').disabled = false;
   document.querySelector('#action-form button').disabled = false;
-  await Promise.all([refreshQuests(), refreshChapters(), refreshTraces()]);
+  await Promise.all([refreshQuests(), refreshChapters(), refreshTraces(), refreshScene()]);
+}
+
+async function refreshScene() {
+  if (!state.currentQuest) return;
+  try {
+    const s = await fetchJSON(`/api/quests/${state.currentQuest}/scene`);
+    const panel = document.getElementById('scene-panel');
+    panel.hidden = false;
+    document.getElementById('scene-location').textContent = s.location || 'Unknown';
+    document.getElementById('scene-characters').textContent =
+      s.present_characters.length ? s.present_characters.join(', ') : 'None';
+    document.getElementById('scene-threads').textContent =
+      s.plot_threads.length ? s.plot_threads.join('; ') : 'None';
+    document.getElementById('scene-recap').textContent = s.recent_prose_tail || '';
+  } catch (_) {
+    // Scene panel stays hidden if quest has no chapters yet or endpoint fails.
+  }
 }
 
 async function refreshChapters() {
@@ -44,14 +61,20 @@ async function refreshChapters() {
     if (isLast && c.choices && c.choices.length > 0) {
       const bar = document.createElement('div');
       bar.className = 'choices-bar';
-      c.choices.forEach((text, idx) => {
+      c.choices.forEach((choice, idx) => {
+        const title = typeof choice === 'string' ? choice : (choice.title || '');
+        const desc = typeof choice === 'object' ? (choice.description || '') : '';
+        const tags = typeof choice === 'object' && Array.isArray(choice.tags) ? choice.tags : [];
         const btn = document.createElement('button');
         btn.className = 'choice';
         btn.dataset.idx = idx + 1;
-        btn.textContent = `${idx + 1}. ${text}`;
+        const tagsHtml = tags.length
+          ? `<div class="tags">${tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>`
+          : '';
+        btn.innerHTML = `<div class="title">${idx + 1}. ${escapeHtml(title)}</div>${desc ? `<div class="desc">${escapeHtml(desc)}</div>` : ''}${tagsHtml}`;
         btn.onclick = () => {
           const input = document.getElementById('action-input');
-          input.value = text;
+          input.value = title;
           document.getElementById('action-form').requestSubmit();
         };
         bar.appendChild(btn);
@@ -115,7 +138,7 @@ document.getElementById('action-form').onsubmit = async (e) => {
       body: JSON.stringify({action}),
     });
     status.textContent = `Done. outcome=${r.outcome}`;
-    await Promise.all([refreshChapters(), refreshTraces(), refreshQuests()]);
+    await Promise.all([refreshChapters(), refreshTraces(), refreshQuests(), refreshScene()]);
   } catch (err) {
     status.textContent = `Error: ${err.message}`;
   }
