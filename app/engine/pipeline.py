@@ -10,7 +10,8 @@ from app.world.schema import NarrativeRecord
 from app.world.state_manager import WorldStateManager
 from .check import CHECK_SCHEMA, CheckIssue, CheckOutput
 from .context_builder import ContextBuilder
-from .context_spec import CHECK_SPEC, PLAN_SPEC, REVISE_SPEC, WRITE_SPEC
+from .context_spec import CHECK_SPEC, EXTRACT_SPEC, PLAN_SPEC, REVISE_SPEC, WRITE_SPEC
+from .extract import EXTRACT_SCHEMA, build_delta
 from .inference_params import TokenUsage
 from .stages import StageError, StageResult
 from .trace import PipelineTrace
@@ -139,6 +140,10 @@ class Pipeline:
         ))
         trace.outcome = outcome
 
+        # EXTRACT stage: only when not critical.
+        if not check_out.has_critical:
+            await self._run_extract(trace, plan_parsed, prose, update_number)
+
         return PipelineOutput(
             prose=prose,
             choices=plan_parsed.get("suggested_choices", []),
@@ -255,6 +260,94 @@ class Pipeline:
             latency_ms=latency,
         ))
         return parsed
+
+    async def _run_extract(
+        self, trace: PipelineTrace, plan: dict, prose: str, update_number: int,
+    ) -> None:
+        plan_text = "\n".join(f"- {b}" for b in plan["beats"])
+        entities = self._world.list_entities()
+        from app.world.schema import EntityStatus
+        active_entities = [e for e in entities if e.status == EntityStatus.ACTIVE]
+        ctx = self._cb.build(
+            spec=EXTRACT_SPEC,
+            stage_name="extract",
+            templates={
+                "system": "stages/extract/system.j2",
+                "user": "stages/extract/user.j2",
+            },
+            extras={"plan": plan_text, "prose": prose, "entities": active_entities},
+        )
+        t0 = time.perf_counter()
+        raw = await self._client.chat_structured(
+            messages=[
+                ChatMessage(role="system", content=ctx.system_prompt),
+                ChatMessage(role="user", content=ctx.user_prompt),
+            ],
+            json_schema=EXTRACT_SCHEMA,
+            schema_name="StateDelta",
+            temperature=0.0,
+        )
+        latency = int((time.perf_counter() - t0) * 1000)
+
+        from app.world.output_parser import OutputParser, ParseError as _ParseError
+        try:
+            extracted = OutputParser.parse_json(raw)
+        except _ParseError as exc:
+            trace.add_stage(StageResult(
+                stage_name="extract",
+                input_prompt=ctx.user_prompt,
+                raw_output=raw,
+                errors=[StageError(kind="parse_error", message=str(exc))],
+                latency_ms=latency,
+            ))
+            return
+
+        if not isinstance(extracted, dict):
+            trace.add_stage(StageResult(
+                stage_name="extract",
+                input_prompt=ctx.user_prompt,
+                raw_output=raw,
+                errors=[StageError(kind="parse_error", message="extract not a dict")],
+                latency_ms=latency,
+            ))
+            return
+
+        known_ids = {e.id for e in active_entities}
+        delta, build_issues = build_delta(extracted, update_number, known_ids=known_ids)
+
+        # Also validate via WorldStateManager
+        validation = self._world.validate_delta(delta)
+
+        all_errors = (
+            [StageError(kind="build_error", message=i.message) for i in build_issues]
+            + [
+                StageError(kind="validation_error", message=i.message)
+                for i in validation.issues
+                if i.severity == "error"
+            ]
+        )
+
+        if all_errors:
+            trace.add_stage(StageResult(
+                stage_name="extract",
+                input_prompt=ctx.user_prompt,
+                raw_output=raw,
+                parsed_output=extracted,
+                errors=all_errors,
+                latency_ms=latency,
+            ))
+            return
+
+        # Apply atomically.
+        self._world.apply_delta(delta, update_number)
+        trace.add_stage(StageResult(
+            stage_name="extract",
+            input_prompt=ctx.user_prompt,
+            raw_output=raw,
+            parsed_output=extracted,
+            token_usage=TokenUsage(prompt=ctx.token_estimate),
+            latency_ms=latency,
+        ))
 
     async def _run_revise(
         self, trace: PipelineTrace, plan: dict, prose: str,
