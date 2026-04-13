@@ -11,7 +11,9 @@ from app.api.quest import (
     AdvanceRequest,
     AdvanceResponse,
     ChapterSummary,
+    Choice,
     QuestSummary,
+    SceneContext,
     TraceSummary,
 )
 from app.engine import (
@@ -100,12 +102,25 @@ def create_app(*, quests_dir: Path, server_url: str) -> FastAPI:
             chapter_count=0, last_action=None,
         )
 
+    def _raw_choices_to_models(raw: list) -> list[Choice]:
+        out: list[Choice] = []
+        for item in raw:
+            if isinstance(item, str):
+                out.append(Choice(title=item))
+            elif isinstance(item, dict):
+                out.append(Choice(
+                    title=item.get("title", ""),
+                    description=item.get("description", ""),
+                    tags=item.get("tags", []) if isinstance(item.get("tags"), list) else [],
+                ))
+        return out
+
     @app.get("/api/quests/{qid}/chapters")
     def list_chapters(qid: str) -> list[ChapterSummary]:
         sm, store = _open(qid)
         results: list[ChapterSummary] = []
         for n in sm.list_narrative(limit=10_000):
-            choices: list[str] = []
+            choices: list[Choice] = []
             if n.pipeline_trace_id:
                 try:
                     trace = store.load(n.pipeline_trace_id)
@@ -113,7 +128,8 @@ def create_app(*, quests_dir: Path, server_url: str) -> FastAPI:
                         if stage.stage_name == "plan":
                             po = stage.parsed_output
                             if isinstance(po, dict):
-                                choices = po.get("suggested_choices", []) or []
+                                raw = po.get("suggested_choices", []) or []
+                                choices = _raw_choices_to_models(raw)
                             break
                 except (FileNotFoundError, Exception):
                     choices = []
@@ -123,6 +139,36 @@ def create_app(*, quests_dir: Path, server_url: str) -> FastAPI:
                 choices=choices,
             ))
         return results
+
+    @app.get("/api/quests/{qid}/scene")
+    def get_scene(qid: str) -> SceneContext:
+        from app.world.schema import EntityStatus, EntityType, ThreadStatus
+        sm, _ = _open(qid)
+        entities = sm.list_entities()
+        active_entities = [e for e in entities if e.status == EntityStatus.ACTIVE]
+        # Most recent active location entity
+        locations = [e for e in active_entities if e.entity_type == EntityType.LOCATION]
+        location_name: str | None = locations[-1].name if locations else None
+        # All active characters
+        characters = [
+            e.name for e in active_entities if e.entity_type == EntityType.CHARACTER
+        ]
+        # Top-3 active plot threads by priority
+        threads = sm.list_plot_threads()
+        active_threads = [t for t in threads if t.status == ThreadStatus.ACTIVE]
+        top_threads = [t.name for t in active_threads[:3]]
+        # Last ~400 chars of most recent narrative
+        records = sm.list_narrative(limit=10_000)
+        recent_tail = ""
+        if records:
+            last_prose = records[-1].raw_text or ""
+            recent_tail = last_prose[-400:]
+        return SceneContext(
+            location=location_name,
+            present_characters=characters,
+            plot_threads=top_threads,
+            recent_prose_tail=recent_tail,
+        )
 
     @app.post("/api/quests/{qid}/advance")
     async def advance(qid: str, req: AdvanceRequest) -> AdvanceResponse:
@@ -137,8 +183,11 @@ def create_app(*, quests_dir: Path, server_url: str) -> FastAPI:
             raise HTTPException(500, f"pipeline failed: {e}")
         store.save(out.trace)
         return AdvanceResponse(
-            update_number=update_number, prose=out.prose, choices=out.choices,
-            trace_id=out.trace.trace_id, outcome=out.trace.outcome,
+            update_number=update_number,
+            prose=out.prose,
+            choices=_raw_choices_to_models(out.choices),
+            trace_id=out.trace.trace_id,
+            outcome=out.trace.outcome,
         )
 
     @app.get("/api/quests/{qid}/traces")
