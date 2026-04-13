@@ -9,6 +9,8 @@ from app.world.db import open_db
 
 PROMPTS = Path(__file__).parent.parent.parent / "prompts"
 
+_EMPTY_EXTRACT = '{"entity_updates":[],"new_relationships":[],"removed_relationships":[],"timeline_events":[],"foreshadowing_updates":[]}'
+
 
 class ScriptedClient:
     """Replay a scripted sequence of responses, one per call in order."""
@@ -50,11 +52,12 @@ async def test_clean_check_commits_directly(world):
         {"kind": "structured", "content": '{"beats": ["beat1"], "suggested_choices": ["x"]}'},
         {"kind": "chat", "content": "Prose v1."},
         {"kind": "structured", "content": '{"issues": []}'},
+        {"kind": "structured", "content": _EMPTY_EXTRACT},
     ])
     out = await Pipeline(world, _cb(world), client).run(player_action="act", update_number=2)
     assert out.prose == "Prose v1."
     assert out.trace.outcome == "committed"
-    assert [s.stage_name for s in out.trace.stages] == ["plan", "write", "check"]
+    assert [s.stage_name for s in out.trace.stages] == ["plan", "write", "check", "extract"]
 
 
 async def test_warning_triggers_revise_and_recheck(world):
@@ -64,12 +67,13 @@ async def test_warning_triggers_revise_and_recheck(world):
         {"kind": "structured", "content": '{"issues": [{"severity": "warning", "category": "prose_quality", "message": "purple prose", "suggested_fix": "simplify"}]}'},
         {"kind": "chat", "content": "Prose v2 simpler."},
         {"kind": "structured", "content": '{"issues": []}'},
+        {"kind": "structured", "content": _EMPTY_EXTRACT},
     ])
     out = await Pipeline(world, _cb(world), client).run(player_action="act", update_number=2)
     assert out.prose == "Prose v2 simpler."
     assert out.trace.outcome == "committed"
     stage_names = [s.stage_name for s in out.trace.stages]
-    assert stage_names == ["plan", "write", "check", "revise", "check"]
+    assert stage_names == ["plan", "write", "check", "revise", "check", "extract"]
 
 
 async def test_critical_triggers_replan_once(world):
@@ -81,11 +85,12 @@ async def test_critical_triggers_replan_once(world):
         {"kind": "structured", "content": '{"beats": ["better beat"], "suggested_choices": []}'},
         {"kind": "chat", "content": "Prose v2."},
         {"kind": "structured", "content": '{"issues": []}'},
+        {"kind": "structured", "content": _EMPTY_EXTRACT},
     ])
     out = await Pipeline(world, _cb(world), client).run(player_action="act", update_number=2)
     assert out.prose == "Prose v2."
     stage_names = [s.stage_name for s in out.trace.stages]
-    assert stage_names == ["plan", "write", "check", "plan", "write", "check"]
+    assert stage_names == ["plan", "write", "check", "plan", "write", "check", "extract"]
     assert out.trace.outcome == "committed"
 
 

@@ -40,12 +40,17 @@ from app.world.db import open_db
 PROMPTS = Path(__file__).parent.parent.parent / "prompts"
 
 
+_EMPTY_EXTRACT = '{"entity_updates":[],"new_relationships":[],"removed_relationships":[],"timeline_events":[],"foreshadowing_updates":[]}'
+
+
 class FakeClient:
     def __init__(self) -> None:
         self.calls = []
 
     async def chat_structured(self, *, messages, json_schema, schema_name, **kw):
         self.calls.append(("structured", messages, json_schema))
+        if schema_name == "StateDelta":
+            return _EMPTY_EXTRACT
         return '{"beats": ["Alice greets Bob."], "suggested_choices": ["Ask who they are", "Leave"]}'
 
     async def chat(self, *, messages, **kw):
@@ -78,7 +83,7 @@ async def test_pipeline_runs_plan_and_write(world):
     assert isinstance(result, PipelineOutput)
     assert "Alice looked up" in result.prose
     assert result.choices == ["Ask who they are", "Leave"]
-    assert [s.stage_name for s in result.trace.stages] == ["plan", "write", "check"]
+    assert [s.stage_name for s in result.trace.stages] == ["plan", "write", "check", "extract"]
     assert result.trace.outcome == "committed"
 
 
