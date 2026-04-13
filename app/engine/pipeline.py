@@ -594,6 +594,16 @@ class Pipeline:
         )
 
         # ---- CRAFT layer ----
+        # Collect POV character entities so the craft planner can ground
+        # voice (G3), detail (G9), and metaphor (G10) from entity data.
+        pov_ids = {s.pov_character_id for s in dramatic.scenes if s.pov_character_id}
+        characters: dict[str, Any] = {}
+        for pov_id in pov_ids:
+            try:
+                characters[pov_id] = self._world.get_entity(pov_id)
+            except WorldStateError:
+                continue
+
         craft_plan = await self._retry_with_critic(
             trace=trace,
             stage_name="craft",
@@ -604,6 +614,7 @@ class Pipeline:
                 narrator=self._narrator,
                 active_parallels=self._world.list_parallels(),
                 active_motifs=self._build_motif_context(update_number),
+                characters=characters,
                 world=self._world,
             ),
             validator=lambda plan: critics.validate_craft(plan, dramatic),
