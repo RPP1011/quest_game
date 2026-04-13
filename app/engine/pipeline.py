@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from typing import Any, Protocol, Union
 from app.runtime.client import ChatMessage
 from app.world.output_parser import OutputParser, ParseError
-from app.world.schema import NarrativeRecord
-from app.world.state_manager import WorldStateManager
+from app.world.schema import NarrativeRecord, QuestArcState
+from app.world.state_manager import WorldStateManager, WorldStateError
 from .check import CHECK_SCHEMA, CheckIssue, CheckOutput
 from .context_builder import ContextBuilder
 from .context_spec import CHECK_SPEC, EXTRACT_SPEC, PLAN_SPEC, REVISE_SPEC, WRITE_SPEC
@@ -159,6 +159,15 @@ BEAT_SHEET_SCHEMA: dict[str, Any] = {
 }
 
 
+def _make_minimal_arc_directive() -> "Any":
+    """Return a minimal ArcDirective when no arc planner is available."""
+    from app.planning.schemas import ArcDirective
+    return ArcDirective(
+        current_phase="unknown",
+        phase_assessment="No arc planner configured.",
+    )
+
+
 class InferenceClientLike(Protocol):
     async def chat_structured(self, *, messages, json_schema, schema_name, **kw) -> str: ...
     async def chat(self, *, messages, **kw) -> str: ...
@@ -178,36 +187,120 @@ class Pipeline:
         world: WorldStateManager,
         context_builder: ContextBuilder,
         client: InferenceClientLike,
+        *,
+        arc_planner: "Any | None" = None,
+        dramatic_planner: "Any | None" = None,
+        emotional_planner: "Any | None" = None,
+        craft_planner: "Any | None" = None,
+        craft_library: "Any | None" = None,
+        structure: "Any | None" = None,
+        quest_config: dict | None = None,
+        quest_id: str | None = None,
+        arc_id: str = "main",
     ) -> None:
         self._world = world
         self._cb = context_builder
         self._client = client
+        self._arc_planner = arc_planner
+        self._dramatic_planner = dramatic_planner
+        self._emotional_planner = emotional_planner
+        self._craft_planner = craft_planner
+        self._craft_library = craft_library
+        self._structure = structure
+        self._quest_config = quest_config or {}
+        self._quest_id = quest_id
+        self._arc_id = arc_id
+
+    @property
+    def is_hierarchical(self) -> bool:
+        """True iff all four hierarchical planning layers are wired in."""
+        return all([
+            self._dramatic_planner is not None,
+            self._emotional_planner is not None,
+            self._craft_planner is not None,
+            self._craft_library is not None,
+        ])
 
     async def run(self, *, player_action: str, update_number: int) -> PipelineOutput:
         trace = PipelineTrace(trace_id=uuid.uuid4().hex, trigger=player_action)
-        replan_attempts = 0
-        recheck_done = False
-        critical_feedback: list[CheckIssue] = []
 
-        plan_parsed = await self._run_plan(trace, player_action, critical_feedback)
-        prose = await self._run_write(trace, plan_parsed)
-        check_out = await self._run_check(trace, plan_parsed, prose)
+        if self.is_hierarchical:
+            craft_plan, plan_like_dict = await self._run_hierarchical(
+                trace, player_action, update_number
+            )
+            prose = await self._run_write(trace, craft_plan)
+            # Wood-gap critics on combined prose
+            await self._run_craft_critics(trace, craft_plan, prose)
+        else:
+            # ---- Flat (legacy) flow ----
+            plan_like_dict = None
+            craft_plan = None
 
-        # REPLAN branch: critical issues, replan once.
-        if check_out.has_critical and replan_attempts < 1:
-            replan_attempts += 1
-            critical_feedback = list(check_out.issues)
+        if not self.is_hierarchical:
+            replan_attempts = 0
+            recheck_done = False
+            critical_feedback: list[CheckIssue] = []
+
             plan_parsed = await self._run_plan(trace, player_action, critical_feedback)
             prose = await self._run_write(trace, plan_parsed)
             check_out = await self._run_check(trace, plan_parsed, prose)
 
-        # REVISE branch: fixable issues, revise + recheck once.
-        if check_out.has_fixable and not check_out.has_critical and not recheck_done:
-            prose = await self._run_revise(trace, plan_parsed, prose, check_out.issues)
-            recheck_done = True
-            check_out = await self._run_check(trace, plan_parsed, prose)
+            # REPLAN branch: critical issues, replan once.
+            if check_out.has_critical and replan_attempts < 1:
+                replan_attempts += 1
+                critical_feedback = list(check_out.issues)
+                plan_parsed = await self._run_plan(trace, player_action, critical_feedback)
+                prose = await self._run_write(trace, plan_parsed)
+                check_out = await self._run_check(trace, plan_parsed, prose)
 
-        # Determine outcome.
+            # REVISE branch: fixable issues, revise + recheck once.
+            if check_out.has_fixable and not check_out.has_critical and not recheck_done:
+                prose = await self._run_revise(trace, plan_parsed, prose, check_out.issues)
+                recheck_done = True
+                check_out = await self._run_check(trace, plan_parsed, prose)
+
+            # Determine outcome.
+            if check_out.has_critical:
+                outcome = "flagged_qm"
+            else:
+                outcome = "committed"
+
+            self._world.write_narrative(NarrativeRecord(
+                update_number=update_number,
+                raw_text=prose,
+                player_action=player_action,
+                pipeline_trace_id=trace.trace_id,
+            ))
+            trace.outcome = outcome
+
+            # EXTRACT stage: only when not critical. Best-effort — any failure
+            # is recorded in the trace but never breaks the chapter commit.
+            if not check_out.has_critical:
+                try:
+                    await self._run_extract(trace, plan_parsed, prose, update_number)
+                except Exception as e:  # pragma: no cover - defensive
+                    trace.add_stage(StageResult(
+                        stage_name="extract", input_prompt="", raw_output="",
+                        errors=[StageError(kind="extract_crash", message=str(e))],
+                    ))
+
+            return PipelineOutput(
+                prose=prose,
+                choices=plan_parsed.get("suggested_choices", []),
+                beats=plan_parsed["beats"],
+                trace=trace,
+            )
+
+        # ---- Hierarchical post-write flow ----
+        recheck_done = False
+        check_out = await self._run_check(trace, plan_like_dict, prose)
+
+        # REVISE branch (no replan in hierarchical flow for now)
+        if check_out.has_fixable and not check_out.has_critical and not recheck_done:
+            prose = await self._run_revise(trace, plan_like_dict, prose, check_out.issues)
+            recheck_done = True
+            check_out = await self._run_check(trace, plan_like_dict, prose)
+
         if check_out.has_critical:
             outcome = "flagged_qm"
         else:
@@ -221,23 +314,279 @@ class Pipeline:
         ))
         trace.outcome = outcome
 
-        # EXTRACT stage: only when not critical. Best-effort — any failure
-        # is recorded in the trace but never breaks the chapter commit.
         if not check_out.has_critical:
             try:
-                await self._run_extract(trace, plan_parsed, prose, update_number)
+                await self._run_extract(trace, plan_like_dict, prose, update_number)
             except Exception as e:  # pragma: no cover - defensive
                 trace.add_stage(StageResult(
                     stage_name="extract", input_prompt="", raw_output="",
                     errors=[StageError(kind="extract_crash", message=str(e))],
                 ))
 
+        suggested_choices = plan_like_dict.get("suggested_choices", [])
+        beats = plan_like_dict.get("beats", [])
         return PipelineOutput(
             prose=prose,
-            choices=plan_parsed.get("suggested_choices", []),
-            beats=plan_parsed["beats"],
+            choices=suggested_choices,
+            beats=beats,
             trace=trace,
         )
+
+    async def _run_hierarchical(
+        self,
+        trace: PipelineTrace,
+        player_action: str,
+        update_number: int,
+    ) -> "tuple[Any, dict]":
+        """Run the 4-layer hierarchy: arc → dramatic → emotional → craft.
+
+        Returns (craft_plan, plan_like_dict) where plan_like_dict has the
+        ``beats`` and ``suggested_choices`` keys expected by CHECK/REVISE/EXTRACT.
+        """
+        from app.planning import critics
+        from app.planning.schemas import ArcDirective
+
+        # ---- ARC layer: load or generate ----
+        directive = await self._load_or_generate_arc(trace)
+
+        # ---- DRAMATIC layer ----
+        dramatic = await self._retry_with_critic(
+            trace=trace,
+            stage_name="dramatic",
+            generator=lambda hint: self._dramatic_planner.plan(
+                directive=directive,
+                player_action=player_action,
+                world=self._world,
+                arc=self._get_craft_arc(),
+                structure=self._structure,
+                recent_tool_ids=None,
+            ),
+            validator=lambda plan: critics.validate_dramatic(
+                plan,
+                active_entity_ids={e.id for e in self._world.list_entities()},
+                valid_tool_ids=self._get_valid_tool_ids(),
+            ),
+        )
+
+        # ---- EMOTIONAL layer ----
+        all_narrative = self._world.list_narrative(limit=10_000)
+        recent_prose = [r.raw_text for r in all_narrative[-2:]] if all_narrative else []
+
+        emotional = await self._retry_with_critic(
+            trace=trace,
+            stage_name="emotional",
+            generator=lambda hint: self._emotional_planner.plan(
+                dramatic=dramatic,
+                world=self._world,
+                recent_prose=recent_prose,
+            ),
+            validator=lambda plan: critics.validate_emotional(plan, dramatic),
+        )
+
+        # ---- CRAFT layer ----
+        craft_plan = await self._retry_with_critic(
+            trace=trace,
+            stage_name="craft",
+            generator=lambda hint: self._craft_planner.plan(
+                dramatic=dramatic,
+                emotional=emotional,
+                style_register_id=None,
+            ),
+            validator=lambda plan: critics.validate_craft(plan, dramatic),
+        )
+
+        # Synthesize plan_like_dict for CHECK/REVISE/EXTRACT compat
+        beats = [scene.dramatic_question for scene in dramatic.scenes]
+        plan_like_dict: dict = {
+            "beats": beats,
+            "suggested_choices": dramatic.suggested_choices,
+        }
+
+        return craft_plan, plan_like_dict
+
+    async def _load_or_generate_arc(self, trace: PipelineTrace) -> "Any":
+        """Load persisted ArcDirective or generate one with arc_planner."""
+        from app.planning.schemas import ArcDirective
+
+        if self._quest_id is not None:
+            try:
+                arc_state = self._world.get_arc(self._quest_id, self._arc_id)
+                if arc_state.last_directive is not None:
+                    directive = ArcDirective.model_validate(arc_state.last_directive)
+                    trace.add_stage(StageResult(
+                        stage_name="arc",
+                        input_prompt="",
+                        raw_output=json.dumps(arc_state.last_directive),
+                        parsed_output=arc_state.last_directive,
+                    ))
+                    return directive
+            except WorldStateError:
+                arc_state = None
+
+            # Generate fresh arc directive
+            if self._arc_planner is not None and self._structure is not None:
+                if arc_state is None:
+                    arc_state = QuestArcState(
+                        quest_id=self._quest_id,
+                        arc_id=self._arc_id,
+                        structure_id=self._structure.id,
+                        scale=self._structure.scales[0],
+                    )
+                directive = await self._arc_planner.plan(
+                    quest_config=self._quest_config,
+                    arc_state=arc_state,
+                    world_snapshot=self._world,
+                    structure=self._structure,
+                )
+                directive_dict = json.loads(directive.model_dump_json())
+                arc_state_updated = arc_state.model_copy(
+                    update={"last_directive": directive_dict}
+                )
+                self._world.upsert_arc(arc_state_updated)
+                trace.add_stage(StageResult(
+                    stage_name="arc",
+                    input_prompt="",
+                    raw_output=directive.model_dump_json(),
+                    parsed_output=directive_dict,
+                ))
+                return directive
+
+        # Fallback: generate a minimal arc directive without persistence
+        if self._arc_planner is not None and self._structure is not None:
+            arc_state = QuestArcState(
+                quest_id="__ephemeral__",
+                arc_id=self._arc_id,
+                structure_id=self._structure.id,
+                scale=self._structure.scales[0],
+            )
+            directive = await self._arc_planner.plan(
+                quest_config=self._quest_config,
+                arc_state=arc_state,
+                world_snapshot=self._world,
+                structure=self._structure,
+            )
+            trace.add_stage(StageResult(
+                stage_name="arc",
+                input_prompt="",
+                raw_output=directive.model_dump_json(),
+                parsed_output=json.loads(directive.model_dump_json()),
+            ))
+            return directive
+
+        # No arc planner — synthesize a minimal directive
+        directive = _make_minimal_arc_directive()
+        trace.add_stage(StageResult(
+            stage_name="arc",
+            input_prompt="",
+            raw_output="{}",
+            parsed_output={},
+        ))
+        return directive
+
+    async def _retry_with_critic(
+        self,
+        *,
+        trace: PipelineTrace,
+        stage_name: str,
+        generator,
+        validator,
+    ) -> "Any":
+        """Call generator, validate, record StageResult. Retry once on errors."""
+        import inspect
+
+        result = await generator(hint=None)
+        issues = validator(result)
+        errors = [
+            StageError(
+                kind="critic_error" if i.severity == "error" else "critic_warning",
+                message=i.message,
+            )
+            for i in issues
+        ]
+        raw = result.model_dump_json() if hasattr(result, "model_dump_json") else str(result)
+        parsed = json.loads(raw) if hasattr(result, "model_dump_json") else {}
+
+        if any(i.severity == "error" for i in issues):
+            # Retry once: generator may accept a hint about issues
+            hint = "\n".join(f"- [{i.severity}] {i.message}" for i in issues)
+            try:
+                result2 = await generator(hint=hint)
+                issues2 = validator(result2)
+                errors2 = [
+                    StageError(
+                        kind="critic_error" if i.severity == "error" else "critic_warning",
+                        message=i.message,
+                    )
+                    for i in issues2
+                ]
+                raw2 = result2.model_dump_json() if hasattr(result2, "model_dump_json") else str(result2)
+                parsed2 = json.loads(raw2) if hasattr(result2, "model_dump_json") else {}
+                trace.add_stage(StageResult(
+                    stage_name=stage_name,
+                    input_prompt=f"[retry after critic: {hint[:200]}]",
+                    raw_output=raw2,
+                    parsed_output=parsed2,
+                    errors=errors + errors2,
+                ))
+                return result2
+            except Exception:
+                pass  # fall through to use original result
+
+        trace.add_stage(StageResult(
+            stage_name=stage_name,
+            input_prompt="",
+            raw_output=raw,
+            parsed_output=parsed,
+            errors=errors,
+        ))
+        return result
+
+    def _get_craft_arc(self) -> "Any":
+        """Return a minimal craft Arc for tool recommendations."""
+        from app.craft.schemas import Arc as CraftArc
+        structure_id = self._structure.id if self._structure else "three_act"
+        return CraftArc(
+            id=self._arc_id,
+            name=self._arc_id,
+            scale="chapter",
+            structure_id=structure_id,
+        )
+
+    def _get_valid_tool_ids(self) -> "set[str]":
+        """Return all tool ids from the craft library (or empty set if none)."""
+        if self._craft_library is None:
+            return set()
+        try:
+            return {t.id for t in self._craft_library.tools()}
+        except Exception:
+            return set()
+
+    async def _run_craft_critics(
+        self, trace: PipelineTrace, craft_plan: "Any", prose: str
+    ) -> None:
+        """Run Wood-gap critics on prose and append as a single 'craft_critics' StageResult."""
+        from app.planning import critics
+
+        all_issues = []
+        all_issues.extend(critics.validate_free_indirect_integrity(craft_plan, prose))
+        all_issues.extend(critics.validate_detail_characterization(craft_plan, prose))
+        all_issues.extend(critics.validate_metaphor_domains(craft_plan, prose))
+        all_issues.extend(critics.validate_indirection(craft_plan, prose))
+        all_issues.extend(critics.validate_voice_blend(craft_plan, prose))
+
+        errors = [
+            StageError(
+                kind="critic_error" if i.severity == "error" else "critic_warning",
+                message=i.message,
+            )
+            for i in all_issues
+        ]
+        trace.add_stage(StageResult(
+            stage_name="craft_critics",
+            input_prompt="",
+            raw_output="",
+            errors=errors,
+        ))
 
     async def _run_plan(
         self, trace: PipelineTrace, player_action: str,
