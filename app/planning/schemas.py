@@ -212,6 +212,33 @@ class VoicePermeability(BaseModel):
     blended_voice_samples: list[str] = []  # few-shot samples of the blend
 
 
+class CharacterVoice(BaseModel):
+    """Persistent voice specification for a character.
+
+    This is the grounding source for free-indirect-style bleed: the narrator
+    pulls from a character's vocabulary, cadence, and metaphor habits when
+    voice permeability is high. Intended to live on ``Entity.data["voice"]``
+    for CHARACTER entities and be loaded via
+    ``app.planning.voice.character_voice_for(entity)``.
+
+    ``bleed_vocabulary`` is derived from ``jargon_domains`` + ``signature_phrases``;
+    ``excluded_vocabulary`` is derived from ``forbidden_words`` plus any
+    narrator-register-mismatched terms. Those are NOT stored on this model —
+    they are computed when the craft planner needs them.
+    """
+    vocabulary_level: str = "plain"           # e.g. "elevated", "plain", "coarse"
+    jargon_domains: list[str] = Field(default_factory=list)
+    forbidden_words: list[str] = Field(default_factory=list)
+    signature_phrases: list[str] = Field(default_factory=list)
+    sentence_length_bias: str = "varied"      # e.g. "short_clipped", "long_winding"
+    directness: float = Field(default=0.5, ge=0.0, le=1.0)
+    uses_metaphor: bool = True
+    emotional_expression: str = "mixed"       # e.g. "guarded", "effusive", "ironic"
+    truth_tendency: str = "candid"            # e.g. "evasive", "candid", "embellishes"
+    code_switching: list[str] = Field(default_factory=list)  # contexts where register shifts
+    voice_samples: list[str] = Field(default_factory=list)
+
+
 class PassagePermeability(BaseModel):
     """Per-passage voice permeability instruction."""
     passage_description: str

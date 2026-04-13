@@ -274,6 +274,85 @@ async def test_craft_planner_injects_style_voice_samples():
 
 
 @pytest.mark.asyncio
+async def test_craft_planner_injects_character_voice_and_defaults_permeability():
+    """POV character's voice data is rendered; bleed/excluded are backfilled from grounded defaults."""
+    from app.planning.schemas import VoicePermeability
+    from app.world.schema import Entity, EntityType
+
+    # Craft plan returned by LLM has voice_permeability set but with EMPTY
+    # grounded vocabulary — planner must backfill from character data.
+    base = _make_craft_plan()
+    base.scenes[0].voice_permeability = VoicePermeability(
+        baseline=0.4, current_target=0.6,
+    )
+    raw = base.model_dump_json()
+
+    hero = Entity(
+        id="hero",
+        entity_type=EntityType.CHARACTER,
+        name="Aldric",
+        data={
+            "voice": {
+                "vocabulary_level": "coarse",
+                "jargon_domains": ["thievery"],
+                "signature_phrases": ["quick as a cat"],
+                "forbidden_words": ["perhaps"],
+                "directness": 0.9,
+                "voice_samples": ["He'd be gone before the bell."],
+            },
+            "blended_voice_samples": ["Quick as a cat, and the key was his."],
+        },
+    )
+
+    client = FakeClient(raw)
+    renderer = PromptRenderer(PROMPTS)
+    craft_library = CraftLibrary(CRAFT_DATA)
+    planner = CraftPlanner(client, renderer, craft_library)
+
+    result = await planner.plan(
+        dramatic=_DRAMATIC_PLAN,
+        emotional=_EMOTIONAL_PLAN,
+        style_register_id="terse_military",
+        characters={"hero": hero},
+    )
+
+    # User prompt should mention character voice details
+    messages, _schema, _name = client.calls[0]
+    user_content = messages[1].content
+    assert "thievery" in user_content
+    assert "quick as a cat" in user_content
+    assert "Quick as a cat, and the key was his." in user_content
+
+    # Backfill: scene 1 VP is LLM-emitted but empty vocab → grounded backfill
+    vp1 = result.scenes[0].voice_permeability
+    assert vp1 is not None
+    assert "thievery" in vp1.bleed_vocabulary
+    assert "perhaps" in vp1.excluded_vocabulary
+    assert vp1.blended_voice_samples  # populated from blended samples
+
+    # Scene 2 had no VP emitted by LLM → fully-populated default is installed
+    vp2 = result.scenes[1].voice_permeability
+    assert vp2 is not None
+    assert "thievery" in vp2.bleed_vocabulary
+
+
+@pytest.mark.asyncio
+async def test_craft_planner_without_characters_is_backward_compatible():
+    """Existing call signature (no characters) still works; no backfill happens."""
+    craft_plan = _make_craft_plan()
+    raw = craft_plan.model_dump_json()
+    client = FakeClient(raw)
+    renderer = PromptRenderer(PROMPTS)
+    craft_library = CraftLibrary(CRAFT_DATA)
+    planner = CraftPlanner(client, renderer, craft_library)
+
+    result = await planner.plan(dramatic=_DRAMATIC_PLAN, emotional=_EMOTIONAL_PLAN)
+    assert isinstance(result, CraftPlan)
+    # No character voices → no permeability backfill
+    assert result.scenes[0].voice_permeability is None
+
+
+@pytest.mark.asyncio
 async def test_craft_planner_includes_tool_examples():
     """Example snippets for tools mentioned in dramatic.tools_selected appear in user prompt."""
     craft_plan = _make_craft_plan()
