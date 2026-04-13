@@ -426,6 +426,127 @@ Existing tests that will need edits:
 
 ---
 
+## Addendum: Wood-gap schemas
+
+Driven by the observation that our decomposition handles dramatic/emotional/craft as separable layers but Wood's central insight is that style, POV, detail, character, and reality are inseparable. The WRITE stage must recompose what the layers separated — and the primary input to WRITE should be a **prose brief** that already embodies the fusion, with the structured plan as backup for critics.
+
+Five additional schemas and one output-format change. These extend the Task 1 schemas, Task 6 CraftPlanner, Task 7 WRITE, and Task 8 critics.
+
+### Addendum schemas (append to `app/planning/schemas.py`)
+
+```python
+# ---- Wood gaps ----
+
+class VoicePermeability(BaseModel):
+    """How much the narrator's register absorbs the POV character's language.
+
+    Not static. Fluctuates within a scene — pulls close during emotional
+    intensity, retreats during transition or description. 0.0 = pure
+    narrator, 1.0 = pure character stream-of-consciousness.
+    """
+    baseline: float = Field(default=0.3, ge=0.0, le=1.0)
+    current_target: float = Field(default=0.3, ge=0.0, le=1.0)
+    triggers_high: list[str] = []      # "emotional extremity", "moment of decision", ...
+    triggers_low: list[str] = []       # "scene transition", "physical description", ...
+    bleed_vocabulary: list[str] = []   # character-register words to appear in narration
+    excluded_vocabulary: list[str] = []  # narrator words unsuitable during high permeability
+    blended_voice_samples: list[str] = []  # few-shot samples of the blend
+
+
+class PassagePermeability(BaseModel):
+    """Per-passage voice permeability instruction."""
+    passage_description: str
+    target: float = Field(ge=0.0, le=1.0)
+    character_id: str
+    bleed_words: list[str] = []
+    reason: str
+
+
+class DetailPrinciple(BaseModel):
+    """Governs detail selection for a scene — why THIS detail, not a generic one."""
+    perceiving_character_id: str
+    perceptual_preoccupations: list[str]   # what they're currently biased to notice
+    detail_mode: Literal[
+        "character_revealing", "world_establishing", "thematic_resonant",
+        "mood_setting", "foreshadowing", "ironic",
+    ] = "character_revealing"
+    triple_duty_targets: list[str] = []    # moments where one detail serves multiple functions
+
+
+class MetaphorProfile(BaseModel):
+    """Metaphor source domains a character draws from. Metaphor IS characterization."""
+    character_id: str
+    permanent_domains: list[str]           # from life experience, stable
+    current_domains: list[str] = []        # activated by current state
+    forbidden_domains: list[str] = []      # domains this character has no experience of
+    metaphor_density: Literal["sparse", "occasional", "regular", "rich"] = "occasional"
+    extends_to_narration: bool = True      # bleeds into narrator during high permeability
+
+
+class IndirectionInstruction(BaseModel):
+    """How to render unconscious motive through behavior and detail, not exposition."""
+    character_id: str
+    unconscious_motive: str                # what the system knows but won't name
+    surface_manifestations: list[str]      # observable behaviors that express the motive
+    detail_tells: list[str]                # details whose inclusion carries the subtext
+    what_not_to_say: list[str]             # narration to AVOID
+    reader_should_infer: str               # the check criterion
+
+
+class CraftBrief(BaseModel):
+    """The prose form of the craft plan, for the WRITE stage.
+
+    A director's note, not a parameter dump. The structured CraftScenePlan
+    exists so critics can validate; the brief exists so the writer receives
+    a unified creative vision rather than a checklist.
+    """
+    scene_id: int
+    brief: str                             # 100-300 words of prose brief
+```
+
+### Addendum changes to `CraftScenePlan`
+
+Extend `CraftScenePlan` with optional fields (all default None / empty so existing tests don't break):
+
+```python
+    # --- Wood-gap fields ---
+    voice_permeability: VoicePermeability | None = None
+    passage_permeabilities: list[PassagePermeability] = []
+    detail_principle: DetailPrinciple | None = None
+    metaphor_profiles: list[MetaphorProfile] = []
+    indirection: list[IndirectionInstruction] = []
+```
+
+### Addendum changes to `CraftPlan`
+
+```python
+    briefs: list[CraftBrief] = []  # one per scene, parallel to scenes
+```
+
+### Addendum changes to Task 6 (CraftPlanner)
+
+The craft planner prompt now must produce **both** the structured `CraftScenePlan` **and** a prose `CraftBrief` per scene. The structured output is for critics; the brief is what WRITE consumes.
+
+System prompt addition: "For each scene, produce (1) the structured craft plan (register, motifs, narrator instructions, voice permeability, detail principle, metaphor profiles, indirection if relevant) and (2) a 100-300 word prose brief that fuses all these into a single creative vision. The brief should read like a director's note. Do not list parameters; weave them into prose."
+
+### Addendum changes to Task 7 (WRITE)
+
+WRITE's user prompt for each scene now leads with the `CraftBrief.brief` as the primary input. The structured `CraftScenePlan` is included as secondary "reference data" — writer can consult but the brief is the vision. Voice samples for the POV character are still included. If `voice_permeability.blended_voice_samples` is non-empty, those are the most important few-shot material — include them prominently.
+
+### Addendum check dimensions (Task 8)
+
+Add five stub validators to `critics.py`:
+
+- `validate_free_indirect_integrity(craft_plan, prose)` — if `voice_permeability` is set for a scene, check that at least one `bleed_vocabulary` word appears in the prose and that `excluded_vocabulary` words do NOT. Heuristic only.
+- `validate_detail_characterization(craft_plan, prose)` — if `detail_principle.detail_mode == "character_revealing"`, verify at least one `perceptual_preoccupation` has a lexical footprint in the prose.
+- `validate_metaphor_domains(craft_plan, prose)` — if `metaphor_profiles` set for a character, scan for forbidden-domain vocabulary; warn if found. (Permissive — only errors on clearly-forbidden terms.)
+- `validate_indirection(craft_plan, prose)` — for each `IndirectionInstruction`, verify no `what_not_to_say` phrase appears verbatim in prose.
+- `validate_voice_blend(craft_plan, prose)` — stub: returns empty issue list in v1; real implementation would compare sentence-by-sentence register. Placeholder so the dimension exists in the trace.
+
+All are heuristic string-match validators. Real LLM-based craft critics are P10.3.
+
+---
+
 ## What's explicitly out of scope for this plan
 
 - LLM-based critics (replaces stub critics with real reviewer agents) — P10.3.
