@@ -63,6 +63,53 @@ def test_recommend_honors_required_beats(lib):
     assert rec[0].id == "false_victory"
 
 
+def test_recommend_boosts_theme_anchored_tools(lib):
+    """A theme whose key_scenes matches the current phase should boost tools
+    that serve that phase (Gap G4: theme-based tool scoring)."""
+    from app.planning.world_extensions import Theme
+
+    structure = lib.structure("three_act")
+    phase_name = structure.phases[0].name
+
+    # Arc with no explicit recent tools; neutral tension so phase_expected
+    # bonus is the main signal. Add a theme whose key_scenes references the
+    # current phase — expected-beat tools should gain a +3 bonus.
+    arc = _arc(phase_index=0, gap_hint="neutral")
+    theme = Theme(
+        id="t:anchor",
+        proposition="the world has a debt that must be named",
+        stance="exploring",
+        key_scenes=[phase_name],
+    )
+
+    baseline = lib.recommend_tools(arc, structure, limit=10)
+    boosted = lib.recommend_tools(arc, structure, limit=10, themes=[theme])
+
+    baseline_ids = [t.id for t in baseline]
+    boosted_ids = [t.id for t in boosted]
+
+    # Every expected-beat tool from this phase should still be in the boosted
+    # output — and among the top results (since its score gained +3).
+    expected = set(structure.phases[0].expected_beats)
+    anchored = expected & set(baseline_ids)
+    assert anchored, "precondition: phase has expected-beat tools"
+    # Anchored tool(s) must appear no later in the boosted list than baseline.
+    for tid in anchored:
+        assert boosted_ids.index(tid) <= baseline_ids.index(tid)
+
+
+def test_recommend_no_theme_match_is_noop(lib):
+    from app.planning.world_extensions import Theme
+
+    arc = _arc(phase_index=0, gap_hint="neutral")
+    theme = Theme(id="t:misc", proposition="x", key_scenes=["nonexistent-phase"])
+    without = [t.id for t in lib.recommend_tools(arc, lib.structure("three_act"))]
+    with_theme = [t.id for t in lib.recommend_tools(
+        arc, lib.structure("three_act"), themes=[theme],
+    )]
+    assert without == with_theme
+
+
 def test_recommend_limit(lib):
     arc = _arc(phase_index=1, gap_hint="lagging")
     rec = lib.recommend_tools(arc, lib.structure("three_act"), limit=2)

@@ -2,7 +2,12 @@
 
 **Genre:** {{ quest_config.get("genre") or "unspecified" }}
 **Premise:** {{ quest_config.get("premise") or "unspecified" }}
-{% if quest_config.get("themes") %}
+{% if themes %}
+**Themes (debatable propositions the quest is interrogating):**
+{% for th in themes %}
+- `{{ th.id }}` [{{ th.stance }}]: {{ th.proposition }}
+{% endfor %}
+{% elif quest_config.get("themes") %}
 **Themes:** {{ quest_config.get("themes") | join(", ") }}
 {% endif %}
 
