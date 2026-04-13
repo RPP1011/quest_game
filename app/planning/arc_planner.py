@@ -5,7 +5,7 @@ from app.engine.prompt_renderer import PromptRenderer
 from app.planning.schemas import ArcDirective
 from app.runtime.client import ChatMessage, InferenceClient
 from app.world.output_parser import OutputParser, ParseError
-from app.world.schema import QuestArcState
+from app.world.schema import ParallelStatus, QuestArcState
 from app.world.state_manager import WorldStateManager
 
 
@@ -55,6 +55,9 @@ class ArcPlanner:
         plot_threads = world_snapshot.list_plot_threads()
         all_narrative = world_snapshot.list_narrative(limit=10_000)
         narrative_summaries = all_narrative[-5:] if all_narrative else []
+        active_parallels = world_snapshot.list_parallels(
+            statuses=[ParallelStatus.PLANTED, ParallelStatus.SCHEDULED],
+        )
 
         schema = ArcDirective.model_json_schema()
 
@@ -71,6 +74,7 @@ class ArcPlanner:
                 "current_phase": current_phase,
                 "plot_threads": plot_threads,
                 "narrative_summaries": narrative_summaries,
+                "active_parallels": active_parallels,
             },
         )
 

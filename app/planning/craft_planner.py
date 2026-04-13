@@ -5,6 +5,7 @@ from app.engine.prompt_renderer import PromptRenderer
 from app.planning.schemas import CraftPlan, DramaticPlan, EmotionalPlan
 from app.runtime.client import ChatMessage, InferenceClient
 from app.world.output_parser import OutputParser
+from app.world.schema import Parallel
 
 
 class CraftPlanner:
@@ -34,6 +35,7 @@ class CraftPlanner:
         dramatic: DramaticPlan,
         emotional: EmotionalPlan,
         style_register_id: str | None = None,
+        active_parallels: list[Parallel] | None = None,
     ) -> CraftPlan:
         """Generate a ``CraftPlan`` translating drama + emotion into a prose blueprint.
 
@@ -87,6 +89,7 @@ class CraftPlanner:
                 "emotional_by_scene": emotional_by_scene,
                 "style_register": style_register,
                 "tool_examples": tool_examples,
+                "active_parallels": active_parallels or [],
             },
         )
 

@@ -377,6 +377,17 @@ class Pipeline:
         ))
         trace.outcome = outcome
 
+        # Post-commit: persist parallel plants/deliveries from the craft plan.
+        if outcome == "committed" and craft_plan is not None:
+            try:
+                self._persist_parallels(craft_plan, update_number)
+            except Exception as e:  # pragma: no cover - defensive
+                trace.add_stage(StageResult(
+                    stage_name="parallels_persist",
+                    input_prompt="", raw_output="",
+                    errors=[StageError(kind="parallels_persist_crash", message=str(e))],
+                ))
+
         if not check_out.has_critical:
             try:
                 await self._run_extract(trace, plan_like_dict, prose, update_number)
@@ -456,6 +467,7 @@ class Pipeline:
                 dramatic=dramatic,
                 emotional=emotional,
                 style_register_id=None,
+                active_parallels=self._world.list_parallels(),
             ),
             validator=lambda plan: critics.validate_craft(plan, dramatic),
             fallback=lambda: _make_minimal_craft_plan(dramatic),
@@ -469,6 +481,46 @@ class Pipeline:
         }
 
         return craft_plan, plan_like_dict
+
+    def _persist_parallels(self, craft_plan: "Any", update_number: int) -> None:
+        """Post-COMMIT: walk the craft plan and plant/deliver parallels.
+
+        Identity strategy: ``ParallelInstruction.parallel_id`` is the row id.
+        If a row with that id exists, mark it ``delivered``. If not, treat the
+        instruction as the A-half (plant) and insert a new row — the
+        ``source_description`` on the instruction describes the just-established
+        half, and ``execution_guidance`` becomes the ``target_description`` the
+        B-half should fulfil later.
+        """
+        from app.world.schema import Parallel, ParallelStatus
+
+        quest_id = self._quest_id or "__ephemeral__"
+        for scene in getattr(craft_plan, "scenes", []) or []:
+            inst = getattr(scene, "parallel_instruction", None)
+            if inst is None:
+                continue
+            try:
+                existing = self._world.get_parallel(inst.parallel_id)
+            except WorldStateError:
+                existing = None
+
+            if existing is None:
+                # Plant the A-half.
+                self._world.add_parallel(Parallel(
+                    id=inst.parallel_id,
+                    quest_id=quest_id,
+                    source_update=update_number,
+                    source_description=inst.source_description,
+                    inversion_axis=inst.inversion_axis,
+                    target_description=inst.execution_guidance,
+                    status=ParallelStatus.PLANTED,
+                ))
+            else:
+                # Deliver the B-half.
+                self._world.update_parallel(inst.parallel_id, {
+                    "status": ParallelStatus.DELIVERED,
+                    "delivered_at_update": update_number,
+                })
 
     async def _load_or_generate_arc(self, trace: PipelineTrace) -> "Any":
         """Load persisted ArcDirective or generate one with arc_planner."""

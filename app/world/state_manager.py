@@ -10,6 +10,8 @@ from .schema import (
     ForeshadowingHook,
     HookStatus,
     NarrativeRecord,
+    Parallel,
+    ParallelStatus,
     PlotThread,
     QuestArcState,
     Relationship,
@@ -56,6 +58,7 @@ class WorldSnapshot:
     narrative: list[NarrativeRecord]
     foreshadowing: list[ForeshadowingHook]
     plot_threads: list[PlotThread]
+    parallels: tuple[Parallel, ...] = ()
 
 
 def _row_to_entity(row: sqlite3.Row) -> Entity:
@@ -91,6 +94,22 @@ def _row_to_hook(row: sqlite3.Row) -> ForeshadowingHook:
         status=row["status"],
         paid_off_at_update=row["paid_off_at_update"],
         references=json.loads(row["refs"]),
+    )
+
+
+def _row_to_parallel(row: sqlite3.Row) -> Parallel:
+    return Parallel(
+        id=row["id"],
+        quest_id=row["quest_id"],
+        source_update=row["source_update"],
+        source_description=row["source_description"],
+        inversion_axis=row["inversion_axis"],
+        target_description=row["target_description"],
+        status=row["status"],
+        target_update_range_min=row["target_update_range_min"],
+        target_update_range_max=row["target_update_range_max"],
+        theme_ids=json.loads(row["theme_ids"]),
+        delivered_at_update=row["delivered_at_update"],
     )
 
 
@@ -336,6 +355,74 @@ class WorldStateManager:
             ),
         )
         self._conn.commit()
+
+    # ---- parallels ----
+
+    def add_parallel(self, p: Parallel) -> None:
+        self._conn.execute(
+            "INSERT INTO parallels(id, quest_id, source_update, source_description, "
+            "inversion_axis, target_description, status, target_update_range_min, "
+            "target_update_range_max, theme_ids, delivered_at_update) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                p.id, p.quest_id, p.source_update, p.source_description,
+                p.inversion_axis, p.target_description,
+                p.status.value if hasattr(p.status, "value") else p.status,
+                p.target_update_range_min, p.target_update_range_max,
+                json.dumps(p.theme_ids), p.delivered_at_update,
+            ),
+        )
+        self._conn.commit()
+
+    def get_parallel(self, parallel_id: str) -> Parallel:
+        row = self._conn.execute(
+            "SELECT * FROM parallels WHERE id=?", (parallel_id,)
+        ).fetchone()
+        if row is None:
+            raise WorldStateError(f"no parallel {parallel_id}")
+        return _row_to_parallel(row)
+
+    def update_parallel(self, parallel_id: str, patch: dict[str, Any]) -> None:
+        current = self.get_parallel(parallel_id)
+
+        def _v(x: Any) -> Any:
+            return x.value if hasattr(x, "value") else x
+
+        self._conn.execute(
+            "UPDATE parallels SET status=?, target_description=?, inversion_axis=?, "
+            "target_update_range_min=?, target_update_range_max=?, theme_ids=?, "
+            "delivered_at_update=? WHERE id=?",
+            (
+                _v(patch.get("status", current.status)),
+                patch.get("target_description", current.target_description),
+                patch.get("inversion_axis", current.inversion_axis),
+                patch.get("target_update_range_min", current.target_update_range_min),
+                patch.get("target_update_range_max", current.target_update_range_max),
+                json.dumps(patch.get("theme_ids", current.theme_ids)),
+                patch.get("delivered_at_update", current.delivered_at_update),
+                parallel_id,
+            ),
+        )
+        self._conn.commit()
+
+    def list_parallels(
+        self, quest_id: str | None = None, statuses: list[ParallelStatus] | None = None
+    ) -> list[Parallel]:
+        q = "SELECT * FROM parallels"
+        clauses: list[str] = []
+        args: list[Any] = []
+        if quest_id is not None:
+            clauses.append("quest_id=?")
+            args.append(quest_id)
+        if statuses:
+            placeholders = ",".join("?" * len(statuses))
+            clauses.append(f"status IN ({placeholders})")
+            args.extend(s.value if hasattr(s, "value") else s for s in statuses)
+        if clauses:
+            q += " WHERE " + " AND ".join(clauses)
+        q += " ORDER BY source_update, id"
+        rows = self._conn.execute(q, tuple(args)).fetchall()
+        return [_row_to_parallel(r) for r in rows]
 
     # ---- plot threads ----
 
@@ -632,6 +719,21 @@ class WorldStateManager:
                         (json.dumps(filtered_refs), row["id"]),
                     )
 
+            # Parallels: revert deliveries that happened after to_update, and
+            # delete parallels whose source was planted after to_update.
+            c.execute(
+                "DELETE FROM parallels WHERE source_update > ?", (to_update,)
+            )
+            for row in c.execute(
+                "SELECT id, delivered_at_update FROM parallels"
+            ).fetchall():
+                d = row["delivered_at_update"]
+                if d is not None and d > to_update:
+                    c.execute(
+                        "UPDATE parallels SET status=?, delivered_at_update=NULL WHERE id=?",
+                        ("planted", row["id"]),
+                    )
+
             c.execute("COMMIT")
         except Exception:
             c.execute("ROLLBACK")
@@ -803,4 +905,5 @@ class WorldStateManager:
                 for r in self._conn.execute("SELECT * FROM foreshadowing ORDER BY id").fetchall()
             ],
             plot_threads=self.list_plot_threads(),
+            parallels=tuple(self.list_parallels()),
         )

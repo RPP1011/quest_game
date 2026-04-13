@@ -180,6 +180,42 @@ async def test_arc_planner_renders_context(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_arc_planner_includes_active_parallels_in_context(tmp_path):
+    """Planted parallels appear in the arc-planner user prompt."""
+    from app.world.schema import Parallel
+
+    raw = _VALID_DIRECTIVE.model_dump_json()
+    client = FakeClient(raw)
+    renderer = PromptRenderer(PROMPTS)
+    world = _make_world(tmp_path)
+    world.add_parallel(Parallel(
+        id="par:crown",
+        quest_id="q1",
+        source_update=4,
+        source_description="Hero refuses the crown in triumph.",
+        inversion_axis="power reversed",
+        target_description="Hero accepts the crown in defeat.",
+        target_update_range_min=8,
+        target_update_range_max=10,
+    ))
+    structure = _make_structure()
+    arc_state = _make_arc_state()
+
+    planner = ArcPlanner(client, renderer)
+    await planner.plan(
+        quest_config={"genre": "fantasy", "premise": "x", "themes": []},
+        arc_state=arc_state,
+        world_snapshot=world,
+        structure=structure,
+    )
+
+    user_content = client.calls[0][0][1].content
+    assert "par:crown" in user_content
+    assert "power reversed" in user_content
+    assert "8" in user_content and "10" in user_content
+
+
+@pytest.mark.asyncio
 async def test_arc_planner_surfaces_parse_error(tmp_path):
     """FakeClient returning garbage raises ParseError."""
     client = FakeClient("this is not json at all!!!")

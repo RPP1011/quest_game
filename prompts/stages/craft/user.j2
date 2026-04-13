@@ -106,4 +106,17 @@
 ---
 {% endif %}
 
+{% if active_parallels %}
+
+## Active Parallels (structural rhymes awaiting their B-half)
+
+{% for p in active_parallels %}
+- **{{ p.id }}** ({{ p.status.value if p.status.value is defined else p.status }}): A-half at update {{ p.source_update }} — "{{ p.source_description }}". Inversion axis: *{{ p.inversion_axis }}*. Target B-half: "{{ p.target_description }}"{% if p.target_update_range_min is not none and p.target_update_range_max is not none %} (due updates {{ p.target_update_range_min }}–{{ p.target_update_range_max }}){% endif %}.
+{% endfor %}
+
+When delivering a parallel's B-half, emit a ``parallel_instruction`` on the relevant scene with ``parallel_id`` set to the row id above so the delivery is persisted.
+
+---
+{% endif %}
+
 Produce the craft plan now. For each dramatic scene, emit one CraftScenePlan entry in `scenes` and one CraftBrief entry in `briefs`. The brief must be 100-300 words of prose that reads like a director's note — weave register, voice, emotional arc, and motif into a unified vision. Do not list parameters in the brief.

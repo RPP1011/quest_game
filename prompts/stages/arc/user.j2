@@ -52,6 +52,18 @@ No plot threads established yet.
 
 ---
 
+## Active Parallels (structural rhymes awaiting their B-half)
+
+{% if active_parallels %}
+{% for p in active_parallels %}
+- **{{ p.id }}** ({{ p.status.value if p.status.value is defined else p.status }}): planted at update {{ p.source_update }} — "{{ p.source_description }}". Inversion axis: *{{ p.inversion_axis }}*. Target B-half: "{{ p.target_description }}"{% if p.target_update_range_min is not none and p.target_update_range_max is not none %} (due between updates {{ p.target_update_range_min }}–{{ p.target_update_range_max }}){% endif %}{% if p.theme_ids %}. Themes: {{ p.theme_ids | join(", ") }}{% endif %}.
+{% endfor %}
+{% else %}
+No active parallels.
+{% endif %}
+
+---
+
 ## Recent Narrative (last {{ narrative_summaries | length }} updates)
 
 {% if narrative_summaries %}
