@@ -32,13 +32,41 @@ async function refreshChapters() {
   const chapters = await fetchJSON(`/api/quests/${state.currentQuest}/chapters`);
   const box = document.getElementById('chapters');
   box.innerHTML = '';
-  for (const c of chapters) {
+  for (let i = 0; i < chapters.length; i++) {
+    const c = chapters[i];
+    const isLast = i === chapters.length - 1;
     const el = document.createElement('div');
     el.className = 'chapter';
     el.innerHTML = `
       <div class="action">[${c.update_number}] ${escapeHtml(c.player_action || '')}</div>
       <div class="prose">${escapeHtml(c.prose)}</div>
     `;
+    if (isLast && c.choices && c.choices.length > 0) {
+      const bar = document.createElement('div');
+      bar.className = 'choices-bar';
+      c.choices.forEach((text, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'choice';
+        btn.dataset.idx = idx + 1;
+        btn.textContent = `${idx + 1}. ${text}`;
+        btn.onclick = () => {
+          const input = document.getElementById('action-input');
+          input.value = text;
+          document.getElementById('action-form').requestSubmit();
+        };
+        bar.appendChild(btn);
+      });
+      const writeIn = document.createElement('button');
+      writeIn.className = 'choice write-in';
+      writeIn.textContent = 'Write-in...';
+      writeIn.onclick = () => {
+        const input = document.getElementById('action-input');
+        input.value = '';
+        input.focus();
+      };
+      bar.appendChild(writeIn);
+      el.appendChild(bar);
+    }
     box.appendChild(el);
   }
   box.scrollTop = box.scrollHeight;
