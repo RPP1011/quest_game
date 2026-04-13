@@ -104,6 +104,25 @@ class PlotThread(BaseModel):
     priority: int = Field(default=5, ge=1, le=10)
 
 
+class EmotionalBeat(BaseModel):
+    """Observed per-scene emotional target, persisted post-commit.
+
+    Written from the emotional planner's ``EmotionalScenePlan`` targets after
+    a quest update commits. Provides the observed-history analogue to
+    ``QuestArcState.tension_observed``: lets the emotional planner detect
+    monotony and schedule contrast against actual trajectory instead of
+    flying blind each tick.
+    """
+    id: int | None = None
+    quest_id: str
+    update_number: int
+    scene_index: int
+    primary_emotion: str
+    secondary_emotion: str | None = None
+    intensity: float = Field(ge=0.0, le=1.0)
+    source: str
+
+
 class QuestArcState(BaseModel):
     """Persisted arc state (thin — references the craft-level Arc)."""
     arc_id: str                 # matches app.craft.Arc.id

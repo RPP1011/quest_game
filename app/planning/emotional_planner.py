@@ -4,7 +4,20 @@ from app.engine.prompt_renderer import PromptRenderer
 from app.planning.schemas import DramaticPlan, EmotionalPlan
 from app.runtime.client import ChatMessage, InferenceClient
 from app.world.output_parser import OutputParser
+from app.world.schema import EmotionalBeat
 from app.world.state_manager import WorldStateManager
+
+
+def detect_monotony(beats: list[EmotionalBeat], window: int = 3) -> bool:
+    """True iff the last ``window`` beats all share ``primary_emotion``.
+
+    A cheap heuristic surfaced to the planner prompt so it can bias toward
+    contrast. Not a hard rejection; the planner still decides.
+    """
+    if window < 2 or len(beats) < window:
+        return False
+    tail = beats[-window:]
+    return len({b.primary_emotion for b in tail}) == 1
 
 
 class EmotionalPlanner:
@@ -26,6 +39,8 @@ class EmotionalPlanner:
         dramatic: DramaticPlan,
         world: WorldStateManager,
         recent_prose: list[str],
+        recent_beats: list[EmotionalBeat] | None = None,
+        monotony_flag: bool = False,
     ) -> EmotionalPlan:
         """Generate an ``EmotionalPlan`` for the current update.
 
@@ -53,6 +68,8 @@ class EmotionalPlanner:
                 "dramatic": dramatic,
                 "characters": characters,
                 "recent_prose": recent_prose[-2:] if recent_prose else [],
+                "recent_beats": recent_beats or [],
+                "monotony_flag": monotony_flag,
             },
         )
 

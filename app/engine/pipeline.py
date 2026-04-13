@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol, Union
 from app.runtime.client import ChatMessage
 from app.world.output_parser import OutputParser, ParseError
-from app.world.schema import NarrativeRecord, QuestArcState
+from app.world.schema import EmotionalBeat, NarrativeRecord, QuestArcState
 from app.world.state_manager import WorldStateManager, WorldStateError
 from .check import CHECK_SCHEMA, CheckIssue, CheckOutput
 from .context_builder import ContextBuilder
@@ -260,6 +260,8 @@ class Pipeline:
         quest_config: dict | None = None,
         quest_id: str | None = None,
         arc_id: str = "main",
+        emotional_history_window: int = 10,
+        emotional_monotony_window: int = 3,
     ) -> None:
         self._world = world
         self._cb = context_builder
@@ -273,6 +275,8 @@ class Pipeline:
         self._quest_config = quest_config or {}
         self._quest_id = quest_id
         self._arc_id = arc_id
+        self._emotional_history_window = emotional_history_window
+        self._emotional_monotony_window = emotional_monotony_window
 
     @property
     def is_hierarchical(self) -> bool:
@@ -377,6 +381,10 @@ class Pipeline:
         ))
         trace.outcome = outcome
 
+        # Post-commit: persist per-scene emotional targets as observed beats.
+        if outcome == "committed":
+            self._persist_emotional_beats(plan_like_dict, update_number, trace)
+
         if not check_out.has_critical:
             try:
                 await self._run_extract(trace, plan_like_dict, prose, update_number)
@@ -436,6 +444,18 @@ class Pipeline:
         all_narrative = self._world.list_narrative(limit=10_000)
         recent_prose = [r.raw_text for r in all_narrative[-2:]] if all_narrative else []
 
+        # Load recent emotional beats so the planner sees actual trajectory.
+        recent_beats: list[EmotionalBeat] = []
+        monotony_flag = False
+        if self._quest_id is not None:
+            from app.planning.emotional_planner import detect_monotony
+            recent_beats = self._world.list_recent_emotional_beats(
+                self._quest_id, limit=self._emotional_history_window
+            )
+            monotony_flag = detect_monotony(
+                recent_beats, window=self._emotional_monotony_window
+            )
+
         emotional = await self._retry_with_critic(
             trace=trace,
             stage_name="emotional",
@@ -443,6 +463,8 @@ class Pipeline:
                 dramatic=dramatic,
                 world=self._world,
                 recent_prose=recent_prose,
+                recent_beats=recent_beats,
+                monotony_flag=monotony_flag,
             ),
             validator=lambda plan: critics.validate_emotional(plan, dramatic),
             fallback=lambda: _make_minimal_emotional_plan(dramatic),
@@ -466,9 +488,44 @@ class Pipeline:
         plan_like_dict: dict = {
             "beats": beats,
             "suggested_choices": dramatic.suggested_choices,
+            "_emotional_plan": emotional,
         }
 
         return craft_plan, plan_like_dict
+
+    def _persist_emotional_beats(
+        self,
+        plan_like_dict: dict,
+        update_number: int,
+        trace: PipelineTrace,
+    ) -> None:
+        """Write the emotional plan's per-scene targets as observed beats.
+
+        Best-effort: any persistence failure is recorded in the trace but
+        never breaks the commit.
+        """
+        if self._quest_id is None:
+            return
+        emotional = plan_like_dict.get("_emotional_plan")
+        if emotional is None:
+            return
+        try:
+            for scene in emotional.scenes:
+                beat = EmotionalBeat(
+                    quest_id=self._quest_id,
+                    update_number=update_number,
+                    scene_index=scene.scene_id,
+                    primary_emotion=scene.primary_emotion,
+                    secondary_emotion=scene.secondary_emotion,
+                    intensity=scene.intensity,
+                    source=scene.emotional_source,
+                )
+                self._world.record_emotional_beat(beat)
+        except Exception as e:  # pragma: no cover - defensive
+            trace.add_stage(StageResult(
+                stage_name="emotional_persist", input_prompt="", raw_output="",
+                errors=[StageError(kind="emotional_persist_crash", message=str(e)[:300])],
+            ))
 
     async def _load_or_generate_arc(self, trace: PipelineTrace) -> "Any":
         """Load persisted ArcDirective or generate one with arc_planner."""

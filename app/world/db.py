@@ -71,6 +71,20 @@ CREATE TABLE IF NOT EXISTS plot_threads (
     priority INTEGER NOT NULL DEFAULT 5
 );
 
+CREATE TABLE IF NOT EXISTS emotional_beats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    quest_id TEXT NOT NULL,
+    update_number INTEGER NOT NULL,
+    scene_index INTEGER NOT NULL,
+    primary_emotion TEXT NOT NULL,
+    secondary_emotion TEXT,
+    intensity REAL NOT NULL,
+    source TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_emotional_beats_quest_update_scene
+    ON emotional_beats (quest_id, update_number, scene_index);
+
 CREATE TABLE IF NOT EXISTS arcs (
     quest_id TEXT NOT NULL,
     arc_id TEXT NOT NULL,

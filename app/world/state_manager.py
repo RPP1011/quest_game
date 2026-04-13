@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any
 from .schema import (
     ArcPosition,
+    EmotionalBeat,
     Entity,
     EntityType,
     ForeshadowingHook,
@@ -790,6 +791,57 @@ class WorldStateManager:
             (json.dumps(new_tension), quest_id, arc_id),
         )
         self._conn.commit()
+
+    # ---- emotional beats ----
+
+    def record_emotional_beat(self, beat: EmotionalBeat) -> int:
+        """Persist an observed emotional beat. Returns the row id."""
+        cur = self._conn.execute(
+            "INSERT INTO emotional_beats"
+            "(quest_id, update_number, scene_index, primary_emotion, "
+            "secondary_emotion, intensity, source) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (
+                beat.quest_id,
+                beat.update_number,
+                beat.scene_index,
+                beat.primary_emotion,
+                beat.secondary_emotion,
+                beat.intensity,
+                beat.source,
+            ),
+        )
+        self._conn.commit()
+        return int(cur.lastrowid)
+
+    def list_recent_emotional_beats(
+        self, quest_id: str, limit: int = 10
+    ) -> list[EmotionalBeat]:
+        """Return the most recent N beats for the quest, ordered oldest->newest.
+
+        Selects the last ``limit`` beats by (update_number, scene_index) and
+        returns them in ascending order so the planner sees a left-to-right
+        trajectory (e.g. "dread -> dread -> grief -> dread").
+        """
+        rows = self._conn.execute(
+            "SELECT * FROM (SELECT * FROM emotional_beats WHERE quest_id=? "
+            "ORDER BY update_number DESC, scene_index DESC, id DESC LIMIT ?) "
+            "ORDER BY update_number ASC, scene_index ASC, id ASC",
+            (quest_id, limit),
+        ).fetchall()
+        return [
+            EmotionalBeat(
+                id=r["id"],
+                quest_id=r["quest_id"],
+                update_number=r["update_number"],
+                scene_index=r["scene_index"],
+                primary_emotion=r["primary_emotion"],
+                secondary_emotion=r["secondary_emotion"],
+                intensity=r["intensity"],
+                source=r["source"],
+            )
+            for r in rows
+        ]
 
     def snapshot(self) -> WorldSnapshot:
         return WorldSnapshot(
