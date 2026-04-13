@@ -2,7 +2,31 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 import yaml
-from .schemas import Example, Scale, Structure, StyleRegister, Tool, ToolCategory
+from .schemas import Arc, Example, Scale, Structure, StyleRegister, Tool, ToolCategory
+
+_HOT_CATEGORIES = {"reversal", "tension", "pacing"}
+_COLD_CATEGORIES = {"pacing", "character"}
+
+
+def _score_tool(
+    tool: Tool,
+    phase_expected: set[str],
+    required: set[str],
+    recent: set[str],
+    gap: float,
+) -> int:
+    score = 0
+    if tool.id in phase_expected:
+        score += 3
+    if tool.id in required:
+        score += 5
+    if gap > 0.15 and tool.category in _HOT_CATEGORIES:
+        score += 2
+    if gap < -0.15 and (tool.category in _COLD_CATEGORIES or tool.id == "scene_sequel"):
+        score += 1
+    if tool.id in recent:
+        score -= 2
+    return score
 
 
 class CraftLibrary:
@@ -104,3 +128,34 @@ class CraftLibrary:
 
     def all_styles(self) -> list[StyleRegister]:
         return list(self._styles.values())
+
+    def recommend_tools(
+        self,
+        arc: Arc,
+        structure: Structure,
+        recent_tool_ids: list[str] | None = None,
+        limit: int = 5,
+    ) -> list[Tool]:
+        from .arc import tension_gap as _tension_gap
+
+        phase = structure.phases[min(arc.current_phase_index, len(structure.phases) - 1)]
+        expected = set(phase.expected_beats)
+        required = set(arc.required_beats_remaining)
+        recent = set(recent_tool_ids or [])
+        gap = _tension_gap(arc, structure)
+
+        scored: list[tuple[int, str, Tool]] = []
+        for tool in self.all_tools():
+            score = _score_tool(tool, expected, required, recent, gap)
+            if score > 0:
+                scored.append((score, tool.id, tool))
+
+        required_order = {tid: i for i, tid in enumerate(arc.required_beats_remaining)}
+
+        def sort_key(item: tuple[int, str, Tool]) -> tuple[int, int, str]:
+            s, tid, _ = item
+            req_rank = required_order.get(tid, len(required_order) + 1)
+            return (-s, req_rank, tid)
+
+        scored.sort(key=sort_key)
+        return [t for _, _, t in scored[:limit]]
