@@ -26,6 +26,7 @@ from app.engine import (
 from app.runtime.client import InferenceClient
 from app.world import SeedLoader, WorldStateManager
 from app.world.db import open_db
+from app.world.schema import QuestArcState
 
 
 PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
@@ -53,6 +54,16 @@ def _load_craft_library():
     """Load the CraftLibrary from the bundled data directory."""
     from app.craft.library import CraftLibrary
     return CraftLibrary(CRAFT_DATA_DIR)
+
+
+def _config_from_seed(seed: dict) -> dict:
+    """Derive quest_config dict from a seed dict."""
+    return {
+        "genre": seed.get("genre", ""),
+        "premise": seed.get("premise", ""),
+        "themes": seed.get("themes", []),
+        "protagonist": seed.get("protagonist", ""),
+    }
 
 
 def _build_planners(client, renderer, craft_library):
@@ -130,6 +141,26 @@ def create_app(*, quests_dir: Path, server_url: str) -> FastAPI:
         for pt in payload.plot_threads:
             sm.add_plot_thread(pt)
         sm.apply_delta(payload.delta, update_number=0)
+
+        # --- Task 11: arc bootstrap ---
+        structure_id = req.seed.get("structure_id", _DEFAULT_STRUCTURE_ID)
+        arc_state = QuestArcState(
+            quest_id=req.id,
+            arc_id="main",
+            structure_id=structure_id,
+            scale="campaign",
+            current_phase_index=0,
+            phase_progress=0.0,
+            tension_observed=[],
+            last_directive=None,
+        )
+        sm.upsert_arc(arc_state)
+
+        # Write config.json with quest metadata derived from seed
+        quest_config = _config_from_seed(req.seed)
+        config_path = paths["root"] / "config.json"
+        config_path.write_text(json.dumps(quest_config, indent=2))
+
         return QuestSummary(
             id=req.id, path=str(paths["db"].resolve()),
             chapter_count=0, last_action=None,

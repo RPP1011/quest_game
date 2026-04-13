@@ -25,12 +25,18 @@ def _open_world(db_path: Path) -> WorldStateManager:
     return WorldStateManager(conn)
 
 
+_DEFAULT_STRUCTURE_ID = "three_act"
+
+
 @app.command()
 def init(
     db: Path = typer.Option(..., help="Path to the quest SQLite DB (will be created)."),
     seed: Path = typer.Option(..., help="Seed JSON file."),
 ) -> None:
     """Initialize a new quest database from a seed JSON file."""
+    import json as _json
+    from app.world.schema import QuestArcState
+
     sm = _open_world(db)
     payload = SeedLoader.load(seed)
     for rule in payload.rules:
@@ -41,6 +47,37 @@ def init(
         sm.add_plot_thread(pt)
     sm.apply_delta(payload.delta, update_number=0)
     typer.echo(f"Seeded {db} with {len(payload.delta.entity_creates)} entities.")
+
+    # Bootstrap arc state
+    try:
+        raw_seed = _json.loads(seed.read_text())
+    except Exception:
+        raw_seed = {}
+    structure_id = raw_seed.get("structure_id", _DEFAULT_STRUCTURE_ID)
+    quest_id = db.stem  # use the DB file's stem as a best-effort quest id
+    arc_state = QuestArcState(
+        quest_id=quest_id,
+        arc_id="main",
+        structure_id=structure_id,
+        scale="campaign",
+        current_phase_index=0,
+        phase_progress=0.0,
+        tension_observed=[],
+        last_directive=None,
+    )
+    sm.upsert_arc(arc_state)
+    typer.echo(f"Arc state bootstrapped: structure={structure_id}")
+
+    # Write config.json alongside the DB
+    quest_config = {
+        "genre": raw_seed.get("genre", ""),
+        "premise": raw_seed.get("premise", ""),
+        "themes": raw_seed.get("themes", []),
+        "protagonist": raw_seed.get("protagonist", ""),
+    }
+    config_path = db.parent / "config.json"
+    config_path.write_text(_json.dumps(quest_config, indent=2))
+    typer.echo(f"Quest config written to {config_path}")
 
 
 @app.command()

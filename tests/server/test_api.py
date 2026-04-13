@@ -244,3 +244,52 @@ def test_scene_endpoint_returns_current_state(tmp_path: Path, monkeypatch):
     assert set(body["present_characters"]) == {"Bob", "Eva"}
     assert "The Lost Relic" in body["plot_threads"]
     assert "It was a quiet evening." in body["recent_prose_tail"]
+
+
+def test_create_quest_bootstraps_arc(tmp_path: Path, monkeypatch):
+    """POST /api/quests bootstraps a QuestArcState and writes config.json."""
+    class FakeClient:
+        async def chat_structured(self, messages=None, *, json_schema=None, schema_name="", **kw):
+            return _CANNED.get(schema_name, "{}")
+
+        async def chat(self, messages=None, **kw):
+            return "Prose."
+
+    def _make_app(url):
+        return FakeClient()
+
+    monkeypatch.setattr("app.server._make_client", _make_app)
+    quests_dir = tmp_path / "quests"
+    app = create_app(quests_dir=quests_dir, server_url="http://fake")
+    c = TestClient(app)
+
+    seed = {
+        "structure_id": "three_act",
+        "genre": "fantasy",
+        "premise": "A hero's journey.",
+        "themes": ["redemption"],
+        "protagonist": "Aria",
+        "entities": [{"id": "hero", "entity_type": "character", "name": "Aria"}],
+    }
+    r = c.post("/api/quests", json={"id": "arc_test", "seed": seed})
+    assert r.status_code == 201, r.text
+
+    # Verify arc row was created
+    from app.world.db import open_db
+    from app.world.state_manager import WorldStateManager
+    db_path = quests_dir / "arc_test" / "quest.db"
+    sm = WorldStateManager(open_db(db_path))
+    arc = sm.get_arc("arc_test", "main")
+    assert arc.structure_id == "three_act"
+    assert arc.arc_id == "main"
+    assert arc.quest_id == "arc_test"
+    assert arc.current_phase_index == 0
+
+    # Verify config.json was written
+    config_path = quests_dir / "arc_test" / "config.json"
+    assert config_path.is_file()
+    config = json.loads(config_path.read_text())
+    assert config["genre"] == "fantasy"
+    assert config["premise"] == "A hero's journey."
+    assert config["themes"] == ["redemption"]
+    assert config["protagonist"] == "Aria"
