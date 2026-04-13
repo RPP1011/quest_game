@@ -1,0 +1,109 @@
+## Dramatic Plan
+
+**Action resolution:** {{ dramatic.action_resolution.kind }} — {{ dramatic.action_resolution.narrative }}
+**Overall tension target:** {{ dramatic.update_tension_target }}
+**Ending hook:** {{ dramatic.ending_hook }}
+
+### Scenes
+
+{% for scene in dramatic.scenes %}
+#### Scene {{ scene.scene_id }}{% if scene.location %} — {{ scene.location }}{% endif %}
+
+- **Dramatic question:** {{ scene.dramatic_question }}
+- **Outcome:** {{ scene.outcome }}
+- **Dramatic function:** {{ scene.dramatic_function }}
+{% if scene.pov_character_id %}- **POV character:** {{ scene.pov_character_id }}{% endif %}
+
+{% if scene.beats %}
+**Beats:**
+{% for beat in scene.beats %}
+- {{ beat }}
+{% endfor %}
+{% endif %}
+{% if scene.tools_used %}
+**Tools used:** {{ scene.tools_used | join(", ") }}
+{% endif %}
+{% if scene.reveals %}
+**Reveals:** {{ scene.reveals | join("; ") }}
+{% endif %}
+{% if scene.withholds %}
+**Withholds:** {{ scene.withholds | join("; ") }}
+{% endif %}
+{% if scene.theme_ids %}
+**Themes:** {{ scene.theme_ids | join(", ") }}
+{% endif %}
+
+{% endfor %}
+
+---
+
+## Emotional Plan
+
+**Emotional arc:** {{ emotional.update_emotional_arc }}
+**Contrast strategy:** {{ emotional.contrast_strategy }}
+
+### Scenes
+
+{% for scene in emotional.scenes %}
+#### Scene {{ scene.scene_id }}
+
+- **Primary emotion:** {{ scene.primary_emotion }} (intensity {{ scene.intensity }})
+{% if scene.secondary_emotion %}- **Secondary emotion:** {{ scene.secondary_emotion }}{% endif %}
+
+- **Entry state:** {{ scene.entry_state }}
+- **Exit state:** {{ scene.exit_state }}
+- **Transition type:** {{ scene.transition_type }}
+- **Emotional source:** {{ scene.emotional_source }}
+{% if scene.surface_vs_depth %}- **Surface vs depth:** {{ scene.surface_vs_depth }}{% endif %}
+
+{% if scene.character_emotions %}
+**Character emotions:**
+{% for char_id, state in scene.character_emotions.items() %}
+- {{ char_id }}: internal={{ state.internal }}, displayed={{ state.displayed }}{% if state.gap %} (gap: {{ state.gap }}){% endif %}
+
+{% endfor %}
+{% endif %}
+
+{% endfor %}
+
+---
+{% if style_register %}
+
+## Style Register: {{ style_register.name }}
+
+{{ style_register.description }}
+
+- **Sentence variance:** {{ style_register.sentence_variance }}
+- **Concrete/abstract ratio:** {{ style_register.concrete_abstract_ratio }}
+- **Interiority depth:** {{ style_register.interiority_depth }}
+- **POV discipline:** {{ style_register.pov_discipline }}
+- **Diction register:** {{ style_register.diction_register }}
+
+{% if style_register.voice_samples %}
+**Voice samples** (model these rhythms and choices):
+{% for sample in style_register.voice_samples %}
+> {{ sample | trim }}
+
+{% endfor %}
+{% endif %}
+
+---
+{% endif %}
+{% if tool_examples %}
+
+## Tool Examples
+
+{% for tool_id, examples in tool_examples.items() %}
+### `{{ tool_id }}`
+
+{% for ex in examples %}
+> {{ ex.snippet | trim }}
+> *({{ ex.annotation }})*
+
+{% endfor %}
+{% endfor %}
+
+---
+{% endif %}
+
+Produce the craft plan now. For each dramatic scene, emit one CraftScenePlan entry in `scenes` and one CraftBrief entry in `briefs`. The brief must be 100-300 words of prose that reads like a director's note — weave register, voice, emotional arc, and motif into a unified vision. Do not list parameters in the brief.
