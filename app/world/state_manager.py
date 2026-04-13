@@ -24,6 +24,7 @@ from .delta import (
     ValidationIssue,
     ValidationResult,
 )
+from .rules_engine import RulesEngine
 
 
 class WorldStateError(Exception):
@@ -459,6 +460,9 @@ class WorldStateManager:
                     message=f"plot thread not found: {op.id}",
                     subject=op.id,
                 ))
+
+        engine = RulesEngine(self.list_rules())
+        issues.extend(engine.evaluate(delta, self))
 
         return ValidationResult(issues=issues)
 
