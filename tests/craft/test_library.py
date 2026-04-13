@@ -116,3 +116,12 @@ def test_load_rejects_duplicate_ids(tiny_library_root: Path):
     )
     with pytest.raises(ValueError, match="duplicate"):
         CraftLibrary(tiny_library_root)
+
+
+def test_real_structures_load():
+    from app.craft.library import CraftLibrary
+    lib = CraftLibrary(Path(__file__).parent.parent.parent / "app" / "craft" / "data")
+    ids = {s.id for s in lib.structures()}
+    assert {"three_act", "five_act_freytag", "kishotenketsu"} <= ids
+    three = lib.structure("three_act")
+    assert len(three.phases) == 5

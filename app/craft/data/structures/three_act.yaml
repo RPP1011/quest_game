@@ -1,0 +1,51 @@
+id: three_act
+name: Three-Act Structure
+description: >
+  The dominant Western dramatic form. Setup establishes character, world, and
+  desire; confrontation escalates obstacles to a crisis at or past the midpoint;
+  resolution collapses the tension via climax and denouement. Strong default
+  for most quests.
+scales: [scene, chapter, campaign, saga]
+phases:
+  - name: setup
+    position: 0
+    tension_target: 0.2
+    expected_beats: [chekhovs_gun, scene_sequel]
+    description: >
+      Establish normal. Plant the elements that will later pay off. Introduce
+      the protagonist's want.
+  - name: rising
+    position: 1
+    tension_target: 0.55
+    expected_beats: [try_fail_cycle, chekhovs_gun]
+    description: >
+      Obstacles escalate. The protagonist tries, fails, adapts. Complications
+      accumulate and force commitment.
+  - name: midpoint
+    position: 2
+    tension_target: 0.7
+    expected_beats: [midpoint_shift, reversal]
+    description: >
+      A shift in knowledge, status, or goal that raises stakes and changes
+      how the protagonist pursues the want.
+  - name: crisis
+    position: 3
+    tension_target: 0.85
+    expected_beats: [false_victory, reversal, try_fail_cycle]
+    description: >
+      The worst complications. A false victory or dark-night-of-the-soul beat.
+      The protagonist must choose what they truly value.
+  - name: resolution
+    position: 4
+    tension_target: 0.3
+    expected_beats: [scene_sequel]
+    description: >
+      Climax resolves the tension. Denouement metabolizes consequences.
+tension_curve:
+  - [0.00, 0.10]
+  - [0.20, 0.25]
+  - [0.45, 0.55]
+  - [0.55, 0.70]
+  - [0.80, 0.90]
+  - [0.92, 0.95]
+  - [1.00, 0.25]

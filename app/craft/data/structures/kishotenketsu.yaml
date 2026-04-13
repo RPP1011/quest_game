@@ -1,0 +1,39 @@
+id: kishotenketsu
+name: Kishōtenketsu
+description: >
+  East Asian four-part structure that does not rely on overt conflict.
+  Introduction, development, twist (a new element that reframes the previous
+  two), and reconciliation (the new frame integrates with the old). Useful
+  for slice-of-life, contemplative, or mystery-lite quests where a conflict-
+  driven pyramid would feel forced.
+scales: [scene, chapter]
+phases:
+  - name: ki
+    position: 0
+    tension_target: 0.2
+    expected_beats: [scene_sequel, chekhovs_gun]
+    description: Introduction. Establish the situation and its texture.
+  - name: sho
+    position: 1
+    tension_target: 0.35
+    expected_beats: [scene_sequel]
+    description: Development. Deepen the situation without introducing conflict.
+  - name: ten
+    position: 2
+    tension_target: 0.75
+    expected_beats: [reversal, midpoint_shift]
+    description: >
+      The twist. An element arrives that is not a conflict but a new lens —
+      something that changes what the prior beats meant.
+  - name: ketsu
+    position: 3
+    tension_target: 0.4
+    expected_beats: [scene_sequel]
+    description: Reconciliation. The new element and prior situation integrate into a single frame.
+tension_curve:
+  - [0.00, 0.15]
+  - [0.25, 0.25]
+  - [0.55, 0.35]
+  - [0.65, 0.75]
+  - [0.85, 0.5]
+  - [1.00, 0.35]

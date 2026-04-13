@@ -1,0 +1,43 @@
+id: five_act_freytag
+name: Freytag's Pyramid (Five-Act)
+description: >
+  Classical dramatic structure from Gustav Freytag. Exposition, rising action,
+  climax at the midpoint, falling action, denouement. Ends in tragedy or
+  rebirth depending on the chosen climax inversion. Useful for quests with a
+  high-stakes central reversal.
+scales: [chapter, campaign, saga]
+phases:
+  - name: exposition
+    position: 0
+    tension_target: 0.2
+    expected_beats: [chekhovs_gun]
+    description: Establish world, characters, and inciting stakes.
+  - name: rising_action
+    position: 1
+    tension_target: 0.5
+    expected_beats: [try_fail_cycle, chekhovs_gun]
+    description: Complications and obstacles escalate toward the climax.
+  - name: climax
+    position: 2
+    tension_target: 0.95
+    expected_beats: [reversal, midpoint_shift]
+    description: >
+      The peak. A reversal of fortune, for better or worse, that determines
+      the trajectory of the rest of the story.
+  - name: falling_action
+    position: 3
+    tension_target: 0.55
+    expected_beats: [try_fail_cycle, false_victory]
+    description: Consequences of the climax unfold; the outcome narrows.
+  - name: denouement
+    position: 4
+    tension_target: 0.2
+    expected_beats: [scene_sequel]
+    description: Final state is set. Unresolved threads either settle or remain as scars.
+tension_curve:
+  - [0.00, 0.10]
+  - [0.20, 0.35]
+  - [0.45, 0.80]
+  - [0.50, 0.95]
+  - [0.70, 0.55]
+  - [1.00, 0.20]
