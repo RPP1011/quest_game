@@ -17,6 +17,7 @@ from app.planning.schemas import (
     ActionResolution,
     CharacterArcDirective,
     CharacterEmotionalState,
+    CharacterVoice,
     CraftBrief,
     CraftPlan,
     CraftScenePlan,
@@ -47,6 +48,15 @@ from app.planning.schemas import (
 # World extensions used by planning
 from app.planning.world_extensions import MotifDef, Theme
 
+# Voice grounding helpers (Gap G3)
+from app.planning.voice import (
+    blended_voice_samples_for,
+    character_voice_for,
+    default_permeability,
+    derive_bleed_vocabulary,
+    derive_excluded_vocabulary,
+)
+
 # Critics module — available as planning.critics
 from app.planning import critics
 
@@ -62,6 +72,7 @@ __all__ = [
     "ActionResolution",
     "CharacterArcDirective",
     "CharacterEmotionalState",
+    "CharacterVoice",
     "CraftBrief",
     "CraftPlan",
     "CraftScenePlan",
@@ -90,6 +101,12 @@ __all__ = [
     # World extensions
     "Theme",
     "MotifDef",
+    # Voice grounding (Gap G3)
+    "blended_voice_samples_for",
+    "character_voice_for",
+    "default_permeability",
+    "derive_bleed_vocabulary",
+    "derive_excluded_vocabulary",
     # Critics module
     "critics",
 ]

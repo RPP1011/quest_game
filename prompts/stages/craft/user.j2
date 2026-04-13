@@ -89,6 +89,43 @@
 
 ---
 {% endif %}
+{% if character_voices %}
+
+## Character Voices (grounded — do NOT invent bleed/excluded vocabulary)
+
+{% for char_id, cv in character_voices.items() %}
+### `{{ char_id }}`
+
+- **Vocabulary level:** {{ cv.vocabulary_level }}
+- **Sentence length bias:** {{ cv.sentence_length_bias }}
+- **Directness:** {{ cv.directness }}{% if cv.uses_metaphor %} — uses metaphor{% endif %}
+- **Emotional expression:** {{ cv.emotional_expression }}
+- **Truth tendency:** {{ cv.truth_tendency }}
+{% if cv.jargon_domains %}- **Jargon domains:** {{ cv.jargon_domains | join(", ") }}{% endif %}
+{% if cv.signature_phrases %}- **Signature phrases:** {{ cv.signature_phrases | join("; ") }}{% endif %}
+{% if cv.forbidden_words %}- **Forbidden words (never in this POV):** {{ cv.forbidden_words | join(", ") }}{% endif %}
+{% if cv.code_switching %}- **Code-switches in:** {{ cv.code_switching | join("; ") }}{% endif %}
+
+{% if cv.voice_samples %}**Character voice samples:**
+{% for s in cv.voice_samples %}> {{ s | trim }}
+
+{% endfor %}{% endif %}
+{% if blended_samples.get(char_id) %}**Blended narrator+character few-shot (for POV passages):**
+{% for s in blended_samples[char_id] %}> {{ s | trim }}
+
+{% endfor %}{% endif %}
+{% endfor %}
+
+{% if scene_permeability_defaults %}
+### Grounded voice_permeability defaults (use these bleed/excluded lists verbatim; adjust only baseline/current_target/triggers as scene demands)
+
+{% for scene_id, vp in scene_permeability_defaults.items() %}
+- **Scene {{ scene_id }}:** baseline={{ vp.baseline }}, bleed_vocabulary={{ vp.bleed_vocabulary | tojson }}, excluded_vocabulary={{ vp.excluded_vocabulary | tojson }}
+{% endfor %}
+{% endif %}
+
+---
+{% endif %}
 {% if tool_examples %}
 
 ## Tool Examples
