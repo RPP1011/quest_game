@@ -47,4 +47,24 @@ No prior prose — this is the opening of the quest.
 
 ---
 
+## Recent Emotional Trajectory
+
+{% if recent_beats %}
+Last {{ recent_beats | length }} observed beat(s), oldest -> newest:
+
+{% for b in recent_beats %}
+- update {{ b.update_number }} / scene {{ b.scene_index }}: **{{ b.primary_emotion }}**{% if b.secondary_emotion %} (+ {{ b.secondary_emotion }}){% endif %} @ {{ "%.2f"|format(b.intensity) }} — {{ b.source }}
+{% endfor %}
+{% else %}
+No prior emotional beats recorded.
+{% endif %}
+
+{% if monotony_flag %}
+**Monotony flag:** the recent trajectory shows repeated emotional tone. Bias
+this plan toward **contrast** — consider a shift, inversion, or subsidence
+transition unless the dramatic logic strictly forbids it.
+{% endif %}
+
+---
+
 Produce the emotional plan now.

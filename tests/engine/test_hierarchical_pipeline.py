@@ -174,7 +174,8 @@ class FakeEmotionalPlanner:
     def __init__(self, client: ScriptedClient) -> None:
         self._client = client
 
-    async def plan(self, *, dramatic, world, recent_prose):
+    async def plan(self, *, dramatic, world, recent_prose,
+                   recent_beats=None, monotony_flag=False):
         from app.planning.schemas import EmotionalPlan
         raw = await self._client.chat_structured(
             messages=[], json_schema={}, schema_name="EmotionalPlan"
@@ -378,3 +379,37 @@ async def test_hierarchical_is_hierarchical_requires_all_four_planners(world):
                   craft_planner=object(),
                   craft_library=cl)
     assert p4.is_hierarchical
+
+
+async def test_hierarchical_pipeline_persists_emotional_beats_post_commit(world):
+    """After a committed hierarchical update, the per-scene emotional plan
+    targets are persisted as observed beats in the emotional_beats table."""
+    scripted = ScriptedClient([
+        {"kind": "structured", "content": _DRAMATIC_JSON},
+        {"kind": "structured", "content": _EMOTIONAL_JSON},
+        {"kind": "structured", "content": _CRAFT_JSON},
+        {"kind": "chat", "content": _PROSE_SCENE_1},
+        {"kind": "structured", "content": _CHECK_CLEAN},
+        {"kind": "structured", "content": _EMPTY_EXTRACT},
+    ])
+
+    pipeline = Pipeline(
+        world, _cb(world), scripted,
+        dramatic_planner=FakeDramaticPlanner(scripted),
+        emotional_planner=FakeEmotionalPlanner(scripted),
+        craft_planner=FakeCraftPlanner(scripted),
+        craft_library=FakeCraftLibrary(),
+        quest_id="q-test",
+    )
+
+    result = await pipeline.run(player_action="Cross.", update_number=2)
+    assert result.trace.outcome == "committed"
+
+    beats = world.list_recent_emotional_beats("q-test")
+    assert len(beats) == 1
+    b = beats[0]
+    assert b.primary_emotion == "anxiety"
+    assert b.intensity == pytest.approx(0.6)
+    assert b.scene_index == 1
+    assert b.update_number == 2
+    assert b.source == "the unknown threat"
