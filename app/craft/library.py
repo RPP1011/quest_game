@@ -17,6 +17,7 @@ def _score_tool(
     theme_tool_ids: set[str] | None = None,
     patience_boost: bool = False,
     overdue_motif_tool_ids: set[str] | None = None,
+    ripe_asymmetry_boost: bool = False,
 ) -> int:
     score = 0
     if tool.id in phase_expected:
@@ -35,6 +36,8 @@ def _score_tool(
         score += 1
     if overdue_motif_tool_ids and tool.id in overdue_motif_tool_ids:
         score += 1
+    if ripe_asymmetry_boost and tool.category in ("reversal", "pacing"):
+        score += 2
     return score
 
 
@@ -149,6 +152,7 @@ class CraftLibrary:
         updates_since_major_event: int | None = None,
         patience_threshold: int = 3,
         overdue_motifs: list | None = None,
+        ripe_asymmetry_count: int = 0,
     ) -> list[Tool]:
         from .arc import tension_gap as _tension_gap
 
@@ -175,6 +179,7 @@ class CraftLibrary:
             updates_since_major_event is not None
             and updates_since_major_event > patience_threshold
         )
+        ripe_asymmetry_boost = ripe_asymmetry_count > 0
 
         # Motif recurrence scoring (Gap G5): +1 for tools in the expected beats
         # of a themed phase when that phase's theme is served by an overdue motif.
@@ -205,6 +210,7 @@ class CraftLibrary:
                 theme_tool_ids=theme_tool_ids,
                 patience_boost=patience_boost,
                 overdue_motif_tool_ids=overdue_motif_tool_ids,
+                ripe_asymmetry_boost=ripe_asymmetry_boost,
             )
             if score > 0:
                 scored.append((score, tool.id, tool))

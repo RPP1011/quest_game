@@ -168,6 +168,61 @@ class ReaderState(BaseModel):
     updates_since_emotional_peak: int = 0
 
 
+class KnowledgeEntry(BaseModel):
+    """A single entity's knowledge of a fact.
+
+    Keyed by entity_id (or the literal ``"reader"`` / ``"narrator"``) in
+    :attr:`InformationState.known_by`.
+    """
+    learned_at_update: int
+    learned_how: str = ""
+    believes: bool = True
+    confidence: float = Field(default=0.9, ge=0.0, le=1.0)
+
+
+class InformationState(BaseModel):
+    """A tracked fact and a ledger of who knows it.
+
+    One row per fact in the world. Mutated post-commit from each
+    ``DramaticScene.reveals`` so that subsequent planning can detect dramatic
+    irony, mystery, secret, and false-belief asymmetries.
+    """
+    id: str
+    quest_id: str
+    fact: str
+    ground_truth: bool = True
+    known_by: dict[str, KnowledgeEntry] = Field(default_factory=dict)
+
+
+class AsymmetryKind(str, Enum):
+    DRAMATIC_IRONY = "dramatic_irony"
+    MYSTERY = "mystery"
+    SECRET = "secret"
+    FALSE_BELIEF = "false_belief"
+
+
+class InformationAsymmetry(BaseModel):
+    """Derived, in-memory asymmetry computed from :class:`InformationState`.
+
+    Not persisted. Produced by
+    :func:`app.planning.information_asymmetry.compute_asymmetries`.
+    """
+    kind: AsymmetryKind
+    fact_id: str
+    fact: str
+    # Who knows / who doesn't (entity ids; may include "reader" / "narrator").
+    knowers: list[str] = Field(default_factory=list)
+    unaware: list[str] = Field(default_factory=list)
+    # For false_belief: the id of the entity whose belief disagrees with
+    # ground truth.
+    believer_id: str | None = None
+    # Heuristic score in [0, 1] — how ripe this is for narrative use.
+    tension_potential: float = 0.0
+    # How many updates since the knowing party learned the fact (for dramatic
+    # irony freshness; None if not applicable).
+    updates_standing: int | None = None
+
+
 class EmotionalBeat(BaseModel):
     """Observed per-scene emotional target, persisted post-commit.
 

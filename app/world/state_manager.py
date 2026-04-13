@@ -12,6 +12,8 @@ from .schema import (
     Expectation,
     ForeshadowingHook,
     HookStatus,
+    InformationState,
+    KnowledgeEntry,
     NarrativeRecord,
     OpenQuestion,
     Parallel,
@@ -127,6 +129,18 @@ def _row_to_motif(row: sqlite3.Row) -> Motif:
         semantic_range=json.loads(row["semantic_range"]),
         target_interval_min=row["target_interval_min"],
         target_interval_max=row["target_interval_max"],
+    )
+
+
+def _row_to_info_state(row: sqlite3.Row) -> InformationState:
+    raw = json.loads(row["known_by"]) if row["known_by"] else {}
+    known_by = {k: KnowledgeEntry.model_validate(v) for k, v in raw.items()}
+    return InformationState(
+        id=row["id"],
+        quest_id=row["quest_id"],
+        fact=row["fact"],
+        ground_truth=bool(row["ground_truth"]),
+        known_by=known_by,
     )
 
 
@@ -1166,6 +1180,40 @@ class WorldStateManager:
             )
             for r in rows
         ]
+
+    # ---- information states (Gap G7) ----
+
+    def upsert_information_state(self, state: InformationState) -> None:
+        self._conn.execute(
+            "INSERT INTO information_states(id, quest_id, fact, ground_truth, known_by) "
+            "VALUES (?, ?, ?, ?, ?) "
+            "ON CONFLICT(id) DO UPDATE SET "
+            "quest_id=excluded.quest_id, fact=excluded.fact, "
+            "ground_truth=excluded.ground_truth, known_by=excluded.known_by",
+            (
+                state.id,
+                state.quest_id,
+                state.fact,
+                1 if state.ground_truth else 0,
+                json.dumps({k: v.model_dump() for k, v in state.known_by.items()}),
+            ),
+        )
+        self._conn.commit()
+
+    def get_information_state(self, id: str) -> InformationState:
+        row = self._conn.execute(
+            "SELECT * FROM information_states WHERE id=?", (id,)
+        ).fetchone()
+        if row is None:
+            raise WorldStateError(f"no information_state {id!r}")
+        return _row_to_info_state(row)
+
+    def list_information_states(self, quest_id: str) -> list[InformationState]:
+        rows = self._conn.execute(
+            "SELECT * FROM information_states WHERE quest_id=? ORDER BY id",
+            (quest_id,),
+        ).fetchall()
+        return [_row_to_info_state(r) for r in rows]
 
     def snapshot(self) -> WorldSnapshot:
         return WorldSnapshot(

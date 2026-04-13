@@ -415,6 +415,26 @@ class Pipeline:
                     errors=[StageError(kind="reader_state_crash", message=str(e)[:300])],
                 ))
 
+        # Gap G7: post-commit information-state accumulation.
+        if (outcome == "committed"
+                and self._quest_id is not None
+                and self._last_dramatic is not None):
+            try:
+                from app.planning.information_asymmetry import (
+                    apply_dramatic_plan_reveals,
+                )
+                apply_dramatic_plan_reveals(
+                    world=self._world,
+                    quest_id=self._quest_id,
+                    dramatic=self._last_dramatic,
+                    update_number=update_number,
+                )
+            except Exception as e:  # pragma: no cover - defensive
+                trace.add_stage(StageResult(
+                    stage_name="information_states", input_prompt="", raw_output="",
+                    errors=[StageError(kind="info_states_crash", message=str(e)[:300])],
+                ))
+
         if outcome == "committed":
             self._persist_emotional_beats(plan_like_dict, update_number, trace)
 
