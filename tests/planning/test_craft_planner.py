@@ -10,6 +10,7 @@ from app.craft.library import CraftLibrary
 from app.engine.prompt_renderer import PromptRenderer
 from app.planning.craft_planner import CraftPlanner
 from app.planning.schemas import (
+    IndirectionInstruction,
     ActionResolution,
     CraftBrief,
     CraftPlan,
@@ -302,3 +303,139 @@ async def test_craft_planner_includes_tool_examples():
     assert expected_fragment in user_content, (
         f"Expected example fragment {expected_fragment!r} to appear in user prompt"
     )
+
+
+# ---------------------------------------------------------------------------
+# G13 — Indirection grounding
+# ---------------------------------------------------------------------------
+
+
+def _world_with_hero_motives():
+    from app.world.db import open_db
+    from app.world.schema import Entity, EntityType
+    from app.world.state_manager import WorldStateManager
+    conn = open_db(":memory:")
+    world = WorldStateManager(conn)
+    world.create_entity(Entity(
+        id="hero",
+        entity_type=EntityType.CHARACTER,
+        name="Aldric",
+        data={
+            "unconscious_motives": [
+                {
+                    "id": "um:hero:erase",
+                    "motive": "needs to disappear into others' purposes to avoid self-definition",
+                    "surface_manifestations": ["defers decisions", "always 'happy to help'"],
+                    "detail_tells": ["watches others' hands, not faces"],
+                    "what_not_to_say": ["erase", "disappear", "hide"],
+                    "active_since_update": 0,
+                    "resolved_at_update": None,
+                }
+            ]
+        },
+    ))
+    world.create_entity(Entity(
+        id="guard", entity_type=EntityType.CHARACTER, name="Guard", data={},
+    ))
+    return world
+
+
+@pytest.mark.asyncio
+async def test_craft_planner_injects_stored_motives_into_prompt():
+    """When world is passed, stored motives appear in the user prompt."""
+    craft_plan = _make_craft_plan()
+    client = FakeClient(craft_plan.model_dump_json())
+    renderer = PromptRenderer(PROMPTS)
+    craft_library = CraftLibrary(CRAFT_DATA)
+    world = _world_with_hero_motives()
+
+    planner = CraftPlanner(client, renderer, craft_library)
+    await planner.plan(
+        dramatic=_DRAMATIC_PLAN,
+        emotional=_EMOTIONAL_PLAN,
+        world=world,
+    )
+
+    user_content = client.calls[0][0][1].content
+    assert "um:hero:erase" in user_content
+    assert "disappear into others' purposes" in user_content
+    assert "Unconscious Motives" in user_content
+
+
+@pytest.mark.asyncio
+async def test_craft_planner_backfills_indirection_from_stored_motives():
+    """If the LLM emits no indirection for a POV char with motives,
+    craft planner backfills one from the stored motive."""
+    # Use a craft plan that has NO indirection entries at all
+    craft_plan = _make_craft_plan()
+    assert all(s.indirection == [] for s in craft_plan.scenes)
+    client = FakeClient(craft_plan.model_dump_json())
+    renderer = PromptRenderer(PROMPTS)
+    craft_library = CraftLibrary(CRAFT_DATA)
+    world = _world_with_hero_motives()
+
+    planner = CraftPlanner(client, renderer, craft_library)
+    result = await planner.plan(
+        dramatic=_DRAMATIC_PLAN,
+        emotional=_EMOTIONAL_PLAN,
+        world=world,
+    )
+
+    # Both scenes have POV=hero, both should have a backfilled entry
+    for scene in result.scenes:
+        hero_instrs = [i for i in scene.indirection if i.character_id == "hero"]
+        assert len(hero_instrs) == 1
+        instr = hero_instrs[0]
+        assert "disappear" in instr.unconscious_motive
+        assert "erase" in instr.what_not_to_say
+        assert "defers decisions" in instr.surface_manifestations
+
+
+@pytest.mark.asyncio
+async def test_craft_planner_backfills_generic_indirection():
+    """An empty/generic LLM indirection entry is replaced by stored-motive content."""
+    craft_plan = _make_craft_plan()
+    # Inject a generic, essentially-empty indirection for hero into scene 1
+    craft_plan.scenes[0].indirection.append(IndirectionInstruction(
+        character_id="hero",
+        unconscious_motive="",
+        surface_manifestations=[],
+        detail_tells=[],
+        what_not_to_say=[],
+        reader_should_infer="something ineffable",
+    ))
+    client = FakeClient(craft_plan.model_dump_json())
+    renderer = PromptRenderer(PROMPTS)
+    craft_library = CraftLibrary(CRAFT_DATA)
+    world = _world_with_hero_motives()
+
+    planner = CraftPlanner(client, renderer, craft_library)
+    result = await planner.plan(
+        dramatic=_DRAMATIC_PLAN,
+        emotional=_EMOTIONAL_PLAN,
+        world=world,
+    )
+
+    scene1 = result.scenes[0]
+    hero_instrs = [i for i in scene1.indirection if i.character_id == "hero"]
+    assert len(hero_instrs) == 1
+    instr = hero_instrs[0]
+    assert instr.unconscious_motive  # no longer empty
+    assert "erase" in instr.what_not_to_say
+    # reader_should_infer was preserved (non-generic content)
+    assert instr.reader_should_infer == "something ineffable"
+
+
+@pytest.mark.asyncio
+async def test_craft_planner_no_world_no_motive_injection():
+    """Without world, user prompt contains no motive block."""
+    craft_plan = _make_craft_plan()
+    client = FakeClient(craft_plan.model_dump_json())
+    renderer = PromptRenderer(PROMPTS)
+    craft_library = CraftLibrary(CRAFT_DATA)
+
+    planner = CraftPlanner(client, renderer, craft_library)
+    await planner.plan(dramatic=_DRAMATIC_PLAN, emotional=_EMOTIONAL_PLAN)
+
+    user_content = client.calls[0][0][1].content
+    assert "Unconscious Motives" not in user_content

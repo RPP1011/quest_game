@@ -456,6 +456,7 @@ class Pipeline:
                 dramatic=dramatic,
                 emotional=emotional,
                 style_register_id=None,
+                world=self._world,
             ),
             validator=lambda plan: critics.validate_craft(plan, dramatic),
             fallback=lambda: _make_minimal_craft_plan(dramatic),
