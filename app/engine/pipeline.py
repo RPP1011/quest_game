@@ -208,19 +208,26 @@ class Pipeline:
             trace.outcome = "failed"
             raise ParseError(f"plan not a dict: {parsed!r}")
         normalized = _normalize_beat_sheet(parsed)
+        errors: list[StageError] = []
         if not normalized["beats"]:
-            trace.add_stage(StageResult(
-                stage_name="plan", input_prompt=plan_ctx.user_prompt, raw_output=raw,
-                errors=[StageError(kind="parse_error", message="no beats")],
-                latency_ms=latency,
+            # Weak/non-strict models regularly fail to produce a clean list;
+            # fall back to a synthetic plan derived from the player's action so
+            # the WRITE stage can still run. Record the parse issue in the trace.
+            normalized = {
+                "beats": [f"React naturally to: {player_action}"],
+                "suggested_choices": normalized.get("suggested_choices", []),
+            }
+            errors.append(StageError(
+                kind="parse_warning",
+                message="no beats extracted from plan; using synthetic fallback",
+                detail={"raw_sample": raw[:400]},
             ))
-            trace.outcome = "failed"
-            raise ParseError(f"plan has no beats: {raw!r}")
         trace.add_stage(StageResult(
             stage_name="plan", input_prompt=plan_ctx.user_prompt, raw_output=raw,
             parsed_output=normalized,
             token_usage=TokenUsage(prompt=plan_ctx.token_estimate),
             latency_ms=latency,
+            errors=errors,
         ))
         return normalized
 

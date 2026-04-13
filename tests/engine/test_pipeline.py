@@ -111,6 +111,24 @@ async def test_pipeline_persists_narrative(world):
     assert "Alice looked up" in records[0].raw_text
 
 
+async def test_pipeline_synthesizes_plan_when_beats_missing(world):
+    cb = ContextBuilder(world, PromptRenderer(PROMPTS), TokenBudget())
+
+    class BeatlessClient(FakeClient):
+        async def chat_structured(self, **kw):
+            if kw.get("schema_name") == "BeatSheet":
+                return '{"beat_sheet": "one long sentence that is not a list"}'
+            return await super().chat_structured(**kw)
+
+    p = Pipeline(world, cb, BeatlessClient())
+    out = await p.run(player_action="Look around.", update_number=2)
+    # Synthetic fallback keeps the chapter alive instead of 500-ing.
+    assert out.prose
+    plan_stage = next(s for s in out.trace.stages if s.stage_name == "plan")
+    assert plan_stage.errors and plan_stage.errors[0].kind == "parse_warning"
+    assert plan_stage.parsed_output["beats"] == ["React naturally to: Look around."]
+
+
 async def test_pipeline_surfaces_parse_error(world):
     cb = ContextBuilder(world, PromptRenderer(PROMPTS), TokenBudget())
 
