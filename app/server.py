@@ -102,14 +102,27 @@ def create_app(*, quests_dir: Path, server_url: str) -> FastAPI:
 
     @app.get("/api/quests/{qid}/chapters")
     def list_chapters(qid: str) -> list[ChapterSummary]:
-        sm, _ = _open(qid)
-        return [
-            ChapterSummary(
+        sm, store = _open(qid)
+        results: list[ChapterSummary] = []
+        for n in sm.list_narrative(limit=10_000):
+            choices: list[str] = []
+            if n.pipeline_trace_id:
+                try:
+                    trace = store.load(n.pipeline_trace_id)
+                    for stage in trace.stages:
+                        if stage.stage_name == "plan":
+                            po = stage.parsed_output
+                            if isinstance(po, dict):
+                                choices = po.get("suggested_choices", []) or []
+                            break
+                except (FileNotFoundError, Exception):
+                    choices = []
+            results.append(ChapterSummary(
                 update_number=n.update_number, player_action=n.player_action,
                 prose=n.raw_text, trace_id=n.pipeline_trace_id,
-            )
-            for n in sm.list_narrative(limit=10_000)
-        ]
+                choices=choices,
+            ))
+        return results
 
     @app.post("/api/quests/{qid}/advance")
     async def advance(qid: str, req: AdvanceRequest) -> AdvanceResponse:

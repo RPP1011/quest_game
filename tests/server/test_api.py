@@ -92,3 +92,14 @@ def test_list_traces(client):
 def test_404_for_unknown_quest(client):
     r = client.get("/api/quests/nope/chapters")
     assert r.status_code == 404
+
+
+def test_chapter_summary_includes_choices_from_trace(client):
+    client.post("/api/quests", json={"id": "q1", "seed": _seed_json()})
+    r = client.post("/api/quests/q1/advance", json={"action": "look around"})
+    assert r.status_code == 200, r.text
+    r2 = client.get("/api/quests/q1/chapters")
+    assert r2.status_code == 200
+    chapters = r2.json()
+    assert len(chapters) == 1
+    assert chapters[0]["choices"] == ["Go"]

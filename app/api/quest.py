@@ -14,6 +14,7 @@ class ChapterSummary(BaseModel):
     player_action: str | None
     prose: str
     trace_id: str | None
+    choices: list[str] = []
 
 
 class AdvanceRequest(BaseModel):
