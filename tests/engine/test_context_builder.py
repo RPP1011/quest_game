@@ -78,10 +78,10 @@ def test_write_context_includes_style_from_extras(world):
             "anti_patterns": ["purple prose", "overused adverbs"],
         },
     )
-    assert "Literary" in ctx.system_prompt
-    assert "purple prose" in ctx.system_prompt
+    # system.j2 is now minimal — style and anti_patterns moved to user.j2
+    assert "writer" in ctx.system_prompt.lower()
+    assert "purple prose" in ctx.user_prompt
     assert "Scene: tavern" in ctx.user_prompt
-    assert "Alice wiped" in ctx.user_prompt  # full narrative mode includes raw_text
 
 
 def test_manifest_records_drops_under_pressure(world):

@@ -3,7 +3,7 @@ import json
 import time
 import uuid
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Any, Protocol, Union
 from app.runtime.client import ChatMessage
 from app.world.output_parser import OutputParser, ParseError
 from app.world.schema import NarrativeRecord
@@ -298,31 +298,123 @@ class Pipeline:
         ))
         return normalized
 
-    async def _run_write(self, trace: PipelineTrace, plan: dict) -> str:
-        plan_text = "\n".join(f"- {b}" for b in plan["beats"])
-        write_ctx = self._cb.build(
-            spec=WRITE_SPEC,
-            stage_name="write",
-            templates={"system": "stages/write/system.j2", "user": "stages/write/user.j2"},
-            extras={"plan": plan_text, "style": "", "anti_patterns": []},
-        )
-        t0 = time.perf_counter()
-        raw = await self._client.chat(
-            messages=[
-                ChatMessage(role="system", content=write_ctx.system_prompt),
-                ChatMessage(role="user", content=write_ctx.user_prompt),
-            ],
-            temperature=0.8,
-        )
-        latency = int((time.perf_counter() - t0) * 1000)
-        prose = OutputParser.parse_prose(raw)
-        trace.add_stage(StageResult(
-            stage_name="write", input_prompt=write_ctx.user_prompt, raw_output=raw,
-            parsed_output=prose,
-            token_usage=TokenUsage(prompt=write_ctx.token_estimate),
-            latency_ms=latency,
-        ))
-        return prose
+    async def _run_write(
+        self,
+        trace: PipelineTrace,
+        plan: "Union[dict, Any]",  # dict = old path, CraftPlan = new path
+        *,
+        voice_samples: list[str] | None = None,
+        anti_patterns: list[str] | None = None,
+    ) -> str:
+        """Write prose.
+
+        New path: ``plan`` is a ``CraftPlan`` (has ``.scenes`` and ``.briefs``).
+        Old path (backwards-compat shim): ``plan`` is a dict with ``beats`` key.
+        """
+        # --- detect which path to use ---
+        # CraftPlan is a Pydantic model; it won't have a "beats" key via dict
+        # access, but it will have a .scenes attribute.
+        try:
+            scenes = plan.scenes  # CraftPlan
+            is_craft_plan = True
+        except AttributeError:
+            is_craft_plan = False
+
+        if not is_craft_plan:
+            # ---- Old backwards-compatible path ----
+            plan_text = "\n".join(f"- {b}" for b in plan["beats"])
+            write_ctx = self._cb.build(
+                spec=WRITE_SPEC,
+                stage_name="write",
+                templates={"system": "stages/write/system.j2", "user": "stages/write/user.j2"},
+                extras={
+                    "plan": plan_text,
+                    "style": "",
+                    "anti_patterns": anti_patterns or [],
+                    "brief": None,
+                    "scene": None,
+                    "voice_samples": voice_samples or [],
+                    "recent_prose_tail": "",
+                },
+            )
+            t0 = time.perf_counter()
+            raw = await self._client.chat(
+                messages=[
+                    ChatMessage(role="system", content=write_ctx.system_prompt),
+                    ChatMessage(role="user", content=write_ctx.user_prompt),
+                ],
+                temperature=0.8,
+            )
+            latency = int((time.perf_counter() - t0) * 1000)
+            prose = OutputParser.parse_prose(raw)
+            trace.add_stage(StageResult(
+                stage_name="write", input_prompt=write_ctx.user_prompt, raw_output=raw,
+                parsed_output=prose,
+                token_usage=TokenUsage(prompt=write_ctx.token_estimate),
+                latency_ms=latency,
+            ))
+            return prose
+
+        # ---- New CraftPlan path: one call per scene ----
+        # Build a brief lookup by scene_id
+        briefs_by_scene: dict[int, Any] = {b.scene_id: b for b in plan.briefs}
+
+        prose_parts: list[str] = []
+        recent_prose_tail = ""
+
+        for scene in scenes:
+            brief_obj = briefs_by_scene.get(scene.scene_id)
+            brief_text = brief_obj.brief if brief_obj else None
+
+            # Determine blended voice samples: prefer voice_permeability.blended_voice_samples
+            effective_voice_samples = list(voice_samples or [])
+            if scene.voice_permeability and scene.voice_permeability.blended_voice_samples:
+                # Prepend blended samples as they are most important
+                effective_voice_samples = (
+                    scene.voice_permeability.blended_voice_samples + effective_voice_samples
+                )
+
+            write_ctx = self._cb.build(
+                spec=WRITE_SPEC,
+                stage_name="write",
+                templates={"system": "stages/write/system.j2", "user": "stages/write/user.j2"},
+                extras={
+                    "brief": brief_text,
+                    "scene": scene.model_dump() if hasattr(scene, "model_dump") else scene,
+                    "voice_samples": effective_voice_samples,
+                    "recent_prose_tail": recent_prose_tail,
+                    "anti_patterns": anti_patterns or [],
+                    "plan": None,
+                    "style": "",
+                },
+            )
+            t0 = time.perf_counter()
+            raw = await self._client.chat(
+                messages=[
+                    ChatMessage(role="system", content=write_ctx.system_prompt),
+                    ChatMessage(role="user", content=write_ctx.user_prompt),
+                ],
+                temperature=0.8,
+            )
+            latency = int((time.perf_counter() - t0) * 1000)
+            scene_prose = OutputParser.parse_prose(raw)
+            prose_parts.append(scene_prose)
+
+            # Track last ~300 chars for rhythm continuity on next scene
+            full_so_far = "\n\n".join(prose_parts)
+            recent_prose_tail = full_so_far[-300:] if len(full_so_far) > 300 else full_so_far
+
+            trace.add_stage(StageResult(
+                stage_name="write",
+                input_prompt=write_ctx.user_prompt,
+                raw_output=raw,
+                parsed_output=scene_prose,
+                token_usage=TokenUsage(prompt=write_ctx.token_estimate),
+                latency_ms=latency,
+                detail={"scene_id": scene.scene_id},
+            ))
+
+        return "\n\n".join(prose_parts)
 
     async def _run_check(self, trace: PipelineTrace, plan: dict, prose: str) -> CheckOutput:
         plan_text = "\n".join(f"- {b}" for b in plan["beats"])

@@ -28,3 +28,4 @@ class StageResult(BaseModel):
     latency_ms: int = 0
     retries: int = 0
     errors: list[StageError] = Field(default_factory=list)
+    detail: dict[str, Any] = Field(default_factory=dict)

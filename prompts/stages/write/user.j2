@@ -1,11 +1,27 @@
-## Plan
+{% if brief is defined and brief %}## Craft Brief (primary — execute this vision)
+{{ brief }}
+
+{% endif %}{% if scene is defined and scene %}## Scene Reference (structural — consult, do not transcribe)
+Scene {{ scene.scene_id }}
+{% if scene.temporal %}Temporal: {{ scene.temporal.description }}{% endif %}
+{% if scene.narrator_focus %}Narrator focus: {{ scene.narrator_focus | join(", ") }}{% endif %}
+{% if scene.narrator_withholding %}Narrator withholding: {{ scene.narrator_withholding | join(", ") }}{% endif %}
+{% if scene.opening_instruction %}Opening: {{ scene.opening_instruction }}{% endif %}
+{% if scene.closing_instruction %}Closing: {{ scene.closing_instruction }}{% endif %}
+{% if scene.voice_permeability %}Voice permeability baseline {{ scene.voice_permeability.baseline }}{% if scene.voice_permeability.bleed_vocabulary %} — bleed words: {{ scene.voice_permeability.bleed_vocabulary | join(", ") }}{% endif %}{% endif %}
+{% if scene.detail_principle %}Detail mode: {{ scene.detail_principle.detail_mode }} (character: {{ scene.detail_principle.perceiving_character_id }}){% endif %}
+{% if scene.indirection %}Indirection:{% for ind in scene.indirection %}
+  - {{ ind.character_id }}: surface as {{ ind.surface_manifestations | join(", ") }}. Do NOT write: {{ ind.what_not_to_say | join("; ") }}.{% endfor %}{% endif %}
+
+{% endif %}{% if voice_samples is defined and voice_samples %}## Voice Samples
+{% for vs in voice_samples %}{{ vs }}
+{% endfor %}
+{% endif %}{% if recent_prose_tail is defined and recent_prose_tail %}## Rhythm Continuity (last ~300 chars of prior prose)
+{{ recent_prose_tail }}
+
+{% endif %}{% if anti_patterns is defined and anti_patterns %}## Avoid
+{% for p in anti_patterns %}- {{ p }}
+{% endfor %}{% endif %}{% if plan is defined and plan %}## Plan
 {{ plan }}
 
-{% if recent_prose %}## Recent Prose (for continuity)
-{% for p in recent_prose %}
-{{ p }}
-
----
-{% endfor %}{% endif %}
-
-Write the next chapter now. Do not explain or preface — output the prose only.
+{% endif %}Write the scene now. Output prose only — no headings, no labels.
