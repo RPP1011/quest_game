@@ -78,3 +78,17 @@ def play(
             typer.echo(f"  {i}. {c}")
         typer.echo()
         update_number += 1
+
+
+@app.command()
+def serve(
+    quests_dir: Path = typer.Option(Path("data/quests"), help="Root directory for quest DBs + traces."),
+    server: str = typer.Option("http://127.0.0.1:8090", help="llama-server base URL."),
+    host: str = typer.Option("127.0.0.1"),
+    port: int = typer.Option(8000),
+) -> None:
+    """Serve the web UI and API."""
+    import uvicorn
+    from app.server import create_app
+    app_obj = create_app(quests_dir=quests_dir, server_url=server)
+    uvicorn.run(app_obj, host=host, port=port)
