@@ -78,7 +78,7 @@ async def test_pipeline_runs_plan_and_write(world):
     assert isinstance(result, PipelineOutput)
     assert "Alice looked up" in result.prose
     assert result.choices == ["Ask who they are", "Leave"]
-    assert [s.stage_name for s in result.trace.stages] == ["plan", "write"]
+    assert [s.stage_name for s in result.trace.stages] == ["plan", "write", "check"]
     assert result.trace.outcome == "committed"
 
 
