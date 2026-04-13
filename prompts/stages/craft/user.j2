@@ -155,6 +155,62 @@ these fields rather than inventing them fresh.
 
 ---
 {% endif %}
+{% if perceptual_profiles %}
+
+## Character Perception (grounded — do NOT invent perceptual_preoccupations)
+
+Each POV character's detail-selection bias is a stable property of who they are.
+A soldier notices exits and sightlines; a merchant notices quality and wealth.
+Derive the scene's `detail_principle.perceptual_preoccupations` from the
+permanent list PLUS any emotion-activated entries for this scene's primary emotion.
+
+{% for char_id, pp in perceptual_profiles.items() %}
+### `{{ char_id }}`
+
+- **Detail mode:** {{ pp.detail_mode }}
+{% if pp.permanent_preoccupations %}- **Permanent preoccupations:** {{ pp.permanent_preoccupations | join(", ") }}{% endif %}
+{% if pp.triple_duty_targets %}- **Triple-duty targets:** {{ pp.triple_duty_targets | join("; ") }}{% endif %}
+{% if pp.emotional_preoccupations %}- **Emotional preoccupations:**
+{% for emo, items in pp.emotional_preoccupations.items() %}  - *{{ emo }}* → {{ items | join(", ") }}
+{% endfor %}{% endif %}
+{% endfor %}
+
+{% if scene_detail_defaults %}
+### Grounded detail_principle defaults (use these preoccupation lists verbatim; refine detail_mode only if a stronger choice is warranted)
+
+{% for scene_id, dp in scene_detail_defaults.items() %}
+- **Scene {{ scene_id }}:** perceiver=`{{ dp.perceiving_character_id }}`, perceptual_preoccupations={{ dp.perceptual_preoccupations | tojson }}, triple_duty_targets={{ dp.triple_duty_targets | tojson }}
+{% endfor %}
+{% endif %}
+
+---
+{% endif %}
+{% if metaphor_profiles_persistent %}
+
+## Character Metaphor Profiles (grounded — do NOT invent permanent/forbidden domains)
+
+Metaphor IS characterization. A character only draws from source domains they
+have experience of. The `current_domains` for a scene are *computed* from the
+character's permanent domains plus a small emotion-triggered set — not invented.
+
+{% for char_id, mp in metaphor_profiles_persistent.items() %}
+### `{{ char_id }}`
+
+- **Permanent domains (life experience):** {{ mp.permanent_domains | join(", ") }}
+{% if mp.forbidden_domains %}- **Forbidden domains (no experience — never use):** {{ mp.forbidden_domains | join(", ") }}{% endif %}
+- **Metaphor density:** {{ "%.2f"|format(mp.metaphor_density) }} — {% if mp.extends_to_narration %}extends to narration during high permeability{% else %}stays in dialogue/interiority{% endif %}
+{% endfor %}
+
+{% if scene_metaphor_defaults %}
+### Grounded metaphor_profiles defaults (use permanent/current/forbidden lists verbatim)
+
+{% for scene_id, mp in scene_metaphor_defaults.items() %}
+- **Scene {{ scene_id }}:** character=`{{ mp.character_id }}`, permanent_domains={{ mp.permanent_domains | tojson }}, current_domains={{ mp.current_domains | tojson }}, forbidden_domains={{ mp.forbidden_domains | tojson }}, metaphor_density={{ mp.metaphor_density }}
+{% endfor %}
+{% endif %}
+
+---
+{% endif %}
 {% if tool_examples %}
 
 ## Tool Examples
