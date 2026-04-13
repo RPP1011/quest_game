@@ -8,6 +8,7 @@ from app.engine import (
     Pipeline,
     PromptRenderer,
     TokenBudget,
+    TraceStore,
 )
 from app.runtime.client import InferenceClient
 from app.world import SeedLoader, WorldStateManager
@@ -46,15 +47,16 @@ def init(
 def play(
     db: Path = typer.Option(..., help="Path to the quest DB."),
     server: str = typer.Option("http://127.0.0.1:8090", help="llama-server base URL."),
+    traces: Path = typer.Option(Path("data/traces"), help="Directory for pipeline trace JSON files."),
 ) -> None:
     """Play the quest — reads player actions from stdin, prints prose."""
     sm = _open_world(db)
     client = InferenceClient(base_url=server, retries=1)
     cb = ContextBuilder(sm, PromptRenderer(PROMPTS), TokenBudget())
     pipeline = Pipeline(sm, cb, client)
+    trace_store = TraceStore(traces)
 
     typer.echo("Quest started. Type an action and press enter. Ctrl-D to quit.")
-    # Determine next update number
     records = sm.list_narrative(limit=10_000)
     update_number = (max((r.update_number for r in records), default=0)) + 1
 
@@ -68,7 +70,9 @@ def play(
         except Exception as e:
             typer.echo(f"[error] {e}", err=True)
             continue
+        trace_store.save(out.trace)
         typer.echo(out.prose)
+        typer.echo(f"\n[trace: {out.trace.trace_id}  outcome: {out.trace.outcome}]", err=True)
         typer.echo("\nChoices:")
         for i, c in enumerate(out.choices, 1):
             typer.echo(f"  {i}. {c}")
