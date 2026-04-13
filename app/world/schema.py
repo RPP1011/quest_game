@@ -102,3 +102,15 @@ class PlotThread(BaseModel):
     involved_entities: list[str] = Field(default_factory=list)
     arc_position: ArcPosition
     priority: int = Field(default=5, ge=1, le=10)
+
+
+class QuestArcState(BaseModel):
+    """Persisted arc state (thin — references the craft-level Arc)."""
+    arc_id: str                 # matches app.craft.Arc.id
+    quest_id: str
+    current_phase_index: int = 0
+    phase_progress: float = 0.0
+    tension_observed: list[tuple[int, float]] = Field(default_factory=list)
+    structure_id: str           # e.g. "three_act"
+    scale: str                  # "scene" | "chapter" | "campaign" | "saga"
+    last_directive: dict | None = None  # JSON-serialized ArcDirective

@@ -11,6 +11,7 @@ from .schema import (
     HookStatus,
     NarrativeRecord,
     PlotThread,
+    QuestArcState,
     Relationship,
     ThreadStatus,
     TimelineEvent,
@@ -718,6 +719,77 @@ class WorldStateManager:
             new_update_number=new_update_number,
             affected_narrative=sorted(affected_update_numbers),
         )
+
+    # ---- arcs ----
+
+    def upsert_arc(self, state: QuestArcState) -> None:
+        self._conn.execute(
+            "INSERT INTO arcs(quest_id, arc_id, structure_id, scale, current_phase_index, "
+            "phase_progress, tension_observed, last_directive) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(quest_id, arc_id) DO UPDATE SET "
+            "structure_id=excluded.structure_id, "
+            "scale=excluded.scale, "
+            "current_phase_index=excluded.current_phase_index, "
+            "phase_progress=excluded.phase_progress, "
+            "tension_observed=excluded.tension_observed, "
+            "last_directive=excluded.last_directive",
+            (
+                state.quest_id,
+                state.arc_id,
+                state.structure_id,
+                state.scale,
+                state.current_phase_index,
+                state.phase_progress,
+                json.dumps(state.tension_observed),
+                json.dumps(state.last_directive) if state.last_directive is not None else None,
+            ),
+        )
+        self._conn.commit()
+
+    def get_arc(self, quest_id: str, arc_id: str) -> QuestArcState:
+        row = self._conn.execute(
+            "SELECT * FROM arcs WHERE quest_id=? AND arc_id=?", (quest_id, arc_id)
+        ).fetchone()
+        if row is None:
+            raise WorldStateError(f"no arc {arc_id!r} for quest {quest_id!r}")
+        return QuestArcState(
+            quest_id=row["quest_id"],
+            arc_id=row["arc_id"],
+            structure_id=row["structure_id"],
+            scale=row["scale"],
+            current_phase_index=row["current_phase_index"],
+            phase_progress=row["phase_progress"],
+            tension_observed=[tuple(x) for x in json.loads(row["tension_observed"])],
+            last_directive=json.loads(row["last_directive"]) if row["last_directive"] is not None else None,
+        )
+
+    def list_arcs(self, quest_id: str) -> list[QuestArcState]:
+        rows = self._conn.execute(
+            "SELECT * FROM arcs WHERE quest_id=? ORDER BY arc_id", (quest_id,)
+        ).fetchall()
+        return [
+            QuestArcState(
+                quest_id=r["quest_id"],
+                arc_id=r["arc_id"],
+                structure_id=r["structure_id"],
+                scale=r["scale"],
+                current_phase_index=r["current_phase_index"],
+                phase_progress=r["phase_progress"],
+                tension_observed=[tuple(x) for x in json.loads(r["tension_observed"])],
+                last_directive=json.loads(r["last_directive"]) if r["last_directive"] is not None else None,
+            )
+            for r in rows
+        ]
+
+    def record_tension(self, quest_id: str, arc_id: str, update_number: int, value: float) -> None:
+        state = self.get_arc(quest_id, arc_id)
+        new_tension = list(state.tension_observed) + [(update_number, value)]
+        self._conn.execute(
+            "UPDATE arcs SET tension_observed=? WHERE quest_id=? AND arc_id=?",
+            (json.dumps(new_tension), quest_id, arc_id),
+        )
+        self._conn.commit()
 
     def snapshot(self) -> WorldSnapshot:
         return WorldSnapshot(

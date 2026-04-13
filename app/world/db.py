@@ -70,6 +70,18 @@ CREATE TABLE IF NOT EXISTS plot_threads (
     arc_position TEXT NOT NULL,
     priority INTEGER NOT NULL DEFAULT 5
 );
+
+CREATE TABLE IF NOT EXISTS arcs (
+    quest_id TEXT NOT NULL,
+    arc_id TEXT NOT NULL,
+    structure_id TEXT NOT NULL,
+    scale TEXT NOT NULL,
+    current_phase_index INTEGER NOT NULL DEFAULT 0,
+    phase_progress REAL NOT NULL DEFAULT 0.0,
+    tension_observed TEXT NOT NULL DEFAULT '[]',
+    last_directive TEXT,
+    PRIMARY KEY (quest_id, arc_id)
+);
 """
 
 
