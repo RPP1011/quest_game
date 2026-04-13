@@ -38,6 +38,7 @@ class CraftPlanner:
         style_register_id: str | None = None,
         narrator: Narrator | None = None,
         active_parallels: list[Parallel] | None = None,
+        active_motifs: list[dict] | None = None,
     ) -> CraftPlan:
         """Generate a ``CraftPlan`` translating drama + emotion into a prose blueprint.
 
@@ -93,6 +94,7 @@ class CraftPlanner:
                 "tool_examples": tool_examples,
                 "narrator": narrator,
                 "active_parallels": active_parallels or [],
+                "active_motifs": active_motifs or [],
             },
         )
 

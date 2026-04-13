@@ -427,6 +427,14 @@ class Pipeline:
                     input_prompt="", raw_output="",
                     errors=[StageError(kind="parallels_persist_crash", message=str(e))],
                 ))
+            try:
+                self._persist_motif_occurrences(craft_plan, update_number)
+            except Exception as e:  # pragma: no cover - defensive
+                trace.add_stage(StageResult(
+                    stage_name="motif_occurrences_persist",
+                    input_prompt="", raw_output="",
+                    errors=[StageError(kind="motif_occurrences_persist_crash", message=str(e))],
+                ))
 
         if not check_out.has_critical:
             try:
@@ -524,6 +532,7 @@ class Pipeline:
                 style_register_id=None,
                 narrator=self._narrator,
                 active_parallels=self._world.list_parallels(),
+                active_motifs=self._build_motif_context(update_number),
             ),
             validator=lambda plan: critics.validate_craft(plan, dramatic),
             fallback=lambda: _make_minimal_craft_plan(dramatic),
@@ -616,6 +625,53 @@ class Pipeline:
                     "status": ParallelStatus.DELIVERED,
                     "delivered_at_update": update_number,
                 })
+
+    def _persist_motif_occurrences(self, craft_plan: "Any", update_number: int) -> None:
+        """Post-COMMIT: record each ``MotifInstruction`` on the craft plan as an
+        observed ``MotifOccurrence`` row so recurrence tracking (Gap G5) has
+        data on future updates.
+        """
+        from app.planning.world_extensions import MotifOccurrence
+
+        if self._quest_id is None:
+            return
+        quest_id = self._quest_id
+        known = {m.id for m in self._world.list_motifs(quest_id)}
+        for scene in getattr(craft_plan, "scenes", []) or []:
+            for inst in getattr(scene, "motif_instructions", []) or []:
+                motif_id = getattr(inst, "motif_id", None)
+                if not motif_id or motif_id not in known:
+                    continue
+                occ = MotifOccurrence(
+                    motif_id=motif_id,
+                    update_number=update_number,
+                    context=getattr(inst, "placement", "") or "",
+                    semantic_value=getattr(inst, "semantic_value", "") or "",
+                    intensity=float(getattr(inst, "intensity", 0.5) or 0.5),
+                )
+                self._world.record_motif_occurrence(quest_id, occ)
+
+    def _build_motif_context(self, update_number: int) -> list[dict]:
+        """Return per-motif recurrence info (last_occurrence_update,
+        last_semantic_value, overdue) for the craft planner prompt."""
+        if self._quest_id is None:
+            return []
+        out: list[dict] = []
+        for motif in self._world.list_motifs(self._quest_id):
+            last = self._world.last_motif_occurrence(self._quest_id, motif.id)
+            last_update = last.update_number if last else None
+            last_sem = last.semantic_value if last else None
+            if last_update is None:
+                overdue = update_number >= motif.target_interval_min
+            else:
+                overdue = (update_number - last_update) > motif.target_interval_max
+            out.append({
+                "motif": motif,
+                "last_occurrence_update": last_update,
+                "last_semantic_value": last_sem,
+                "overdue": overdue,
+            })
+        return out
 
     async def _load_or_generate_arc(self, trace: PipelineTrace) -> "Any":
         """Load persisted ArcDirective or generate one with arc_planner."""

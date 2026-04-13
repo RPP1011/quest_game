@@ -3,7 +3,7 @@ import json
 import sqlite3
 from dataclasses import dataclass
 from typing import Any
-from app.planning.world_extensions import Theme
+from app.planning.world_extensions import Motif, MotifOccurrence, Theme
 from .schema import (
     ArcPosition,
     EmotionalBeat,
@@ -115,6 +115,18 @@ def _row_to_parallel(row: sqlite3.Row) -> Parallel:
         target_update_range_max=row["target_update_range_max"],
         theme_ids=json.loads(row["theme_ids"]),
         delivered_at_update=row["delivered_at_update"],
+    )
+
+
+def _row_to_motif(row: sqlite3.Row) -> Motif:
+    return Motif(
+        id=row["id"],
+        name=row["name"],
+        description=row["description"],
+        theme_ids=json.loads(row["theme_ids"]),
+        semantic_range=json.loads(row["semantic_range"]),
+        target_interval_min=row["target_interval_min"],
+        target_interval_max=row["target_interval_max"],
     )
 
 
@@ -949,6 +961,101 @@ class WorldStateManager:
         if cur.rowcount == 0:
             raise WorldStateError(f"no theme {theme_id!r} for quest {quest_id!r}")
         self._conn.commit()
+
+    # ---- motifs (Gap G5) ----
+
+    def add_motif(self, quest_id: str, motif: Motif) -> None:
+        self._conn.execute(
+            "INSERT INTO motifs(id, quest_id, name, description, theme_ids, "
+            "semantic_range, target_interval_min, target_interval_max) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                motif.id,
+                quest_id,
+                motif.name,
+                motif.description,
+                json.dumps(motif.theme_ids),
+                json.dumps(motif.semantic_range),
+                motif.target_interval_min,
+                motif.target_interval_max,
+            ),
+        )
+        self._conn.commit()
+
+    def get_motif(self, quest_id: str, motif_id: str) -> Motif:
+        row = self._conn.execute(
+            "SELECT * FROM motifs WHERE quest_id=? AND id=?", (quest_id, motif_id)
+        ).fetchone()
+        if row is None:
+            raise WorldStateError(f"no motif {motif_id!r} for quest {quest_id!r}")
+        return _row_to_motif(row)
+
+    def list_motifs(self, quest_id: str) -> list[Motif]:
+        rows = self._conn.execute(
+            "SELECT * FROM motifs WHERE quest_id=? ORDER BY id", (quest_id,)
+        ).fetchall()
+        return [_row_to_motif(r) for r in rows]
+
+    def record_motif_occurrence(self, quest_id: str, occ: MotifOccurrence) -> int:
+        cur = self._conn.execute(
+            "INSERT INTO motif_occurrences"
+            "(motif_id, quest_id, update_number, context, semantic_value, intensity) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (
+                occ.motif_id,
+                quest_id,
+                occ.update_number,
+                occ.context,
+                occ.semantic_value,
+                occ.intensity,
+            ),
+        )
+        self._conn.commit()
+        return int(cur.lastrowid)
+
+    def list_motif_occurrences(
+        self, quest_id: str, motif_id: str | None = None
+    ) -> list[MotifOccurrence]:
+        if motif_id is None:
+            rows = self._conn.execute(
+                "SELECT * FROM motif_occurrences WHERE quest_id=? "
+                "ORDER BY update_number ASC, id ASC",
+                (quest_id,),
+            ).fetchall()
+        else:
+            rows = self._conn.execute(
+                "SELECT * FROM motif_occurrences WHERE quest_id=? AND motif_id=? "
+                "ORDER BY update_number ASC, id ASC",
+                (quest_id, motif_id),
+            ).fetchall()
+        return [
+            MotifOccurrence(
+                motif_id=r["motif_id"],
+                update_number=r["update_number"],
+                context=r["context"],
+                semantic_value=r["semantic_value"],
+                intensity=r["intensity"],
+            )
+            for r in rows
+        ]
+
+    def last_motif_occurrence(
+        self, quest_id: str, motif_id: str
+    ) -> MotifOccurrence | None:
+        row = self._conn.execute(
+            "SELECT * FROM motif_occurrences WHERE quest_id=? AND motif_id=? "
+            "ORDER BY update_number DESC, id DESC LIMIT 1",
+            (quest_id, motif_id),
+        ).fetchone()
+        if row is None:
+            return None
+        return MotifOccurrence(
+            motif_id=row["motif_id"],
+            update_number=row["update_number"],
+            context=row["context"],
+            semantic_value=row["semantic_value"],
+            intensity=row["intensity"],
+        )
 
     def record_tension(self, quest_id: str, arc_id: str, update_number: int, value: float) -> None:
         state = self.get_arc(quest_id, arc_id)

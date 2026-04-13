@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 from pydantic import ValidationError
 from app.craft.schemas import Narrator
-from app.planning.world_extensions import Theme
+from app.planning.world_extensions import Motif, Theme
 from .delta import EntityCreate, RelChange, StateDelta
 from .schema import (
     Entity,
@@ -24,6 +24,7 @@ class SeedPayload:
     plot_threads: list[PlotThread] = field(default_factory=list)
     narrator: Narrator | None = None
     themes: list[Theme] = field(default_factory=list)
+    motifs: list[Motif] = field(default_factory=list)
 
 
 def _coerce_theme(raw: Any, index: int) -> Theme:
@@ -56,6 +57,24 @@ def _coerce_theme(raw: Any, index: int) -> Theme:
     raise ValueError(f"theme entry must be string or object, got {type(raw).__name__}")
 
 
+def _coerce_motif(raw: Any, index: int) -> Motif:
+    """Accept a string (treated as name) or a structured motif dict."""
+    if isinstance(raw, str):
+        return Motif(id=f"motif:{index}", name=raw, description=raw)
+    if isinstance(raw, dict):
+        data = dict(raw)
+        data.setdefault("id", f"motif:{index}")
+        data.setdefault("name", data.get("id", f"motif:{index}"))
+        data.setdefault("description", data.get("name", ""))
+        allowed = {
+            "id", "name", "description", "theme_ids", "semantic_range",
+            "target_interval_min", "target_interval_max",
+        }
+        data = {k: v for k, v in data.items() if k in allowed}
+        return Motif.model_validate(data)
+    raise ValueError(f"motif entry must be string or object, got {type(raw).__name__}")
+
+
 class SeedLoader:
     @staticmethod
     def load(path: str | Path) -> SeedPayload:
@@ -78,6 +97,9 @@ class SeedLoader:
             themes = [
                 _coerce_theme(t, i) for i, t in enumerate(raw.get("themes", []))
             ]
+            motifs = [
+                _coerce_motif(m, i) for i, m in enumerate(raw.get("motifs", []))
+            ]
         except ValidationError as e:
             raise ValueError(f"seed file schema error: {e}") from e
 
@@ -89,4 +111,5 @@ class SeedLoader:
             delta=delta, rules=rules, foreshadowing=hooks, plot_threads=threads,
             narrator=narrator,
             themes=themes,
+            motifs=motifs,
         )

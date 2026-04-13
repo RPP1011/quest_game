@@ -45,7 +45,7 @@ from app.planning.schemas import (
 )
 
 # World extensions used by planning
-from app.planning.world_extensions import MotifDef, Theme
+from app.planning.world_extensions import Motif, MotifDef, MotifOccurrence, Theme
 
 # Critics module — available as planning.critics
 from app.planning import critics
@@ -89,7 +89,9 @@ __all__ = [
     "VoicePermeability",
     # World extensions
     "Theme",
+    "Motif",
     "MotifDef",
+    "MotifOccurrence",
     # Critics module
     "critics",
 ]

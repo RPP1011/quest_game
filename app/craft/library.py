@@ -16,6 +16,7 @@ def _score_tool(
     gap: float,
     theme_tool_ids: set[str] | None = None,
     patience_boost: bool = False,
+    overdue_motif_tool_ids: set[str] | None = None,
 ) -> int:
     score = 0
     if tool.id in phase_expected:
@@ -31,6 +32,8 @@ def _score_tool(
     if theme_tool_ids and tool.id in theme_tool_ids:
         score += 3
     if patience_boost and tool.category in _HOT_CATEGORIES:
+        score += 1
+    if overdue_motif_tool_ids and tool.id in overdue_motif_tool_ids:
         score += 1
     return score
 
@@ -145,6 +148,7 @@ class CraftLibrary:
         current_scene_id: str | None = None,
         updates_since_major_event: int | None = None,
         patience_threshold: int = 3,
+        overdue_motifs: list | None = None,
     ) -> list[Tool]:
         from .arc import tension_gap as _tension_gap
 
@@ -172,12 +176,35 @@ class CraftLibrary:
             and updates_since_major_event > patience_threshold
         )
 
+        # Motif recurrence scoring (Gap G5): +1 for tools in the expected beats
+        # of a themed phase when that phase's theme is served by an overdue motif.
+        overdue_motif_tool_ids: set[str] = set()
+        if overdue_motifs and themes:
+            overdue_theme_ids: set[str] = set()
+            for m in overdue_motifs:
+                for tid in getattr(m, "theme_ids", []) or []:
+                    overdue_theme_ids.add(tid)
+            if overdue_theme_ids:
+                phase_key = phase.name
+                for th in themes:
+                    if getattr(th, "id", None) not in overdue_theme_ids:
+                        continue
+                    key_scenes = getattr(th, "key_scenes", []) or []
+                    match = False
+                    if current_scene_id is not None and current_scene_id in key_scenes:
+                        match = True
+                    elif current_scene_id is None and phase_key in key_scenes:
+                        match = True
+                    if match:
+                        overdue_motif_tool_ids.update(expected)
+
         scored: list[tuple[int, str, Tool]] = []
         for tool in self.all_tools():
             score = _score_tool(
                 tool, expected, required, recent, gap,
                 theme_tool_ids=theme_tool_ids,
                 patience_boost=patience_boost,
+                overdue_motif_tool_ids=overdue_motif_tool_ids,
             )
             if score > 0:
                 scored.append((score, tool.id, tool))

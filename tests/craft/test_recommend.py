@@ -127,6 +127,54 @@ def test_recommend_patience_boost_surfaces_hot_tools(lib):
     assert boosted_ids >= baseline_ids
 
 
+def test_recommend_boosts_overdue_motif_themed_tools(lib):
+    """Gap G5: when an overdue motif's theme is served by the current phase,
+    expected-beat tools for that phase get a +1 scoring boost."""
+    from app.planning.world_extensions import Motif, Theme
+
+    structure = lib.structure("three_act")
+    phase_name = structure.phases[0].name
+    arc = _arc(phase_index=0, gap_hint="neutral")
+    theme = Theme(id="t:identity", proposition="who am I", key_scenes=[phase_name])
+    motif = Motif(
+        id="m:mirror", name="mirror", description="reflective surface",
+        theme_ids=["t:identity"], semantic_range=["self-knowledge"],
+    )
+
+    # Baseline: themes present but no overdue motif — +3 theme boost applies
+    # to expected tools uniformly. We compare against the *same* baseline with
+    # no overdue motif, then add overdue motif to confirm ordering/score shift.
+    baseline = [t.id for t in lib.recommend_tools(
+        arc, structure, limit=20, themes=[theme],
+    )]
+    boosted = [t.id for t in lib.recommend_tools(
+        arc, structure, limit=20, themes=[theme], overdue_motifs=[motif],
+    )]
+    expected = set(structure.phases[0].expected_beats)
+    anchored = expected & set(baseline)
+    assert anchored, "precondition: phase has expected-beat tools in baseline"
+    # Every anchored tool must appear at the same index or earlier.
+    for tid in anchored:
+        assert boosted.index(tid) <= baseline.index(tid)
+
+
+def test_recommend_overdue_motif_no_theme_match_noop(lib):
+    """If the overdue motif's theme does not match the phase, no boost."""
+    from app.planning.world_extensions import Motif, Theme
+
+    arc = _arc(phase_index=0, gap_hint="neutral")
+    theme = Theme(id="t:x", proposition="p", key_scenes=["nonexistent-phase"])
+    motif = Motif(id="m:x", name="x", description="d", theme_ids=["t:x"])
+    without = [t.id for t in lib.recommend_tools(
+        arc, lib.structure("three_act"), themes=[theme], limit=20,
+    )]
+    with_motif = [t.id for t in lib.recommend_tools(
+        arc, lib.structure("three_act"), themes=[theme],
+        overdue_motifs=[motif], limit=20,
+    )]
+    assert without == with_motif
+
+
 def test_recommend_limit(lib):
     arc = _arc(phase_index=1, gap_hint="lagging")
     rec = lib.recommend_tools(arc, lib.structure("three_act"), limit=2)
