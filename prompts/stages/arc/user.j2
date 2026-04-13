@@ -1,0 +1,67 @@
+## Quest Configuration
+
+**Genre:** {{ quest_config.genre | default("unspecified") }}
+**Premise:** {{ quest_config.premise | default("unspecified") }}
+{% if quest_config.themes %}
+**Themes:** {{ quest_config.themes | join(", ") }}
+{% endif %}
+
+---
+
+## Structure: {{ structure.name }}
+
+{{ structure.description }}
+
+**Current Phase:** {{ current_phase.name }} (phase {{ arc_state.current_phase_index + 1 }} of {{ structure.phases | length }})
+{{ current_phase.description }}
+
+**Phase tension target:** {{ current_phase.tension_target }}
+
+**All phases:**
+{% for phase in structure.phases %}
+- **{{ phase.name }}** (position {{ phase.position }}): {{ phase.description }}
+{% endfor %}
+
+**Tension curve** (position → target):
+{% for pos, tension in structure.tension_curve %}
+- {{ "%.2f"|format(pos) }} → {{ "%.2f"|format(tension) }}
+{% endfor %}
+
+---
+
+## Arc State
+
+- Phase progress: {{ "%.0f"|format(arc_state.phase_progress * 100) }}%
+{% if arc_state.tension_observed %}
+- Recent tension readings: {{ arc_state.tension_observed[-5:] | map(attribute=1) | map("round", 2) | list | join(", ") }}
+{% else %}
+- No tension observations yet
+{% endif %}
+
+---
+
+## Plot Threads
+
+{% if plot_threads %}
+{% for pt in plot_threads %}
+- **{{ pt.name }}** ({{ pt.status.value }}, priority {{ pt.priority }}, position: {{ pt.arc_position.value }}): {{ pt.description }}
+{% endfor %}
+{% else %}
+No plot threads established yet.
+{% endif %}
+
+---
+
+## Recent Narrative (last {{ narrative_summaries | length }} updates)
+
+{% if narrative_summaries %}
+{% for rec in narrative_summaries %}
+- Update {{ rec.update_number }}: {{ rec.summary or rec.raw_text[:300] }}
+{% endfor %}
+{% else %}
+No narrative history yet — this is the opening of the quest.
+{% endif %}
+
+---
+
+Produce the arc directive for the current phase now.
