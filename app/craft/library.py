@@ -15,6 +15,7 @@ def _score_tool(
     recent: set[str],
     gap: float,
     theme_tool_ids: set[str] | None = None,
+    patience_boost: bool = False,
 ) -> int:
     score = 0
     if tool.id in phase_expected:
@@ -27,10 +28,10 @@ def _score_tool(
         score += 1
     if tool.id in recent:
         score -= 2
-    # Thematic anchoring: boost tools that appear in a theme's key_scenes
-    # for the current scene/update — theme-aware recommendation (Gap G4).
     if theme_tool_ids and tool.id in theme_tool_ids:
         score += 3
+    if patience_boost and tool.category in _HOT_CATEGORIES:
+        score += 1
     return score
 
 
@@ -142,6 +143,8 @@ class CraftLibrary:
         limit: int = 5,
         themes: list | None = None,
         current_scene_id: str | None = None,
+        updates_since_major_event: int | None = None,
+        patience_threshold: int = 3,
     ) -> list[Tool]:
         from .arc import tension_gap as _tension_gap
 
@@ -151,9 +154,6 @@ class CraftLibrary:
         recent = set(recent_tool_ids or [])
         gap = _tension_gap(arc, structure)
 
-        # Build set of tool ids that serve a theme whose key_scenes matches
-        # the current scene (or, if no scene_id was supplied, whose
-        # key_scenes matches the current phase name — a coarse fallback).
         theme_tool_ids: set[str] = set()
         if themes:
             phase_key = phase.name
@@ -165,14 +165,20 @@ class CraftLibrary:
                 elif current_scene_id is None and phase_key in key_scenes:
                     match = True
                 if match:
-                    # Any tool whose id appears in this phase's expected
-                    # beats is considered "serving" the themed scene; this
-                    # keeps the rule self-contained within existing data.
                     theme_tool_ids.update(expected)
+
+        patience_boost = (
+            updates_since_major_event is not None
+            and updates_since_major_event > patience_threshold
+        )
 
         scored: list[tuple[int, str, Tool]] = []
         for tool in self.all_tools():
-            score = _score_tool(tool, expected, required, recent, gap, theme_tool_ids)
+            score = _score_tool(
+                tool, expected, required, recent, gap,
+                theme_tool_ids=theme_tool_ids,
+                patience_boost=patience_boost,
+            )
             if score > 0:
                 scored.append((score, tool.id, tool))
 

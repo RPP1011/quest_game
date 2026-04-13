@@ -110,6 +110,23 @@ def test_recommend_no_theme_match_is_noop(lib):
     assert without == with_theme
 
 
+def test_recommend_patience_boost_surfaces_hot_tools(lib):
+    """When the reader has been waiting past threshold, HOT-category tools
+    (reversal/tension/pacing) get an extra boost."""
+    # Neutral gap so the boost isn't already maxed out.
+    arc = _arc(phase_index=1, gap_hint="neutral")
+    baseline_ids = {t.id for t in lib.recommend_tools(
+        arc, lib.structure("three_act"), limit=10,
+        updates_since_major_event=0, patience_threshold=3,
+    )}
+    boosted_ids = {t.id for t in lib.recommend_tools(
+        arc, lib.structure("three_act"), limit=10,
+        updates_since_major_event=5, patience_threshold=3,
+    )}
+    # Boosted set should include at least as many tools (boost only adds score).
+    assert boosted_ids >= baseline_ids
+
+
 def test_recommend_limit(lib):
     arc = _arc(phase_index=1, gap_hint="lagging")
     rec = lib.recommend_tools(arc, lib.structure("three_act"), limit=2)

@@ -273,7 +273,6 @@ class Pipeline:
         self._quest_config = quest_config or {}
         self._quest_id = quest_id
         self._arc_id = arc_id
-        # Parse narrator from quest_config if present. Stored as a dict.
         self._narrator = None
         n_raw = self._quest_config.get("narrator") if self._quest_config else None
         if n_raw:
@@ -282,6 +281,8 @@ class Pipeline:
                 self._narrator = Narrator.model_validate(n_raw)
             except Exception:
                 self._narrator = None
+        self._last_dramatic: Any | None = None
+        self._last_emotional: Any | None = None
 
     @property
     def is_hierarchical(self) -> bool:
@@ -391,6 +392,26 @@ class Pipeline:
         ))
         trace.outcome = outcome
 
+        # Gap G6: post-commit reader-state accumulation.
+        if (outcome == "committed"
+                and self._quest_id is not None
+                and self._last_dramatic is not None):
+            try:
+                from app.planning.reader_model import apply_dramatic_plan
+                current = self._world.get_reader_state(self._quest_id)
+                updated = apply_dramatic_plan(
+                    current,
+                    self._last_dramatic,
+                    update_number=update_number,
+                    emotional=self._last_emotional,
+                )
+                self._world.upsert_reader_state(updated)
+            except Exception as e:  # pragma: no cover - defensive
+                trace.add_stage(StageResult(
+                    stage_name="reader_state", input_prompt="", raw_output="",
+                    errors=[StageError(kind="reader_state_crash", message=str(e)[:300])],
+                ))
+
         if not check_out.has_critical:
             try:
                 await self._run_extract(trace, plan_like_dict, prose, update_number)
@@ -483,6 +504,10 @@ class Pipeline:
             "beats": beats,
             "suggested_choices": dramatic.suggested_choices,
         }
+
+        # Stash for post-commit reader_state mutation (Gap G6).
+        self._last_dramatic = dramatic
+        self._last_emotional = emotional
 
         return craft_plan, plan_like_dict
 

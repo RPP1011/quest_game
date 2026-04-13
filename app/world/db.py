@@ -82,6 +82,18 @@ CREATE TABLE IF NOT EXISTS themes (
     PRIMARY KEY (id, quest_id)
 );
 
+CREATE TABLE IF NOT EXISTS reader_state (
+    quest_id TEXT PRIMARY KEY,
+    known_fact_ids TEXT NOT NULL DEFAULT '[]',
+    open_questions TEXT NOT NULL DEFAULT '[]',
+    expectations TEXT NOT NULL DEFAULT '[]',
+    attachment_levels TEXT NOT NULL DEFAULT '{}',
+    current_emotional_valence REAL NOT NULL DEFAULT 0.0,
+    updates_since_major_event INTEGER NOT NULL DEFAULT 0,
+    updates_since_revelation INTEGER NOT NULL DEFAULT 0,
+    updates_since_emotional_peak INTEGER NOT NULL DEFAULT 0
+);
+
 CREATE TABLE IF NOT EXISTS arcs (
     quest_id TEXT NOT NULL,
     arc_id TEXT NOT NULL,

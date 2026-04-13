@@ -202,7 +202,7 @@ class FakeCraftLibrary:
     def tools(self, category=None):
         return []
 
-    def recommend_tools(self, arc, structure, recent_tool_ids=None, limit=5):
+    def recommend_tools(self, arc, structure, recent_tool_ids=None, limit=5, **kwargs):
         return []
 
     def examples_for_tool(self, tool_id):

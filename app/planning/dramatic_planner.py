@@ -64,8 +64,6 @@ class DramaticPlanner:
         all_narrative = world.list_narrative(limit=10_000)
         recent_narrative = all_narrative[-2:] if all_narrative else []
 
-        # Load persisted themes (may be empty for legacy quests or when
-        # quest_id is not provided by the caller).
         themes: list = []
         if quest_id is not None:
             try:
@@ -73,12 +71,17 @@ class DramaticPlanner:
             except Exception:
                 themes = []
 
-        # Get tool recommendations including examples. Pass themes so the
-        # scorer can boost tools that serve theme-anchored scenes.
-        current_scene_id = None  # recommend_tools doesn't yet know per-scene id
+        reader_state = (
+            world.get_reader_state(quest_id) if quest_id is not None else None
+        )
+
+        current_scene_id = None
         recommended_tools = self._craft_library.recommend_tools(
             arc, structure, recent_tool_ids=recent_tool_ids, limit=5,
             themes=themes, current_scene_id=current_scene_id,
+            updates_since_major_event=(
+                reader_state.updates_since_major_event if reader_state else None
+            ),
         )
         tools_with_examples = []
         for tool in recommended_tools:
@@ -101,6 +104,7 @@ class DramaticPlanner:
                 "recent_narrative": recent_narrative,
                 "tools_with_examples": tools_with_examples,
                 "themes": themes,
+                "reader_state": reader_state,
             },
         )
 

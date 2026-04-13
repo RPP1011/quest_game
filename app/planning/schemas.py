@@ -88,6 +88,8 @@ class DramaticPlan(BaseModel):
     thread_advances: list[ThreadAdvance] = []
     questions_opened: list[str] = []
     questions_closed: list[str] = []
+    expectations_set: list[str] = []
+    expectations_subverted: list[str] = []
 
 
 # ---- EMOTIONAL layer ----

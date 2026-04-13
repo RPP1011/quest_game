@@ -8,11 +8,14 @@ from .schema import (
     ArcPosition,
     Entity,
     EntityType,
+    Expectation,
     ForeshadowingHook,
     HookStatus,
     NarrativeRecord,
+    OpenQuestion,
     PlotThread,
     QuestArcState,
+    ReaderState,
     Relationship,
     ThreadStatus,
     TimelineEvent,
@@ -850,6 +853,56 @@ class WorldStateManager:
         self._conn.execute(
             "UPDATE arcs SET tension_observed=? WHERE quest_id=? AND arc_id=?",
             (json.dumps(new_tension), quest_id, arc_id),
+        )
+        self._conn.commit()
+
+    # ---- reader state ----
+
+    def get_reader_state(self, quest_id: str) -> ReaderState:
+        """Load reader state for a quest; returns a fresh default if absent."""
+        row = self._conn.execute(
+            "SELECT * FROM reader_state WHERE quest_id=?", (quest_id,)
+        ).fetchone()
+        if row is None:
+            return ReaderState(quest_id=quest_id)
+        return ReaderState(
+            quest_id=row["quest_id"],
+            known_fact_ids=json.loads(row["known_fact_ids"]),
+            open_questions=[OpenQuestion.model_validate(q) for q in json.loads(row["open_questions"])],
+            expectations=[Expectation.model_validate(e) for e in json.loads(row["expectations"])],
+            attachment_levels=json.loads(row["attachment_levels"]),
+            current_emotional_valence=row["current_emotional_valence"],
+            updates_since_major_event=row["updates_since_major_event"],
+            updates_since_revelation=row["updates_since_revelation"],
+            updates_since_emotional_peak=row["updates_since_emotional_peak"],
+        )
+
+    def upsert_reader_state(self, state: ReaderState) -> None:
+        self._conn.execute(
+            "INSERT INTO reader_state(quest_id, known_fact_ids, open_questions, "
+            "expectations, attachment_levels, current_emotional_valence, "
+            "updates_since_major_event, updates_since_revelation, updates_since_emotional_peak) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(quest_id) DO UPDATE SET "
+            "known_fact_ids=excluded.known_fact_ids, "
+            "open_questions=excluded.open_questions, "
+            "expectations=excluded.expectations, "
+            "attachment_levels=excluded.attachment_levels, "
+            "current_emotional_valence=excluded.current_emotional_valence, "
+            "updates_since_major_event=excluded.updates_since_major_event, "
+            "updates_since_revelation=excluded.updates_since_revelation, "
+            "updates_since_emotional_peak=excluded.updates_since_emotional_peak",
+            (
+                state.quest_id,
+                json.dumps(state.known_fact_ids),
+                json.dumps([q.model_dump() for q in state.open_questions]),
+                json.dumps([e.model_dump(mode="json") for e in state.expectations]),
+                json.dumps(state.attachment_levels),
+                state.current_emotional_valence,
+                state.updates_since_major_event,
+                state.updates_since_revelation,
+                state.updates_since_emotional_peak,
+            ),
         )
         self._conn.commit()
 
