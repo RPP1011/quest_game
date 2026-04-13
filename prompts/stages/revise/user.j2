@@ -1,0 +1,12 @@
+## Plan
+{{ plan }}
+
+## Original Prose
+{{ prose }}
+
+## Issues to Fix
+{% for i in issues %}
+- [{{ i.severity }}/{{ i.category }}] {{ i.message }}{% if i.suggested_fix %} — fix: {{ i.suggested_fix }}{% endif %}
+{% endfor %}
+
+Produce the revised prose now.

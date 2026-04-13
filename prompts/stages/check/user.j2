@@ -1,0 +1,21 @@
+## Plan the narrator was given
+{{ plan }}
+
+## Proposed Prose
+{{ prose }}
+
+{% if rules %}
+## Active World Rules
+{% for r in rules %}
+- {{ r.description }}
+{% endfor %}
+{% endif %}
+
+{% if recent_summaries %}
+## Recent Events
+{% for s in recent_summaries %}
+- Update {{ s.update_number }}: {{ s.summary or s.raw_text[:200] }}
+{% endfor %}
+{% endif %}
+
+Evaluate the prose and return the issues JSON now.
