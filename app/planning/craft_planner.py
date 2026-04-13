@@ -58,6 +58,7 @@ class CraftPlanner:
         narrator: Narrator | None = None,
         active_parallels: list[Parallel] | None = None,
         characters: dict[str, Entity] | None = None,
+        active_motifs: list[dict] | None = None,
     ) -> CraftPlan:
         """Generate a ``CraftPlan`` translating drama + emotion into a prose blueprint.
 
@@ -144,6 +145,7 @@ class CraftPlanner:
                 "character_voices": character_voices,
                 "blended_samples": blended_samples,
                 "scene_permeability_defaults": scene_permeability_defaults,
+                "active_motifs": active_motifs or [],
             },
         )
 

@@ -122,6 +122,31 @@ CREATE TABLE IF NOT EXISTS parallels (
     delivered_at_update INTEGER
 );
 
+CREATE TABLE IF NOT EXISTS motifs (
+    id TEXT NOT NULL,
+    quest_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    theme_ids TEXT NOT NULL DEFAULT '[]',
+    semantic_range TEXT NOT NULL DEFAULT '[]',
+    target_interval_min INTEGER NOT NULL DEFAULT 2,
+    target_interval_max INTEGER NOT NULL DEFAULT 6,
+    PRIMARY KEY (id, quest_id)
+);
+
+CREATE TABLE IF NOT EXISTS motif_occurrences (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    motif_id TEXT NOT NULL,
+    quest_id TEXT NOT NULL,
+    update_number INTEGER NOT NULL,
+    context TEXT NOT NULL DEFAULT '',
+    semantic_value TEXT NOT NULL DEFAULT '',
+    intensity REAL NOT NULL DEFAULT 0.5
+);
+
+CREATE INDEX IF NOT EXISTS idx_motif_occurrences_quest_motif_update
+    ON motif_occurrences (quest_id, motif_id, update_number);
+
 CREATE TABLE IF NOT EXISTS arcs (
     quest_id TEXT NOT NULL,
     arc_id TEXT NOT NULL,

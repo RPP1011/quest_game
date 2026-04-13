@@ -185,4 +185,17 @@ When delivering a parallel's B-half, emit a ``parallel_instruction`` on the rele
 ---
 {% endif %}
 
+{% if active_motifs %}
+
+## Active Motifs (recurring images with evolving meaning)
+
+{% for m in active_motifs %}
+- **{{ m.motif.id }}** "{{ m.motif.name }}" — {{ m.motif.description }}. Semantic range: {{ m.motif.semantic_range | join(", ") }}. Target recurrence interval: {{ m.motif.target_interval_min }}–{{ m.motif.target_interval_max }} updates. {% if m.last_occurrence_update is not none %}Last seen at update {{ m.last_occurrence_update }} carrying meaning "{{ m.last_semantic_value }}".{% else %}Not yet used.{% endif %} {% if m.overdue %}**OVERDUE** — should recur now, ideally with a new semantic shade from its range.{% endif %}
+{% endfor %}
+
+When a motif appears in a scene, emit a ``motif_instruction`` on that scene with ``motif_id`` set to the id above and ``semantic_value`` chosen from the motif's semantic_range.
+
+---
+{% endif %}
+
 Produce the craft plan now. For each dramatic scene, emit one CraftScenePlan entry in `scenes` and one CraftBrief entry in `briefs`. The brief must be 100-300 words of prose that reads like a director's note — weave register, voice, emotional arc, and motif into a unified vision. Do not list parameters in the brief.

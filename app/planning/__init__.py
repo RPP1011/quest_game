@@ -46,7 +46,7 @@ from app.planning.schemas import (
 )
 
 # World extensions used by planning
-from app.planning.world_extensions import MotifDef, Theme
+from app.planning.world_extensions import Motif, MotifDef, MotifOccurrence, Theme
 
 # Voice grounding helpers (Gap G3)
 from app.planning.voice import (
@@ -100,8 +100,9 @@ __all__ = [
     "VoicePermeability",
     # World extensions
     "Theme",
+    "Motif",
     "MotifDef",
-    # Voice grounding (Gap G3)
+    "MotifOccurrence",
     "blended_voice_samples_for",
     "character_voice_for",
     "default_permeability",

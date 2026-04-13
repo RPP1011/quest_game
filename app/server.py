@@ -145,6 +145,8 @@ def create_app(*, quests_dir: Path, server_url: str) -> FastAPI:
             sm.add_plot_thread(pt)
         for th in payload.themes:
             sm.add_theme(req.id, th)
+        for mo in payload.motifs:
+            sm.add_motif(req.id, mo)
         sm.apply_delta(payload.delta, update_number=0)
 
         # --- Task 11: arc bootstrap ---
