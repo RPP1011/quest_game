@@ -1,0 +1,20 @@
+id: try_fail_cycle
+name: Try / Fail / Adapt
+category: pacing
+description: >
+  The protagonist attempts something, fails in a way that reveals new
+  information or raises stakes, then adapts. A single cycle is a beat; two
+  or three strung together form rising action. Each failure should teach —
+  either the protagonist, the reader, or both.
+preconditions:
+  - The protagonist has a clear immediate goal
+  - A straightforward success would skip a phase of the arc
+signals:
+  - Tension is below target and needs escalation via failure
+  - The protagonist's approach should mature over the next few beats
+anti_patterns:
+  - Failure that teaches nothing (pure friction)
+  - Success on the first try when stakes require earning
+  - Repeating the same failure shape three times in a row (monotonous)
+example_ids:
+  - ex_try_fail_siege

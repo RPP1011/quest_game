@@ -1,0 +1,20 @@
+id: midpoint_shift
+name: Midpoint Shift
+category: structural
+description: >
+  Around the center of the arc, something changes in the protagonist's
+  understanding or situation that reframes the second half. A revelation,
+  a lost ally, an upgrade of the threat. Distinguishes stories with two
+  halves from stories that merely continue.
+preconditions:
+  - The first half of the arc has established a clear situation
+  - A payoff for a planted irony is available
+signals:
+  - Arc progress is 0.45-0.55
+  - Tension has been climbing but needs a new axis
+anti_patterns:
+  - Shift that doesn't actually change the pursuit (cosmetic)
+  - Shift too early (no first half to reframe)
+  - Shift that requires external info not planted earlier
+example_ids:
+  - ex_midpoint_mirror

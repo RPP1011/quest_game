@@ -1,0 +1,20 @@
+id: scene_sequel
+name: Scene and Sequel
+category: pacing
+description: >
+  A scene (action with a goal) is followed by a sequel (reaction, dilemma,
+  decision). The sequel lets the reader metabolize and the protagonist
+  recommit. Omitting sequels produces plot without story; omitting scenes
+  produces rumination without forward motion.
+preconditions:
+  - A scene has just resolved with outcome (success, failure, or mixed)
+signals:
+  - Reader needs a beat to absorb what just happened
+  - Protagonist's emotional state is about to shift
+  - Next scene's goal needs to be recommitted in light of the outcome
+anti_patterns:
+  - Skipping the sequel entirely (reader bounces)
+  - A sequel that doesn't reach a decision (stalls)
+  - Sequel becomes exposition (kills momentum)
+example_ids:
+  - ex_sequel_door

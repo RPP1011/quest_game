@@ -1,0 +1,19 @@
+id: false_victory
+name: False Victory
+category: tension
+description: >
+  An apparent win that the reader can tell is about to unravel. Often placed
+  at ~70-85% progress, immediately before the lowest low. Lets the reader
+  feel the contrast when the unraveling hits.
+preconditions:
+  - The protagonist has pursued a visible goal
+  - There is a planted condition the victory will violate
+signals:
+  - Arc progress 0.65-0.80
+  - A planted Chekhov's gun is primed to fire against the win
+anti_patterns:
+  - Victory that actually sticks (deflates expectations)
+  - Unraveling with no prior planted condition (feels cheap)
+  - Triumph without any sense of cost (reader doesn't care)
+example_ids:
+  - ex_false_victory_crown

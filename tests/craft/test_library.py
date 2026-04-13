@@ -125,3 +125,15 @@ def test_real_structures_load():
     assert {"three_act", "five_act_freytag", "kishotenketsu"} <= ids
     three = lib.structure("three_act")
     assert len(three.phases) == 5
+
+
+def test_real_tools_load():
+    from app.craft.library import CraftLibrary
+    lib = CraftLibrary(Path(__file__).parent.parent.parent / "app" / "craft" / "data")
+    ids = {t.id for t in lib.tools()}
+    expected = {"chekhovs_gun", "try_fail_cycle", "reversal",
+                "scene_sequel", "midpoint_shift", "false_victory"}
+    assert expected <= ids
+    # Categories distributed
+    cats = {t.category for t in lib.tools()}
+    assert {"foreshadowing", "pacing", "reversal", "structural", "tension"} <= cats

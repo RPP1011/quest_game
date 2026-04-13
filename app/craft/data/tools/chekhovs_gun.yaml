@@ -1,0 +1,20 @@
+id: chekhovs_gun
+name: Chekhov's Gun
+category: foreshadowing
+description: >
+  Any element introduced early with enough salience that the reader expects
+  it to return, so that when it does return the payoff feels earned rather
+  than contrived. The plant must look incidental but not invisible.
+preconditions:
+  - A later beat requires an element that would feel arbitrary if introduced fresh
+  - The current scene has room to dwell on a detail without stalling the forward motion
+signals:
+  - Planner knows a payoff is coming in the next 2-6 updates
+  - Current scene naturally brings the element into view
+anti_patterns:
+  - Paying off something that was never planted (deus ex machina)
+  - Planting something with too much emphasis (broadcasts the payoff)
+  - Planting and never paying off (dead weight)
+example_ids:
+  - ex_chekhov_coin
+  - ex_chekhov_letter

@@ -1,0 +1,20 @@
+id: reversal
+name: Reversal
+category: reversal
+description: >
+  A moment where the situation inverts: an apparent friend is an enemy, a
+  failure was actually the goal, a triumph is revealed as hollow. Reversals
+  should recontextualize what came before rather than invalidate it.
+preconditions:
+  - Prior beats supplied enough information that the reversal is recoverable on re-read
+  - The reader has a stable reading of the situation that can be overturned
+signals:
+  - Tension is flat and needs shock
+  - A planted irony is ready to collapse
+  - The protagonist's model of the world is due to be broken
+anti_patterns:
+  - Reversal that invalidates the prior scenes rather than reframing them
+  - Reversal with no planted clues (feels arbitrary)
+  - Too many reversals in succession (diminishing returns)
+example_ids:
+  - ex_reversal_ally
