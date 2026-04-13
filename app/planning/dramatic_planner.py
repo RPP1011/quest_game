@@ -75,6 +75,22 @@ class DramaticPlanner:
             world.get_reader_state(quest_id) if quest_id is not None else None
         )
 
+        # Gap G7: compute live information asymmetries for prompt context +
+        # tool scoring.
+        asymmetries: list = []
+        ripe_count = 0
+        if quest_id is not None:
+            try:
+                from app.planning.information_asymmetry import (
+                    compute_asymmetries,
+                    ripe_asymmetry_count,
+                )
+                asymmetries = compute_asymmetries(world, quest_id)
+                ripe_count = ripe_asymmetry_count(asymmetries)
+            except Exception:
+                asymmetries = []
+                ripe_count = 0
+
         current_scene_id = None
         recommended_tools = self._craft_library.recommend_tools(
             arc, structure, recent_tool_ids=recent_tool_ids, limit=5,
@@ -82,6 +98,7 @@ class DramaticPlanner:
             updates_since_major_event=(
                 reader_state.updates_since_major_event if reader_state else None
             ),
+            ripe_asymmetry_count=ripe_count,
         )
         tools_with_examples = []
         for tool in recommended_tools:
@@ -105,6 +122,7 @@ class DramaticPlanner:
                 "tools_with_examples": tools_with_examples,
                 "themes": themes,
                 "reader_state": reader_state,
+                "information_asymmetries": asymmetries,
             },
         )
 

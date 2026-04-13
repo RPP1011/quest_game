@@ -94,6 +94,17 @@ CREATE TABLE IF NOT EXISTS reader_state (
     updates_since_emotional_peak INTEGER NOT NULL DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS information_states (
+    id TEXT PRIMARY KEY,
+    quest_id TEXT NOT NULL,
+    fact TEXT NOT NULL,
+    ground_truth INTEGER NOT NULL DEFAULT 1,
+    known_by TEXT NOT NULL DEFAULT '{}'
+);
+
+CREATE INDEX IF NOT EXISTS idx_information_states_quest
+    ON information_states (quest_id);
+
 CREATE TABLE IF NOT EXISTS emotional_beats (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     quest_id TEXT NOT NULL,

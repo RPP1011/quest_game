@@ -116,6 +116,21 @@ _No open questions tracked._
 ---
 
 {% endif %}
+{% if information_asymmetries %}
+## Active Information Asymmetries
+
+{% for a in information_asymmetries %}
+- **{{ a.kind.value if a.kind.value is defined else a.kind }}** [potential={{ "%.2f" | format(a.tension_potential) }}{% if a.updates_standing is not none %}, standing={{ a.updates_standing }}u{% endif %}]: _{{ a.fact }}_
+{% if a.kind.value == "dramatic_irony" or a.kind == "dramatic_irony" %}  — reader knows; unaware: {{ a.unaware | join(", ") }}
+{% elif a.kind.value == "mystery" or a.kind == "mystery" %}  — {{ a.knowers | join(", ") }} knows; reader does not
+{% elif a.kind.value == "secret" or a.kind == "secret" %}  — {{ a.knowers | join(", ") }} know; {{ a.unaware | join(", ") }} do not
+{% elif a.kind.value == "false_belief" or a.kind == "false_belief" %}  — {{ a.believer_id }} believes contrary to ground truth
+{% endif %}
+{% endfor %}
+
+---
+
+{% endif %}
 ## Recommended Craft Tools
 
 {% if tools_with_examples %}

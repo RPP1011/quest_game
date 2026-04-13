@@ -16,6 +16,7 @@ def _score_tool(
     gap: float,
     theme_tool_ids: set[str] | None = None,
     patience_boost: bool = False,
+    ripe_asymmetry_boost: bool = False,
 ) -> int:
     score = 0
     if tool.id in phase_expected:
@@ -32,6 +33,10 @@ def _score_tool(
         score += 3
     if patience_boost and tool.category in _HOT_CATEGORIES:
         score += 1
+    # Gap G7: if an information asymmetry has been standing too long, nudge
+    # reversal/pacing-category tools (revelation types).
+    if ripe_asymmetry_boost and tool.category in ("reversal", "pacing"):
+        score += 2
     return score
 
 
@@ -145,6 +150,7 @@ class CraftLibrary:
         current_scene_id: str | None = None,
         updates_since_major_event: int | None = None,
         patience_threshold: int = 3,
+        ripe_asymmetry_count: int = 0,
     ) -> list[Tool]:
         from .arc import tension_gap as _tension_gap
 
@@ -171,6 +177,7 @@ class CraftLibrary:
             updates_since_major_event is not None
             and updates_since_major_event > patience_threshold
         )
+        ripe_asymmetry_boost = ripe_asymmetry_count > 0
 
         scored: list[tuple[int, str, Tool]] = []
         for tool in self.all_tools():
@@ -178,6 +185,7 @@ class CraftLibrary:
                 tool, expected, required, recent, gap,
                 theme_tool_ids=theme_tool_ids,
                 patience_boost=patience_boost,
+                ripe_asymmetry_boost=ripe_asymmetry_boost,
             )
             if score > 0:
                 scored.append((score, tool.id, tool))
