@@ -244,6 +244,28 @@ class PipelineOutput:
     trace: PipelineTrace
 
 
+DEFAULT_RERANK_WEIGHTS: dict[str, float] = {
+    # Heuristic weights. Errors are far worse than warnings; voice/detail
+    # grounding are what the hierarchy is built to produce, so they get the
+    # largest deductions. POV/action/entity fidelity catch the grossest
+    # prose-level failures from small models. Defaults chosen so any single
+    # error dominates any stack of warnings; a clean candidate scores 0.0,
+    # flawed candidates score negative, and the least-flawed wins.
+    "error": -5.0,
+    "warning": -1.0,
+    # Per-critic scaling: some critics are more load-bearing.
+    "narrator_sensory": 1.2,
+    "free_indirect": 1.2,
+    "detail_characterization": 1.0,
+    "metaphor_domains": 0.8,
+    "indirection": 0.8,
+    "voice_blend": 0.8,
+    "pov_adherence": 1.5,
+    "named_entity_presence": 1.0,
+    "action_fidelity": 1.5,
+}
+
+
 class Pipeline:
     def __init__(
         self,
@@ -262,6 +284,11 @@ class Pipeline:
         arc_id: str = "main",
         emotional_history_window: int = 10,
         emotional_monotony_window: int = 3,
+        n_candidates: int = 1,
+        check_all_candidates: bool = False,
+        rerank_weights: dict[str, float] | None = None,
+        candidate_base_temperature: float = 0.8,
+        candidate_temperature_step: float = 0.15,
     ) -> None:
         self._world = world
         self._cb = context_builder
@@ -288,6 +315,29 @@ class Pipeline:
         self._emotional_history_window = emotional_history_window
         self._emotional_monotony_window = emotional_monotony_window
 
+        # ---- Gap G2: Generate-N + Rerank ----
+        # quest_config takes precedence over ctor default so CLI/server can
+        # enable quality runs without re-plumbing constructors.
+        cfg = self._quest_config or {}
+        self._n_candidates = int(cfg.get("n_candidates", n_candidates))
+        if self._n_candidates < 1:
+            self._n_candidates = 1
+        self._check_all_candidates = bool(
+            cfg.get("check_all_candidates", check_all_candidates)
+        )
+        self._rerank_weights = dict(DEFAULT_RERANK_WEIGHTS)
+        if rerank_weights:
+            self._rerank_weights.update(rerank_weights)
+        cfg_weights = cfg.get("rerank_weights")
+        if isinstance(cfg_weights, dict):
+            self._rerank_weights.update(cfg_weights)
+        self._candidate_base_temperature = float(
+            cfg.get("candidate_base_temperature", candidate_base_temperature)
+        )
+        self._candidate_temperature_step = float(
+            cfg.get("candidate_temperature_step", candidate_temperature_step)
+        )
+
     @property
     def is_hierarchical(self) -> bool:
         """True iff all four hierarchical planning layers are wired in."""
@@ -309,7 +359,8 @@ class Pipeline:
                 list(self._narrator.voice_samples) if self._narrator else None
             )
             prose = await self._run_write(
-                trace, craft_plan, voice_samples=narrator_voice
+                trace, craft_plan, voice_samples=narrator_voice,
+                player_action=player_action,
             )
             # Wood-gap critics on combined prose
             await self._run_craft_critics(trace, craft_plan, prose)
@@ -324,7 +375,7 @@ class Pipeline:
             critical_feedback: list[CheckIssue] = []
 
             plan_parsed = await self._run_plan(trace, player_action, critical_feedback)
-            prose = await self._run_write(trace, plan_parsed)
+            prose = await self._run_write(trace, plan_parsed, player_action=player_action)
             check_out = await self._run_check(trace, plan_parsed, prose)
 
             # REPLAN branch: critical issues, replan once.
@@ -332,7 +383,7 @@ class Pipeline:
                 replan_attempts += 1
                 critical_feedback = list(check_out.issues)
                 plan_parsed = await self._run_plan(trace, player_action, critical_feedback)
-                prose = await self._run_write(trace, plan_parsed)
+                prose = await self._run_write(trace, plan_parsed, player_action=player_action)
                 check_out = await self._run_check(trace, plan_parsed, prose)
 
             # REVISE branch: fixable issues, revise + recheck once.
@@ -971,6 +1022,175 @@ class Pipeline:
         ))
         return normalized
 
+    def _score_candidate(
+        self,
+        *,
+        prose: str,
+        craft_plan: "Any | None",
+        player_action: str | None,
+    ) -> "tuple[float, dict[str, Any], list[Any]]":
+        """Run heuristic critics on a single candidate and compute a weighted
+        score. Returns (weighted_score, per_dimension_breakdown, raw_issues).
+
+        Per-dimension breakdown entries are ``{critic: {"errors": n,
+        "warnings": n, "score": float}}``. Weighted score sums
+        ``critic_weight * (err_weight * errors + warn_weight * warnings)``
+        across critics. A clean candidate scores 0.0; flawed candidates
+        score negative (less negative = better).
+        """
+        from app.planning import critics as _critics
+
+        def _run(name, fn):
+            try:
+                issues = fn()
+            except Exception as e:  # pragma: no cover - defensive
+                return name, [], str(e)
+            return name, issues, None
+
+        checks: list[tuple[str, Any]] = []
+        if craft_plan is not None:
+            checks.append(("free_indirect", lambda: _critics.validate_free_indirect_integrity(craft_plan, prose)))
+            checks.append(("detail_characterization", lambda: _critics.validate_detail_characterization(craft_plan, prose)))
+            checks.append(("metaphor_domains", lambda: _critics.validate_metaphor_domains(craft_plan, prose)))
+            checks.append(("indirection", lambda: _critics.validate_indirection(craft_plan, prose)))
+            checks.append(("voice_blend", lambda: _critics.validate_voice_blend(craft_plan, prose)))
+        checks.append((
+            "narrator_sensory",
+            lambda: _critics.validate_narrator_sensory_distribution(self._narrator, prose),
+        ))
+        checks.append(("pov_adherence", lambda: _critics.validate_pov_adherence(prose)))
+        entity_names = [e.name for e in self._world.list_entities() if getattr(e, "name", None)]
+        checks.append((
+            "named_entity_presence",
+            lambda: _critics.validate_named_entity_presence(prose, entity_names),
+        ))
+        if player_action is not None:
+            checks.append(("action_fidelity", lambda: _critics.validate_action_fidelity(prose, player_action)))
+
+        breakdown: dict[str, Any] = {}
+        all_issues: list[Any] = []
+        total = 0.0
+        err_w = self._rerank_weights.get("error", -5.0)
+        warn_w = self._rerank_weights.get("warning", -1.0)
+        for name, fn in checks:
+            _, issues, crash = _run(name, fn)
+            if crash:
+                breakdown[name] = {"errors": 0, "warnings": 0, "score": 0.0, "crash": crash}
+                continue
+            errs = sum(1 for i in issues if getattr(i, "severity", None) == "error")
+            warns = sum(1 for i in issues if getattr(i, "severity", None) == "warning")
+            critic_w = self._rerank_weights.get(name, 1.0)
+            sub = critic_w * (err_w * errs + warn_w * warns)
+            breakdown[name] = {"errors": errs, "warnings": warns, "score": sub}
+            total += sub
+            all_issues.extend(issues)
+        return total, breakdown, all_issues
+
+    async def _generate_scene_candidates(
+        self,
+        *,
+        trace: PipelineTrace,
+        write_ctx: "Any",
+        n: int,
+        scene_id: int | None,
+        craft_plan: "Any | None",
+        player_action: str | None,
+    ) -> "tuple[str, list[dict]]":
+        """Generate N candidate prose blocks for one scene, score each,
+        return (winner_prose, records). Each record is a dict suitable for
+        trace ``detail``.
+
+        Temperature jitter: candidate i uses base_temp + i*step (clamped to
+        [0.1, 1.3]). If the client accepts a ``seed`` kwarg we also vary it;
+        unrecognised kwargs are passed through to `chat` and ignored by
+        clients that don't support them.
+        """
+        records: list[dict] = []
+        for i in range(n):
+            temp = self._candidate_base_temperature + i * self._candidate_temperature_step
+            temp = max(0.1, min(1.3, temp))
+            kw: dict[str, Any] = {"temperature": temp}
+            # Best-effort seed jitter: only pass if the client likely supports it.
+            # The default InferenceClient forwards **extra kwargs, so passing
+            # seed is safe; fake clients that don't accept it would fail — so
+            # we only pass seed when N>1 (dev fake clients use N=1 by default).
+            if n > 1:
+                kw["seed"] = 1000 + i
+            t0 = time.perf_counter()
+            try:
+                raw = await self._client.chat(
+                    messages=[
+                        ChatMessage(role="system", content=write_ctx.system_prompt),
+                        ChatMessage(role="user", content=write_ctx.user_prompt),
+                    ],
+                    **kw,
+                )
+            except TypeError:
+                # Client doesn't accept one of our kwargs (e.g. seed). Retry
+                # with only temperature — sampling non-determinism still gives
+                # us variance between candidates.
+                raw = await self._client.chat(
+                    messages=[
+                        ChatMessage(role="system", content=write_ctx.system_prompt),
+                        ChatMessage(role="user", content=write_ctx.user_prompt),
+                    ],
+                    temperature=temp,
+                )
+            latency = int((time.perf_counter() - t0) * 1000)
+            scene_prose = OutputParser.parse_prose(raw)
+            score, breakdown, _issues = self._score_candidate(
+                prose=scene_prose,
+                craft_plan=craft_plan,
+                player_action=player_action,
+            )
+            detail: dict[str, Any] = {
+                "candidate_index": i,
+                "n_candidates": n,
+                "temperature": temp,
+                "weighted_score": score,
+                "dimension_scores": breakdown,
+            }
+            if scene_id is not None:
+                detail["scene_id"] = scene_id
+            trace.add_stage(StageResult(
+                stage_name="write",
+                input_prompt=write_ctx.user_prompt,
+                raw_output=raw,
+                parsed_output=scene_prose,
+                token_usage=TokenUsage(prompt=write_ctx.token_estimate),
+                latency_ms=latency,
+                detail=detail,
+            ))
+            records.append({
+                "index": i,
+                "prose": scene_prose,
+                "score": score,
+                "breakdown": breakdown,
+            })
+
+        # Rerank: highest weighted_score wins. Ties broken by lowest index.
+        winner = max(records, key=lambda r: (r["score"], -r["index"]))
+        ranking = sorted(
+            ((r["index"], r["score"]) for r in records),
+            key=lambda x: (-x[1], x[0]),
+        )
+        rerank_detail: dict[str, Any] = {
+            "winner_index": winner["index"],
+            "winner_score": winner["score"],
+            "ranking": [{"index": idx, "score": sc} for idx, sc in ranking],
+            "n_candidates": n,
+        }
+        if scene_id is not None:
+            rerank_detail["scene_id"] = scene_id
+        trace.add_stage(StageResult(
+            stage_name="write_rerank",
+            input_prompt="",
+            raw_output="",
+            parsed_output=winner["prose"],
+            detail=rerank_detail,
+        ))
+        return winner["prose"], records
+
     async def _run_write(
         self,
         trace: PipelineTrace,
@@ -978,6 +1198,7 @@ class Pipeline:
         *,
         voice_samples: list[str] | None = None,
         anti_patterns: list[str] | None = None,
+        player_action: str | None = None,
     ) -> str:
         """Write prose.
 
@@ -1010,22 +1231,32 @@ class Pipeline:
                     "recent_prose_tail": "",
                 },
             )
-            t0 = time.perf_counter()
-            raw = await self._client.chat(
-                messages=[
-                    ChatMessage(role="system", content=write_ctx.system_prompt),
-                    ChatMessage(role="user", content=write_ctx.user_prompt),
-                ],
-                temperature=0.8,
+            if self._n_candidates == 1:
+                t0 = time.perf_counter()
+                raw = await self._client.chat(
+                    messages=[
+                        ChatMessage(role="system", content=write_ctx.system_prompt),
+                        ChatMessage(role="user", content=write_ctx.user_prompt),
+                    ],
+                    temperature=0.8,
+                )
+                latency = int((time.perf_counter() - t0) * 1000)
+                prose = OutputParser.parse_prose(raw)
+                trace.add_stage(StageResult(
+                    stage_name="write", input_prompt=write_ctx.user_prompt, raw_output=raw,
+                    parsed_output=prose,
+                    token_usage=TokenUsage(prompt=write_ctx.token_estimate),
+                    latency_ms=latency,
+                ))
+                return prose
+            prose, _records = await self._generate_scene_candidates(
+                trace=trace,
+                write_ctx=write_ctx,
+                n=self._n_candidates,
+                scene_id=None,
+                craft_plan=None,
+                player_action=player_action,
             )
-            latency = int((time.perf_counter() - t0) * 1000)
-            prose = OutputParser.parse_prose(raw)
-            trace.add_stage(StageResult(
-                stage_name="write", input_prompt=write_ctx.user_prompt, raw_output=raw,
-                parsed_output=prose,
-                token_usage=TokenUsage(prompt=write_ctx.token_estimate),
-                latency_ms=latency,
-            ))
             return prose
 
         # ---- New CraftPlan path: one call per scene ----
@@ -1061,31 +1292,41 @@ class Pipeline:
                     "style": "",
                 },
             )
-            t0 = time.perf_counter()
-            raw = await self._client.chat(
-                messages=[
-                    ChatMessage(role="system", content=write_ctx.system_prompt),
-                    ChatMessage(role="user", content=write_ctx.user_prompt),
-                ],
-                temperature=0.8,
-            )
-            latency = int((time.perf_counter() - t0) * 1000)
-            scene_prose = OutputParser.parse_prose(raw)
+            if self._n_candidates == 1:
+                # Fast path — identical behaviour to pre-G2 for dev runs.
+                t0 = time.perf_counter()
+                raw = await self._client.chat(
+                    messages=[
+                        ChatMessage(role="system", content=write_ctx.system_prompt),
+                        ChatMessage(role="user", content=write_ctx.user_prompt),
+                    ],
+                    temperature=0.8,
+                )
+                latency = int((time.perf_counter() - t0) * 1000)
+                scene_prose = OutputParser.parse_prose(raw)
+                trace.add_stage(StageResult(
+                    stage_name="write",
+                    input_prompt=write_ctx.user_prompt,
+                    raw_output=raw,
+                    parsed_output=scene_prose,
+                    token_usage=TokenUsage(prompt=write_ctx.token_estimate),
+                    latency_ms=latency,
+                    detail={"scene_id": scene.scene_id},
+                ))
+            else:
+                scene_prose, _records = await self._generate_scene_candidates(
+                    trace=trace,
+                    write_ctx=write_ctx,
+                    n=self._n_candidates,
+                    scene_id=scene.scene_id,
+                    craft_plan=plan,
+                    player_action=player_action,
+                )
             prose_parts.append(scene_prose)
 
             # Track last ~300 chars for rhythm continuity on next scene
             full_so_far = "\n\n".join(prose_parts)
             recent_prose_tail = full_so_far[-300:] if len(full_so_far) > 300 else full_so_far
-
-            trace.add_stage(StageResult(
-                stage_name="write",
-                input_prompt=write_ctx.user_prompt,
-                raw_output=raw,
-                parsed_output=scene_prose,
-                token_usage=TokenUsage(prompt=write_ctx.token_estimate),
-                latency_ms=latency,
-                detail={"scene_id": scene.scene_id},
-            ))
 
         return "\n\n".join(prose_parts)
 
