@@ -179,7 +179,83 @@ class CraftScenePlan(BaseModel):
     negative_space: list[NegativeSpaceInstruction] = []
     opening_instruction: str | None = None
     closing_instruction: str | None = None
+    # --- Wood-gap fields ---
+    voice_permeability: VoicePermeability | None = None
+    passage_permeabilities: list[PassagePermeability] = []
+    detail_principle: DetailPrinciple | None = None
+    metaphor_profiles: list[MetaphorProfile] = []
+    indirection: list[IndirectionInstruction] = []
 
 
 class CraftPlan(BaseModel):
     scenes: list[CraftScenePlan]
+    briefs: list[CraftBrief] = []
+
+
+# ---- Wood gaps ----
+
+class VoicePermeability(BaseModel):
+    """How much the narrator's register absorbs the POV character's language.
+
+    Not static. Fluctuates within a scene — pulls close during emotional
+    intensity, retreats during transition or description. 0.0 = pure
+    narrator, 1.0 = pure character stream-of-consciousness.
+    """
+    baseline: float = Field(default=0.3, ge=0.0, le=1.0)
+    current_target: float = Field(default=0.3, ge=0.0, le=1.0)
+    triggers_high: list[str] = []      # "emotional extremity", "moment of decision", ...
+    triggers_low: list[str] = []       # "scene transition", "physical description", ...
+    bleed_vocabulary: list[str] = []   # character-register words to appear in narration
+    excluded_vocabulary: list[str] = []  # narrator words unsuitable during high permeability
+    blended_voice_samples: list[str] = []  # few-shot samples of the blend
+
+
+class PassagePermeability(BaseModel):
+    """Per-passage voice permeability instruction."""
+    passage_description: str
+    target: float = Field(ge=0.0, le=1.0)
+    character_id: str
+    bleed_words: list[str] = []
+    reason: str
+
+
+class DetailPrinciple(BaseModel):
+    """Governs detail selection for a scene — why THIS detail, not a generic one."""
+    perceiving_character_id: str
+    perceptual_preoccupations: list[str]   # what they're currently biased to notice
+    detail_mode: Literal[
+        "character_revealing", "world_establishing", "thematic_resonant",
+        "mood_setting", "foreshadowing", "ironic",
+    ] = "character_revealing"
+    triple_duty_targets: list[str] = []    # moments where one detail serves multiple functions
+
+
+class MetaphorProfile(BaseModel):
+    """Metaphor source domains a character draws from. Metaphor IS characterization."""
+    character_id: str
+    permanent_domains: list[str]           # from life experience, stable
+    current_domains: list[str] = []        # activated by current state
+    forbidden_domains: list[str] = []      # domains this character has no experience of
+    metaphor_density: Literal["sparse", "occasional", "regular", "rich"] = "occasional"
+    extends_to_narration: bool = True      # bleeds into narrator during high permeability
+
+
+class IndirectionInstruction(BaseModel):
+    """How to render unconscious motive through behavior and detail, not exposition."""
+    character_id: str
+    unconscious_motive: str                # what the system knows but won't name
+    surface_manifestations: list[str]      # observable behaviors that express the motive
+    detail_tells: list[str]                # details whose inclusion carries the subtext
+    what_not_to_say: list[str]             # narration to AVOID
+    reader_should_infer: str               # the check criterion
+
+
+class CraftBrief(BaseModel):
+    """The prose form of the craft plan, for the WRITE stage.
+
+    A director's note, not a parameter dump. The structured CraftScenePlan
+    exists so critics can validate; the brief exists so the writer receives
+    a unified creative vision rather than a checklist.
+    """
+    scene_id: int
+    brief: str                             # 100-300 words of prose brief

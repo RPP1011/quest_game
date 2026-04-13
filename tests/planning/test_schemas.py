@@ -8,16 +8,21 @@ from app.planning.schemas import (
     ArcDirective,
     CharacterArcDirective,
     CharacterEmotionalState,
+    CraftBrief,
     CraftPlan,
     CraftScenePlan,
+    DetailPrinciple,
     DramaticPlan,
     DramaticScene,
     EmotionalPlan,
     EmotionalScenePlan,
+    IndirectionInstruction,
+    MetaphorProfile,
     MotifInstruction,
     NegativeSpaceInstruction,
     ParallelInstruction,
     PassageOverride,
+    PassagePermeability,
     PlotObjective,
     SceneRegister,
     TemporalStructure,
@@ -25,6 +30,7 @@ from app.planning.schemas import (
     ThreadAdvance,
     ToolSelection,
     VoiceNote,
+    VoicePermeability,
 )
 
 
@@ -399,3 +405,314 @@ class TestCraftPlan:
         )
         restored = CraftPlan.model_validate_json(plan.model_dump_json())
         assert restored == plan
+
+
+# ---------------------------------------------------------------------------
+# Wood-gap schemas
+# ---------------------------------------------------------------------------
+
+class TestVoicePermeability:
+    def test_round_trip_json(self):
+        vp = VoicePermeability(
+            baseline=0.4,
+            current_target=0.7,
+            triggers_high=["emotional extremity", "moment of decision"],
+            triggers_low=["scene transition"],
+            bleed_vocabulary=["bloody", "damn"],
+            excluded_vocabulary=["indeed", "furthermore"],
+            blended_voice_samples=["She'd seen worse — hadn't she?"],
+        )
+        restored = VoicePermeability.model_validate_json(vp.model_dump_json())
+        assert restored == vp
+
+    def test_defaults(self):
+        vp = VoicePermeability()
+        assert vp.baseline == 0.3
+        assert vp.current_target == 0.3
+        assert vp.triggers_high == []
+        assert vp.triggers_low == []
+        assert vp.bleed_vocabulary == []
+        assert vp.excluded_vocabulary == []
+        assert vp.blended_voice_samples == []
+
+    def test_baseline_bounds_enforced(self):
+        with pytest.raises(ValidationError):
+            VoicePermeability(baseline=-0.1)
+        with pytest.raises(ValidationError):
+            VoicePermeability(baseline=1.1)
+
+    def test_current_target_bounds_enforced(self):
+        with pytest.raises(ValidationError):
+            VoicePermeability(current_target=-0.01)
+        with pytest.raises(ValidationError):
+            VoicePermeability(current_target=1.01)
+
+    def test_boundary_values_valid(self):
+        vp = VoicePermeability(baseline=0.0, current_target=1.0)
+        assert vp.baseline == 0.0
+        assert vp.current_target == 1.0
+
+
+class TestPassagePermeability:
+    def test_round_trip_json(self):
+        pp = PassagePermeability(
+            passage_description="Hero confronts the captain",
+            target=0.8,
+            character_id="hero",
+            bleed_words=["bloody", "right"],
+            reason="High emotional intensity pulls voice close",
+        )
+        restored = PassagePermeability.model_validate_json(pp.model_dump_json())
+        assert restored == pp
+
+    def test_defaults(self):
+        pp = PassagePermeability(
+            passage_description="Description passage",
+            target=0.5,
+            character_id="hero",
+            reason="Moderate blend during exposition",
+        )
+        assert pp.bleed_words == []
+
+    def test_target_bounds_enforced(self):
+        with pytest.raises(ValidationError):
+            PassagePermeability(
+                passage_description="test",
+                target=1.5,
+                character_id="hero",
+                reason="test",
+            )
+        with pytest.raises(ValidationError):
+            PassagePermeability(
+                passage_description="test",
+                target=-0.1,
+                character_id="hero",
+                reason="test",
+            )
+
+
+class TestDetailPrinciple:
+    def test_round_trip_json(self):
+        dp = DetailPrinciple(
+            perceiving_character_id="hero",
+            perceptual_preoccupations=["exits", "weapons", "the captain's hands"],
+            detail_mode="character_revealing",
+            triple_duty_targets=["the locked door"],
+        )
+        restored = DetailPrinciple.model_validate_json(dp.model_dump_json())
+        assert restored == dp
+
+    def test_default_detail_mode(self):
+        dp = DetailPrinciple(
+            perceiving_character_id="hero",
+            perceptual_preoccupations=["exits"],
+        )
+        assert dp.detail_mode == "character_revealing"
+
+    def test_valid_detail_modes(self):
+        for mode in ("character_revealing", "world_establishing", "thematic_resonant",
+                     "mood_setting", "foreshadowing", "ironic"):
+            dp = DetailPrinciple(
+                perceiving_character_id="hero",
+                perceptual_preoccupations=["something"],
+                detail_mode=mode,  # type: ignore[arg-type]
+            )
+            assert dp.detail_mode == mode
+
+    def test_bad_detail_mode_enum(self):
+        with pytest.raises(ValidationError):
+            DetailPrinciple(
+                perceiving_character_id="hero",
+                perceptual_preoccupations=["exits"],
+                detail_mode="random",  # type: ignore[arg-type]
+            )
+
+    def test_triple_duty_default_empty(self):
+        dp = DetailPrinciple(
+            perceiving_character_id="hero",
+            perceptual_preoccupations=["exits"],
+        )
+        assert dp.triple_duty_targets == []
+
+
+class TestMetaphorProfile:
+    def test_round_trip_json(self):
+        mp = MetaphorProfile(
+            character_id="hero",
+            permanent_domains=["military", "weather"],
+            current_domains=["fire"],
+            forbidden_domains=["sailing"],
+            metaphor_density="regular",
+            extends_to_narration=False,
+        )
+        restored = MetaphorProfile.model_validate_json(mp.model_dump_json())
+        assert restored == mp
+
+    def test_default_metaphor_density(self):
+        mp = MetaphorProfile(
+            character_id="hero",
+            permanent_domains=["military"],
+        )
+        assert mp.metaphor_density == "occasional"
+
+    def test_defaults(self):
+        mp = MetaphorProfile(
+            character_id="hero",
+            permanent_domains=["military"],
+        )
+        assert mp.current_domains == []
+        assert mp.forbidden_domains == []
+        assert mp.extends_to_narration is True
+
+    def test_valid_metaphor_density_values(self):
+        for density in ("sparse", "occasional", "regular", "rich"):
+            mp = MetaphorProfile(
+                character_id="hero",
+                permanent_domains=["military"],
+                metaphor_density=density,  # type: ignore[arg-type]
+            )
+            assert mp.metaphor_density == density
+
+    def test_bad_metaphor_density_enum(self):
+        with pytest.raises(ValidationError):
+            MetaphorProfile(
+                character_id="hero",
+                permanent_domains=["military"],
+                metaphor_density="overwhelming",  # type: ignore[arg-type]
+            )
+
+
+class TestIndirectionInstruction:
+    def test_round_trip_json(self):
+        ii = IndirectionInstruction(
+            character_id="hero",
+            unconscious_motive="Guilt about abandoning family",
+            surface_manifestations=["checks exits obsessively", "flinches at children's voices"],
+            detail_tells=["worn photograph in breast pocket", "hesitation at the gate"],
+            what_not_to_say=["She missed them.", "Guilt gnawed at her."],
+            reader_should_infer="Hero is running from something at home.",
+        )
+        restored = IndirectionInstruction.model_validate_json(ii.model_dump_json())
+        assert restored == ii
+
+    def test_required_fields(self):
+        with pytest.raises(ValidationError):
+            IndirectionInstruction(
+                character_id="hero",
+                # missing unconscious_motive
+                surface_manifestations=[],
+                detail_tells=[],
+                what_not_to_say=[],
+                reader_should_infer="infer something",
+            )  # type: ignore[call-arg]
+
+
+class TestCraftBrief:
+    def test_round_trip_json(self):
+        cb = CraftBrief(
+            scene_id=1,
+            brief=(
+                "This scene is a chess match played in pleasantries. The hero needs "
+                "information the captain has; the captain suspects the hero knows more "
+                "than she lets on. Write it in close third, pulled tight to her "
+                "preoccupations: exits, the captain's hands, the weight of the satchel "
+                "on her shoulder. Let the room do the work — the locked door, the "
+                "untouched wine. She doesn't trust easily, so her metaphors run to "
+                "weather and terrain, never warmth. End before resolution; the reader "
+                "should feel the conversation could tip either way."
+            ),
+        )
+        restored = CraftBrief.model_validate_json(cb.model_dump_json())
+        assert restored == cb
+
+    def test_requires_scene_id(self):
+        with pytest.raises(ValidationError):
+            CraftBrief(brief="A prose director's note.")  # type: ignore[call-arg]
+
+    def test_requires_brief(self):
+        with pytest.raises(ValidationError):
+            CraftBrief(scene_id=1)  # type: ignore[call-arg]
+
+
+class TestCraftScenePlanWoodFields:
+    def test_backwards_compat_no_wood_fields(self):
+        """Existing CraftScenePlan with no Wood fields still validates."""
+        csp = CraftScenePlan(scene_id=5)
+        assert csp.voice_permeability is None
+        assert csp.passage_permeabilities == []
+        assert csp.detail_principle is None
+        assert csp.metaphor_profiles == []
+        assert csp.indirection == []
+
+    def test_backwards_compat_round_trip(self):
+        """CraftScenePlan without Wood fields round-trips identically."""
+        csp = CraftScenePlan(scene_id=5)
+        restored = CraftScenePlan.model_validate_json(csp.model_dump_json())
+        assert restored == csp
+
+    def test_with_all_wood_fields_round_trip(self):
+        csp = CraftScenePlan(
+            scene_id=2,
+            voice_permeability=VoicePermeability(
+                baseline=0.2,
+                current_target=0.6,
+                triggers_high=["decision moment"],
+                bleed_vocabulary=["damn"],
+            ),
+            passage_permeabilities=[
+                PassagePermeability(
+                    passage_description="Opening paragraph",
+                    target=0.3,
+                    character_id="hero",
+                    reason="Establishing distance",
+                )
+            ],
+            detail_principle=DetailPrinciple(
+                perceiving_character_id="hero",
+                perceptual_preoccupations=["exits", "hands"],
+                detail_mode="character_revealing",
+            ),
+            metaphor_profiles=[
+                MetaphorProfile(
+                    character_id="hero",
+                    permanent_domains=["military"],
+                    metaphor_density="sparse",
+                )
+            ],
+            indirection=[
+                IndirectionInstruction(
+                    character_id="hero",
+                    unconscious_motive="Grief",
+                    surface_manifestations=["avoids mirrors"],
+                    detail_tells=["cracked locket"],
+                    what_not_to_say=["She grieved."],
+                    reader_should_infer="Hero is mourning.",
+                )
+            ],
+        )
+        restored = CraftScenePlan.model_validate_json(csp.model_dump_json())
+        assert restored == csp
+
+
+class TestCraftPlanWithBriefs:
+    def test_briefs_default_empty(self):
+        plan = CraftPlan(scenes=[CraftScenePlan(scene_id=1)])
+        assert plan.briefs == []
+
+    def test_with_scenes_and_briefs_round_trip(self):
+        plan = CraftPlan(
+            scenes=[
+                CraftScenePlan(scene_id=1),
+                CraftScenePlan(scene_id=2),
+            ],
+            briefs=[
+                CraftBrief(scene_id=1, brief="Director's note for scene one."),
+                CraftBrief(scene_id=2, brief="Director's note for scene two."),
+            ],
+        )
+        restored = CraftPlan.model_validate_json(plan.model_dump_json())
+        assert restored == plan
+        assert len(restored.scenes) == 2
+        assert len(restored.briefs) == 2
+        assert restored.briefs[0].scene_id == 1
+        assert restored.briefs[1].brief == "Director's note for scene two."
