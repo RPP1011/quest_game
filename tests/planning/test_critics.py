@@ -498,3 +498,55 @@ def test_voice_blend_always_ok_with_complex_craft():
     craft = _craft_plan([1, 2])
     issues = validate_voice_blend(craft, "Complex prose with many characters speaking.")
     assert issues == []
+
+
+# ---------------------------------------------------------------------------
+# validate_narrator_sensory_distribution
+# ---------------------------------------------------------------------------
+def test_narrator_sensory_distribution_none_narrator_is_no_issues():
+    from app.planning.critics import validate_narrator_sensory_distribution
+    assert validate_narrator_sensory_distribution(None, "any prose") == []
+
+
+def test_narrator_sensory_distribution_empty_bias_is_no_issues():
+    from app.craft.schemas import Narrator
+    from app.planning.critics import validate_narrator_sensory_distribution
+    n = Narrator()
+    assert validate_narrator_sensory_distribution(n, "any prose") == []
+
+
+def test_narrator_sensory_distribution_short_prose_skipped():
+    from app.craft.schemas import Narrator
+    from app.planning.critics import validate_narrator_sensory_distribution
+    n = Narrator(sensory_bias={"visual": 1.0})
+    # only 1 hit — below min_total_hits default
+    assert validate_narrator_sensory_distribution(n, "He saw nothing.") == []
+
+
+def test_narrator_sensory_distribution_matching_is_no_warning():
+    from app.craft.schemas import Narrator
+    from app.planning.critics import validate_narrator_sensory_distribution
+    n = Narrator(sensory_bias={"visual": 1.0})
+    # Many visual words — matches target
+    prose = (
+        "He saw the light. She looked at the shadow. "
+        "The red glow of the lamp gleamed. He watched the dim color. "
+        "The bright silhouette shone in the dark."
+    )
+    assert validate_narrator_sensory_distribution(n, prose) == []
+
+
+def test_narrator_sensory_distribution_mismatch_warns():
+    from app.craft.schemas import Narrator
+    from app.planning.critics import validate_narrator_sensory_distribution
+    # Target is heavily auditory but prose is heavily interoceptive+kinesthetic
+    n = Narrator(sensory_bias={"auditory": 1.0})
+    prose = (
+        "His heart ached. His chest tightened. He breathed hard. "
+        "He walked. He ran. He turned. His stomach fluttered. "
+        "He leaned. His pulse raced. His breath came short."
+    )
+    issues = validate_narrator_sensory_distribution(n, prose)
+    assert len(issues) == 1
+    assert issues[0].severity == "warning"
+    assert "narrator sensory" in issues[0].message.lower()

@@ -58,12 +58,15 @@ def _load_craft_library():
 
 def _config_from_seed(seed: dict) -> dict:
     """Derive quest_config dict from a seed dict."""
-    return {
+    cfg = {
         "genre": seed.get("genre", ""),
         "premise": seed.get("premise", ""),
         "themes": seed.get("themes", []),
         "protagonist": seed.get("protagonist", ""),
     }
+    if "narrator" in seed and seed["narrator"]:
+        cfg["narrator"] = seed["narrator"]
+    return cfg
 
 
 def _build_planners(client, renderer, craft_library):

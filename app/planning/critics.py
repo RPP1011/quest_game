@@ -425,6 +425,144 @@ def validate_indirection(
     return issues
 
 
+# ---- narrator-consistency critic ----
+
+# Keyword lexicons per sensory channel. Small but representative; sufficient
+# for a heuristic distribution check. Add / tune as corpus evolves.
+_SENSORY_LEXICONS: dict[str, list[str]] = {
+    "visual": [
+        "see", "saw", "seen", "look", "looked", "looking", "watch", "watched",
+        "glimpse", "stare", "stared", "gaze", "gazed", "light", "dark", "shadow",
+        "bright", "dim", "color", "colour", "red", "blue", "green", "black",
+        "white", "gleam", "gleamed", "flash", "flashed", "shine", "shone",
+        "glow", "glowed", "silhouette", "shape",
+    ],
+    "auditory": [
+        "hear", "heard", "hearing", "listen", "listened", "sound", "sounded",
+        "noise", "silence", "silent", "quiet", "loud", "whisper", "whispered",
+        "shout", "shouted", "scream", "screamed", "voice", "voices", "echo",
+        "echoed", "ring", "rang", "hum", "hummed", "clatter", "crack", "thud",
+        "rumble",
+    ],
+    "tactile": [
+        "touch", "touched", "feel", "felt", "rough", "smooth", "warm", "cold",
+        "hot", "cool", "wet", "dry", "soft", "hard", "sharp", "blunt", "press",
+        "pressed", "grip", "gripped", "brush", "brushed", "scrape", "scraped",
+        "cold", "heat", "chill",
+    ],
+    "olfactory": [
+        "smell", "smelled", "smelt", "scent", "scented", "aroma", "odor",
+        "odour", "stink", "stank", "fragrance", "reek", "reeked", "whiff",
+        "perfume", "musk",
+    ],
+    "gustatory": [
+        "taste", "tasted", "flavor", "flavour", "bitter", "sweet", "salty",
+        "sour", "savory", "savoury", "tongue", "swallow", "swallowed", "sip",
+        "sipped",
+    ],
+    "kinesthetic": [
+        "step", "stepped", "walk", "walked", "run", "ran", "move", "moved",
+        "turn", "turned", "reach", "reached", "lean", "leaned", "leant",
+        "stretch", "stretched", "climb", "climbed", "fall", "fell", "rise",
+        "rose", "balance", "sway", "swayed",
+    ],
+    "interoceptive": [
+        "heart", "breath", "breathed", "breathing", "pulse", "ache", "ached",
+        "stomach", "chest", "throat", "tight", "tightness", "flutter",
+        "fluttered", "nausea", "dizzy", "dizziness", "hunger", "hungry",
+        "thirst", "exhausted", "fatigue",
+    ],
+}
+
+
+def _count_sensory_channels(prose: str) -> dict[str, int]:
+    """Count whole-word keyword hits per sensory channel (case-insensitive)."""
+    lower = prose.lower()
+    counts: dict[str, int] = {}
+    for channel, lex in _SENSORY_LEXICONS.items():
+        c = 0
+        for w in lex:
+            # \b word boundaries
+            if re.search(r"\b" + re.escape(w) + r"\b", lower):
+                # count occurrences, not just presence
+                c += len(re.findall(r"\b" + re.escape(w) + r"\b", lower))
+        counts[channel] = c
+    return counts
+
+
+def _l1_distance(a: dict[str, float], b: dict[str, float]) -> float:
+    """L1 distance between two distributions over the same key set."""
+    keys = set(a) | set(b)
+    return sum(abs(a.get(k, 0.0) - b.get(k, 0.0)) for k in keys)
+
+
+def validate_narrator_sensory_distribution(
+    narrator: "object | None",
+    prose: str,
+    *,
+    threshold: float = 0.6,
+    min_total_hits: int = 6,
+) -> list["ValidationIssue"]:
+    """Compare prose's sensory-channel distribution to ``narrator.sensory_bias``.
+
+    Returns a warning when the L1 distance between the normalised prose
+    distribution and the narrator's target distribution exceeds ``threshold``.
+
+    Parameters
+    ----------
+    narrator:
+        A ``Narrator`` instance (or ``None``; in which case this returns []).
+    prose:
+        The generated prose to evaluate.
+    threshold:
+        L1 distance threshold (0..2). Default 0.6 — a distribution that
+        disagrees on roughly 30% of its mass.
+    min_total_hits:
+        Skip the check when the prose has fewer sensory-keyword hits than
+        this.  Short prose can't yield a reliable distribution.
+    """
+    issues: list[ValidationIssue] = []
+    if narrator is None:
+        return issues
+    bias = getattr(narrator, "sensory_bias", None) or {}
+    if not bias:
+        return issues
+
+    # Normalise target distribution (tolerate unnormalised input)
+    bias_total = sum(bias.values())
+    if bias_total <= 0:
+        return issues
+    target = {k: v / bias_total for k, v in bias.items()}
+
+    counts = _count_sensory_channels(prose)
+    total = sum(counts.values())
+    if total < min_total_hits:
+        return issues
+    observed = {k: v / total for k, v in counts.items()}
+
+    dist = _l1_distance(observed, target)
+    if dist > threshold:
+        # Identify the channels most out of line
+        deltas = sorted(
+            ((k, observed.get(k, 0.0) - target.get(k, 0.0)) for k in set(observed) | set(target)),
+            key=lambda kv: abs(kv[1]),
+            reverse=True,
+        )
+        top = ", ".join(
+            f"{k}: obs={observed.get(k, 0.0):.2f} vs target={target.get(k, 0.0):.2f}"
+            for k, _ in deltas[:3]
+        )
+        issues.append(ValidationIssue(
+            severity="warning",
+            message=(
+                f"narrator sensory distribution drift: L1={dist:.2f} > {threshold:.2f} "
+                f"({top})"
+            ),
+            subject="narrator.sensory_bias",
+        ))
+    return issues
+
+
 def validate_voice_blend(
     craft: CraftPlan,  # noqa: ARG001
     prose: str,  # noqa: ARG001

@@ -71,6 +71,39 @@ class StyleRegister(BaseModel):
     voice_samples: list[str] = Field(min_length=1)
 
 
+class Narrator(BaseModel):
+    """Persistent narrator definition for a quest — the single most important style lever.
+
+    A ``Narrator`` is quest-scoped and stable across updates. The craft planner
+    derives per-scene ``narrator_focus``, ``sensory_palette``, and
+    ``narrator_withholding`` from these fields rather than inventing them fresh.
+    ``voice_samples`` are routed into the WRITE stage as the primary style anchor.
+    """
+
+    pov_type: str = "third_limited"
+    sensory_bias: dict[str, float] = Field(default_factory=dict)
+    attention_bias: list[str] = Field(default_factory=list)
+    worldview: str = ""
+    editorial_stance: str = ""
+    register: str = ""
+    register_flex: tuple[str, str] = ("", "")
+    knowledge_scope: str = ""
+    withholding_tendency: str = ""
+    reliability: float = Field(default=1.0, ge=0.0, le=1.0)
+    unreliability_axes: list[str] = Field(default_factory=list)
+    voice_samples: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _validate(self) -> "Narrator":
+        if self.sensory_bias:
+            for k, v in self.sensory_bias.items():
+                if not (0.0 <= v <= 1.0):
+                    raise ValueError(
+                        f"sensory_bias[{k!r}] = {v!r} must be in [0.0, 1.0]"
+                    )
+        return self
+
+
 class Arc(BaseModel):
     id: str
     name: str

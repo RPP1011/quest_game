@@ -89,3 +89,48 @@ def test_arc_records_tension():
     a = Arc(id="x", name="x", scale="chapter", structure_id="three_act",
             tension_observed=[(1, 0.3), (2, 0.4), (3, 0.45)])
     assert a.tension_observed[-1] == (3, 0.45)
+
+
+# ---------------------------------------------------------------------------
+# Narrator
+# ---------------------------------------------------------------------------
+def test_narrator_defaults():
+    from app.craft.schemas import Narrator
+    n = Narrator()
+    assert n.pov_type == "third_limited"
+    assert n.reliability == 1.0
+    assert n.voice_samples == []
+    assert n.sensory_bias == {}
+
+
+def test_narrator_full_roundtrip():
+    from app.craft.schemas import Narrator
+    n = Narrator(
+        pov_type="third_limited",
+        sensory_bias={"visual": 0.4, "auditory": 0.3, "interoceptive": 0.3},
+        attention_bias=["hands", "edges of things"],
+        worldview="exile looks backward",
+        editorial_stance="ironic",
+        register="measured literary",
+        register_flex=("colloquial", "high lyric"),
+        knowledge_scope="one POV, past tense",
+        withholding_tendency="high — reveals motive late",
+        reliability=0.7,
+        unreliability_axes=["self-deception"],
+        voice_samples=["He did not say what he meant. He rarely did."],
+    )
+    assert n.sensory_bias["visual"] == 0.4
+    assert n.reliability == 0.7
+    assert n.register_flex == ("colloquial", "high lyric")
+    # roundtrip via model_dump
+    data = n.model_dump()
+    from app.craft.schemas import Narrator as N2
+    n2 = N2.model_validate(data)
+    assert n2 == n
+
+
+def test_narrator_rejects_out_of_range_sensory_bias():
+    from app.craft.schemas import Narrator
+    from pydantic import ValidationError as VE
+    with pytest.raises(VE):
+        Narrator(sensory_bias={"visual": 1.5})
