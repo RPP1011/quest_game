@@ -33,6 +33,16 @@
 
 ---
 
+{% if themes %}
+## Themes in Play
+
+{% for th in themes %}
+- `{{ th.id }}` [{{ th.stance }}]: {{ th.proposition }}
+{% endfor %}
+
+---
+
+{% endif %}
 ## Player Action
 
 {{ player_action }}

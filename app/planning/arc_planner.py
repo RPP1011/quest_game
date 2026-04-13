@@ -56,6 +56,14 @@ class ArcPlanner:
         all_narrative = world_snapshot.list_narrative(limit=10_000)
         narrative_summaries = all_narrative[-5:] if all_narrative else []
 
+        # Persisted themes: propositions + stances for this quest
+        themes: list = []
+        quest_id = arc_state.quest_id
+        try:
+            themes = world_snapshot.list_themes(quest_id)
+        except Exception:
+            themes = []
+
         schema = ArcDirective.model_json_schema()
 
         system_prompt = self._renderer.render(
@@ -71,6 +79,7 @@ class ArcPlanner:
                 "current_phase": current_phase,
                 "plot_threads": plot_threads,
                 "narrative_summaries": narrative_summaries,
+                "themes": themes,
             },
         )
 

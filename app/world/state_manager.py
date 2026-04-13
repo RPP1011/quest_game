@@ -3,6 +3,7 @@ import json
 import sqlite3
 from dataclasses import dataclass
 from typing import Any
+from app.planning.world_extensions import Theme
 from .schema import (
     ArcPosition,
     Entity,
@@ -781,6 +782,67 @@ class WorldStateManager:
             )
             for r in rows
         ]
+
+    # ---- themes ----
+
+    def add_theme(self, quest_id: str, theme: Theme) -> None:
+        self._conn.execute(
+            "INSERT INTO themes(id, quest_id, proposition, stance, motif_ids, "
+            "thesis_character_ids, key_scenes) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (
+                theme.id,
+                quest_id,
+                theme.proposition,
+                theme.stance,
+                json.dumps(theme.motif_ids),
+                json.dumps(theme.thesis_character_ids),
+                json.dumps(theme.key_scenes),
+            ),
+        )
+        self._conn.commit()
+
+    def get_theme(self, quest_id: str, theme_id: str) -> Theme:
+        row = self._conn.execute(
+            "SELECT * FROM themes WHERE quest_id=? AND id=?", (quest_id, theme_id)
+        ).fetchone()
+        if row is None:
+            raise WorldStateError(f"no theme {theme_id!r} for quest {quest_id!r}")
+        return Theme(
+            id=row["id"],
+            proposition=row["proposition"],
+            stance=row["stance"],
+            motif_ids=json.loads(row["motif_ids"]),
+            thesis_character_ids=json.loads(row["thesis_character_ids"]),
+            key_scenes=json.loads(row["key_scenes"]),
+        )
+
+    def list_themes(self, quest_id: str) -> list[Theme]:
+        rows = self._conn.execute(
+            "SELECT * FROM themes WHERE quest_id=? ORDER BY id", (quest_id,)
+        ).fetchall()
+        return [
+            Theme(
+                id=r["id"],
+                proposition=r["proposition"],
+                stance=r["stance"],
+                motif_ids=json.loads(r["motif_ids"]),
+                thesis_character_ids=json.loads(r["thesis_character_ids"]),
+                key_scenes=json.loads(r["key_scenes"]),
+            )
+            for r in rows
+        ]
+
+    def update_theme_stance(self, quest_id: str, theme_id: str, new_stance: str) -> None:
+        """Persist a stance change for a theme. Caller is responsible for
+        deciding *when* the stance should evolve (e.g. based on post-COMMIT
+        assessment)."""
+        cur = self._conn.execute(
+            "UPDATE themes SET stance=? WHERE quest_id=? AND id=?",
+            (new_stance, quest_id, theme_id),
+        )
+        if cur.rowcount == 0:
+            raise WorldStateError(f"no theme {theme_id!r} for quest {quest_id!r}")
+        self._conn.commit()
 
     def record_tension(self, quest_id: str, arc_id: str, update_number: int, value: float) -> None:
         state = self.get_arc(quest_id, arc_id)

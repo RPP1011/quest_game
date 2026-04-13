@@ -437,6 +437,7 @@ class Pipeline:
                 arc=self._get_craft_arc(),
                 structure=self._structure,
                 recent_tool_ids=None,
+                quest_id=self._quest_id,
             ),
             validator=lambda plan: critics.validate_dramatic(
                 plan,
@@ -991,6 +992,28 @@ class Pipeline:
 
         # Apply atomically.
         self._world.apply_delta(delta, update_number)
+
+        # Theme stance evolution (Gap G4). Stance updates are persisted but
+        # the LLM-driven assessment that *decides* the new stance is a stub
+        # for now: the model may emit updates in the extract JSON, and we
+        # write them through. The heuristic/LLM assessor will land later.
+        # TODO(G4-stance): replace direct-from-extract writes with a
+        # dedicated post-COMMIT "theme assessor" stage that inspects the
+        # scene + recent prose and decides whether a stance should shift.
+        theme_updates = extracted.get("theme_stance_updates", []) or []
+        if theme_updates and self._quest_id is not None:
+            _VALID_STANCES = {"exploring", "affirming", "questioning", "subverting"}
+            for item in theme_updates:
+                tid = item.get("id")
+                new_stance = item.get("new_stance")
+                if not tid or new_stance not in _VALID_STANCES:
+                    continue
+                try:
+                    self._world.update_theme_stance(self._quest_id, tid, new_stance)
+                except Exception:
+                    # non-fatal: a bogus theme id shouldn't blow up COMMIT
+                    continue
+
         trace.add_stage(StageResult(
             stage_name="extract",
             input_prompt=ctx.user_prompt,

@@ -161,7 +161,7 @@ class FakeDramaticPlanner:
         self._client = client
 
     async def plan(self, *, directive, player_action, world, arc, structure,
-                   recent_tool_ids=None):
+                   recent_tool_ids=None, quest_id=None):
         from app.planning.schemas import DramaticPlan
         raw = await self._client.chat_structured(
             messages=[], json_schema={}, schema_name="DramaticPlan"

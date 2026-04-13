@@ -37,6 +37,7 @@ class DramaticPlanner:
         arc: Arc,
         structure: Structure,
         recent_tool_ids: list[str] | None = None,
+        quest_id: str | None = None,
     ) -> DramaticPlan:
         """Generate a ``DramaticPlan`` for the current update.
 
@@ -63,9 +64,21 @@ class DramaticPlanner:
         all_narrative = world.list_narrative(limit=10_000)
         recent_narrative = all_narrative[-2:] if all_narrative else []
 
-        # Get tool recommendations including examples
+        # Load persisted themes (may be empty for legacy quests or when
+        # quest_id is not provided by the caller).
+        themes: list = []
+        if quest_id is not None:
+            try:
+                themes = world.list_themes(quest_id)
+            except Exception:
+                themes = []
+
+        # Get tool recommendations including examples. Pass themes so the
+        # scorer can boost tools that serve theme-anchored scenes.
+        current_scene_id = None  # recommend_tools doesn't yet know per-scene id
         recommended_tools = self._craft_library.recommend_tools(
-            arc, structure, recent_tool_ids=recent_tool_ids, limit=5
+            arc, structure, recent_tool_ids=recent_tool_ids, limit=5,
+            themes=themes, current_scene_id=current_scene_id,
         )
         tools_with_examples = []
         for tool in recommended_tools:
@@ -87,6 +100,7 @@ class DramaticPlanner:
                 "plot_threads": plot_threads,
                 "recent_narrative": recent_narrative,
                 "tools_with_examples": tools_with_examples,
+                "themes": themes,
             },
         )
 

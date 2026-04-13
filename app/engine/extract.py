@@ -92,6 +92,21 @@ EXTRACT_SCHEMA: dict[str, Any] = {
                 "additionalProperties": False,
             },
         },
+        "theme_stance_updates": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "new_stance": {
+                        "type": "string",
+                        "enum": ["exploring", "affirming", "questioning", "subverting"],
+                    },
+                },
+                "required": ["id", "new_stance"],
+                "additionalProperties": False,
+            },
+        },
     },
     "required": [
         "entity_updates",

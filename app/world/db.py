@@ -71,6 +71,17 @@ CREATE TABLE IF NOT EXISTS plot_threads (
     priority INTEGER NOT NULL DEFAULT 5
 );
 
+CREATE TABLE IF NOT EXISTS themes (
+    id TEXT NOT NULL,
+    quest_id TEXT NOT NULL,
+    proposition TEXT NOT NULL,
+    stance TEXT NOT NULL DEFAULT 'exploring',
+    motif_ids TEXT NOT NULL DEFAULT '[]',
+    thesis_character_ids TEXT NOT NULL DEFAULT '[]',
+    key_scenes TEXT NOT NULL DEFAULT '[]',
+    PRIMARY KEY (id, quest_id)
+);
+
 CREATE TABLE IF NOT EXISTS arcs (
     quest_id TEXT NOT NULL,
     arc_id TEXT NOT NULL,

@@ -1,13 +1,27 @@
 from __future__ import annotations
 
-from pydantic import BaseModel
+from typing import Literal
+
+from pydantic import BaseModel, Field
+
+
+ThemeStance = Literal["exploring", "affirming", "questioning", "subverting"]
 
 
 class Theme(BaseModel):
+    """A debatable proposition the quest interrogates.
+
+    A theme is a *claim*, not a topic — "loyalty demands self-erasure", not
+    "loyalty". The stance tracks how the quest currently engages with the
+    proposition; it may evolve over the course of play.
+    """
+
     id: str
-    name: str
-    description: str
-    stance: str | None = None   # quest's current stance toward the theme
+    proposition: str
+    stance: ThemeStance = "exploring"
+    motif_ids: list[str] = Field(default_factory=list)
+    thesis_character_ids: list[str] = Field(default_factory=list)
+    key_scenes: list[str] = Field(default_factory=list)
 
 
 class MotifDef(BaseModel):
