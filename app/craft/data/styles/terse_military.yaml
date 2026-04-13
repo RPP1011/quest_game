@@ -1,0 +1,21 @@
+id: terse_military
+name: Terse Military
+description: >
+  Declarative, short-to-medium sentences; concrete physical detail; low
+  interiority; POV stays tight. Think professional-soldier voice. Avoids
+  abstract emotion words; shows affect through action and observation.
+sentence_variance: low
+concrete_abstract_ratio: 0.85
+interiority_depth: surface
+pov_discipline: strict
+diction_register: plain
+voice_samples:
+  - |
+    He counted the rounds. Twelve. He counted them again. Still twelve.
+    Outside the wind moved through the broken window.
+  - |
+    The sergeant did not answer. He put the radio down, very carefully,
+    and looked at the map. Nothing on the map had changed.
+  - |
+    She took the jacket off, folded it, set it on the cot, and went to
+    find the captain. She did not hurry. She did not slow.

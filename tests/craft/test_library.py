@@ -150,3 +150,14 @@ def test_real_examples_load_and_link_tools():
     for ex in lib.all_examples():
         for tid in ex.tool_ids:
             assert tid in tool_ids, f"example {ex.id} references unknown tool {tid}"
+
+
+def test_real_styles_load():
+    from app.craft.library import CraftLibrary
+    lib = CraftLibrary(Path(__file__).parent.parent.parent / "app" / "craft" / "data")
+    ids = {s.id for s in lib.all_styles()}
+    assert {"terse_military", "lyrical_fantasy"} <= ids
+    terse = lib.style("terse_military")
+    assert terse.sentence_variance == "low"
+    assert terse.interiority_depth == "surface"
+    assert len(terse.voice_samples) >= 2

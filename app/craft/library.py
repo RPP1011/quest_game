@@ -101,3 +101,6 @@ class CraftLibrary:
 
     def all_examples(self) -> list[Example]:
         return list(self._examples.values())
+
+    def all_styles(self) -> list[StyleRegister]:
+        return list(self._styles.values())

@@ -1,0 +1,24 @@
+id: lyrical_fantasy
+name: Lyrical Fantasy
+description: >
+  Variable sentence length, some long breathed periods punctuated by short
+  declarative beats; concrete sensory detail foregrounded; moderate
+  interiority rendered through metaphor; diction registers slightly
+  archaic but not florid.
+sentence_variance: high
+concrete_abstract_ratio: 0.6
+interiority_depth: medium
+pov_discipline: moderate
+diction_register: slightly_archaic
+voice_samples:
+  - |
+    There are roads in that country, old roads, older than the stones of
+    the king's hall, and she had walked them all. None of them went home.
+  - |
+    The wind moved in the grass, and in the moving was a whisper of some
+    older language; the shepherd, hearing it, crossed himself in the new
+    way and continued up the hill.
+  - |
+    She carried the lamp before her, and the shadow the lamp cast was
+    smaller than her own, which she took, for no reason she could name,
+    as a kindness.
