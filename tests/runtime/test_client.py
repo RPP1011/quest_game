@@ -64,3 +64,48 @@ async def test_stream_chat_yields_tokens(httpx_mock: HTTPXMock):
     async for t in client.stream_chat(messages=[ChatMessage(role="user", content="hi")]):
         tokens.append(t)
     assert tokens == ["hel", "lo"]
+
+
+async def test_chat_passes_thinking_toggle(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(
+        url=f"{BASE}/v1/chat/completions",
+        method="POST",
+        json={"choices": [{"message": {"role": "assistant", "content": "x"}}]},
+    )
+    client = InferenceClient(base_url=BASE)
+    await client.chat(messages=[ChatMessage(role="user", content="hi")], thinking=False)
+    import json
+    body = json.loads(httpx_mock.get_requests()[0].content)
+    assert body["chat_template_kwargs"] == {"enable_thinking": False}
+
+
+async def test_chat_default_thinking_is_true(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(
+        url=f"{BASE}/v1/chat/completions",
+        method="POST",
+        json={"choices": [{"message": {"role": "assistant", "content": "x"}}]},
+    )
+    client = InferenceClient(base_url=BASE)
+    await client.chat(messages=[ChatMessage(role="user", content="hi")])
+    import json
+    body = json.loads(httpx_mock.get_requests()[0].content)
+    assert body["chat_template_kwargs"] == {"enable_thinking": True}
+
+
+async def test_chat_retries_on_error_then_succeeds(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url=f"{BASE}/v1/chat/completions", method="POST", status_code=500)
+    httpx_mock.add_response(
+        url=f"{BASE}/v1/chat/completions",
+        method="POST",
+        json={"choices": [{"message": {"role": "assistant", "content": "ok"}}]},
+    )
+    client = InferenceClient(base_url=BASE, retries=2, retry_backoff=0.0)
+    assert await client.chat(messages=[ChatMessage(role="user", content="hi")]) == "ok"
+
+
+async def test_chat_gives_up_after_retries(httpx_mock: HTTPXMock):
+    for _ in range(3):
+        httpx_mock.add_response(url=f"{BASE}/v1/chat/completions", method="POST", status_code=500)
+    client = InferenceClient(base_url=BASE, retries=2, retry_backoff=0.0)
+    with pytest.raises(InferenceError):
+        await client.chat(messages=[ChatMessage(role="user", content="hi")])
