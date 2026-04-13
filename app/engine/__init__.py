@@ -1,7 +1,8 @@
 from .check import CHECK_SCHEMA, CheckIssue, CheckOutput
 from .context_builder import AssembledContext, ContextBuilder
-from .context_spec import CHECK_SPEC, ContextSpec, EntityScope, NarrativeMode, PLAN_SPEC, REVISE_SPEC, WRITE_SPEC
+from .context_spec import CHECK_SPEC, ContextSpec, EntityScope, EXTRACT_SPEC, NarrativeMode, PLAN_SPEC, REVISE_SPEC, WRITE_SPEC
 from .diagnostics import DiagnosticsManager
+from .extract import EXTRACT_SCHEMA
 from .inference_params import InferenceParams, TokenUsage
 from .pipeline import BEAT_SHEET_SCHEMA, Pipeline, PipelineOutput
 from .prompt_renderer import PromptRenderer
@@ -21,6 +22,8 @@ __all__ = [
     "ContextSpec",
     "DiagnosticsManager",
     "EntityScope",
+    "EXTRACT_SCHEMA",
+    "EXTRACT_SPEC",
     "InferenceParams",
     "NarrativeMode",
     "PLAN_SPEC",

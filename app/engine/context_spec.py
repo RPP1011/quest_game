@@ -79,3 +79,16 @@ REVISE_SPEC = ContextSpec(
     include_rules=False,
     prior_stages=["plan", "write", "check"],
 )
+
+
+EXTRACT_SPEC = ContextSpec(
+    entity_scope=EntityScope.ACTIVE,
+    narrative_mode=NarrativeMode.NONE,
+    include_rules=False,
+    include_style=False,
+    include_character_voices=False,
+    include_anti_patterns=False,
+    include_foreshadowing=False,
+    include_plot_threads=False,
+    prior_stages=["plan", "write"],
+)
