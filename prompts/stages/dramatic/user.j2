@@ -1,0 +1,106 @@
+## Arc Directive
+
+- **Current phase:** {{ directive.current_phase }}
+- **Phase assessment:** {{ directive.phase_assessment }}
+{% if directive.theme_priorities %}
+- **Theme priorities:**
+{% for tp in directive.theme_priorities %}
+  - {{ tp.theme_id }} — {{ tp.intensity }}{% if tp.method_hint %} ({{ tp.method_hint }}){% endif %}
+{% endfor %}
+{% endif %}
+{% if directive.plot_objectives %}
+- **Plot objectives:**
+{% for obj in directive.plot_objectives %}
+  - [{{ obj.urgency }}] {{ obj.description }}{% if obj.plot_thread_id %} (thread: {{ obj.plot_thread_id }}){% endif %}
+{% endfor %}
+{% endif %}
+{% if directive.character_arcs %}
+- **Character arcs:**
+{% for ca in directive.character_arcs %}
+  - {{ ca.character_id }}: {{ ca.current_state }} → {{ ca.target_state }}{% if ca.key_moment %} (key moment: {{ ca.key_moment }}){% endif %}
+{% endfor %}
+{% endif %}
+- **Tension envelope:** {{ directive.tension_range[0] }} – {{ directive.tension_range[1] }}
+{% if directive.hooks_to_plant %}
+- **Hooks to plant:** {{ directive.hooks_to_plant | join("; ") }}
+{% endif %}
+{% if directive.hooks_to_pay_off %}
+- **Hooks to pay off:** {{ directive.hooks_to_pay_off | join("; ") }}
+{% endif %}
+{% if directive.parallels_to_schedule %}
+- **Parallels to schedule:** {{ directive.parallels_to_schedule | join("; ") }}
+{% endif %}
+
+---
+
+## Player Action
+
+{{ player_action }}
+
+---
+
+## World Snapshot
+
+### Active Characters
+
+{% if characters %}
+{% for ch in characters %}
+- **{{ ch.name }}** ({{ ch.id }}){% if ch.data.description %}: {{ ch.data.description }}{% endif %}
+
+{% endfor %}
+{% else %}
+No characters established yet.
+{% endif %}
+
+{% if plot_threads %}
+### Active Plot Threads
+
+{% for pt in plot_threads %}
+- **{{ pt.name }}** ({{ pt.status.value }}, priority {{ pt.priority }}, position: {{ pt.arc_position.value }}): {{ pt.description }}
+{% endfor %}
+{% endif %}
+
+---
+
+## Recent Narrative (last {{ recent_narrative | length }} segments)
+
+{% if recent_narrative %}
+{% for rec in recent_narrative %}
+### Update {{ rec.update_number }}
+
+{{ rec.raw_text }}
+
+{% endfor %}
+{% else %}
+No narrative history yet — this is the opening of the quest.
+{% endif %}
+
+---
+
+## Recommended Craft Tools
+
+{% if tools_with_examples %}
+{% for item in tools_with_examples %}
+### {{ item.tool.name }} (`{{ item.tool.id }}`)
+
+{{ item.tool.description }}
+
+{% if item.tool.preconditions %}
+**When to use:** {{ item.tool.preconditions | join("; ") }}
+{% endif %}
+{% if item.examples %}
+**Examples:**
+{% for ex in item.examples %}
+> {{ ex.snippet | trim }}
+> *({{ ex.annotation }})*
+{% endfor %}
+{% endif %}
+
+{% endfor %}
+{% else %}
+No specific tools recommended for this phase.
+{% endif %}
+
+---
+
+Produce the dramatic plan now.
