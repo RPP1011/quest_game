@@ -337,6 +337,87 @@ async def test_craft_planner_injects_character_voice_and_defaults_permeability()
 
 
 @pytest.mark.asyncio
+async def test_craft_planner_grounds_detail_and_metaphor_from_entity_data():
+    """POV character's perception + metaphor profiles drive DetailPrinciple and MetaphorProfile."""
+    from app.planning.schemas import DetailPrinciple, MetaphorProfile
+    from app.world.schema import Entity, EntityType
+
+    # LLM emits a DetailPrinciple with EMPTY preoccupations (should be
+    # backfilled) and NO MetaphorProfile for the POV character (should be
+    # injected). Scene 2 has nothing at all — full defaults installed.
+    base = _make_craft_plan()
+    base.scenes[0].detail_principle = DetailPrinciple(
+        perceiving_character_id="hero",
+        perceptual_preoccupations=[],
+        detail_mode="character_revealing",
+    )
+    raw = base.model_dump_json()
+
+    hero = Entity(
+        id="hero",
+        entity_type=EntityType.CHARACTER,
+        name="Aldric",
+        data={
+            "perception": {
+                "permanent_preoccupations": ["exits", "sightlines", "boot quality"],
+                "emotional_preoccupations": {"dread": ["footsteps", "hands"]},
+                "detail_mode": "precise",
+                "triple_duty_targets": ["wounds that echo the theme"],
+            },
+            "metaphor": {
+                "permanent_domains": ["stone", "cold", "iron"],
+                "forbidden_domains": ["courtly-dance", "perfume"],
+                "metaphor_density": 0.6,
+                "extends_to_narration": True,
+            },
+        },
+    )
+
+    client = FakeClient(raw)
+    renderer = PromptRenderer(PROMPTS)
+    craft_library = CraftLibrary(CRAFT_DATA)
+    planner = CraftPlanner(client, renderer, craft_library)
+
+    result = await planner.plan(
+        dramatic=_DRAMATIC_PLAN,
+        emotional=_EMOTIONAL_PLAN,
+        characters={"hero": hero},
+    )
+
+    # Prompt mentions grounded data
+    messages, _schema, _name = client.calls[0]
+    user_content = messages[1].content
+    assert "sightlines" in user_content
+    assert "boot quality" in user_content
+    assert "stone" in user_content
+    assert "courtly-dance" in user_content  # forbidden rendered
+
+    # Scene 1 DetailPrinciple: empty preoccupations backfilled
+    dp1 = result.scenes[0].detail_principle
+    assert dp1 is not None
+    assert "exits" in dp1.perceptual_preoccupations
+    assert "footsteps" in dp1.perceptual_preoccupations  # emotion-activated (dread)
+    assert dp1.triple_duty_targets == ["wounds that echo the theme"]
+
+    # Scene 2 DetailPrinciple: fully defaulted (LLM emitted none)
+    dp2 = result.scenes[0 + 1].detail_principle  # scene_id=2
+    assert dp2 is not None
+    assert "exits" in dp2.perceptual_preoccupations
+
+    # Scene 1 MetaphorProfile: none emitted → default installed
+    mps1 = result.scenes[0].metaphor_profiles
+    hero_mp1 = next(mp for mp in mps1 if mp.character_id == "hero")
+    assert "stone" in hero_mp1.permanent_domains
+    assert "courtly-dance" in hero_mp1.forbidden_domains
+    # dread should activate current domains; at minimum one of the
+    # character's permanent_domains that intersects the emotion map.
+    assert hero_mp1.current_domains
+    assert any(d.lower() in {"stone", "cold"} for d in hero_mp1.current_domains)
+    # 0.6 density → "regular" bucket
+    assert hero_mp1.metaphor_density == "regular"
+
+
+@pytest.mark.asyncio
 async def test_craft_planner_without_characters_is_backward_compatible():
     """Existing call signature (no characters) still works; no backfill happens."""
     craft_plan = _make_craft_plan()

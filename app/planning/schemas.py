@@ -212,6 +212,43 @@ class VoicePermeability(BaseModel):
     blended_voice_samples: list[str] = []  # few-shot samples of the blend
 
 
+class PerceptualProfile(BaseModel):
+    """Persistent per-character detail-selection profile (Gap G9).
+
+    Grounds ``DetailPrinciple.perceptual_preoccupations`` in stable character
+    data rather than per-scene LLM invention. A soldier notices exits and
+    sightlines; a merchant notices quality and wealth. That preference is a
+    property of the character, not of the scene.
+
+    Intended to live on ``Entity.data["perception"]`` for CHARACTER entities
+    and be loaded via ``app.planning.perception.perceptual_profile_for``.
+    """
+    permanent_preoccupations: list[str] = Field(default_factory=list)
+    # emotion label (lowercase) → preoccupations activated when that emotion
+    # is the scene's primary emotion. e.g. {"dread": ["exits", "footsteps"]}
+    emotional_preoccupations: dict[str, list[str]] = Field(default_factory=dict)
+    detail_mode: str = "precise"          # e.g. "precise", "impressionistic", "obsessive"
+    triple_duty_targets: list[str] = Field(default_factory=list)
+
+
+class CharacterMetaphorProfile(BaseModel):
+    """Persistent per-character metaphor source domains (Gap G10).
+
+    Grounds ``MetaphorProfile`` output on ``CraftScenePlan`` in stable
+    character data. ``permanent_domains`` come from life experience;
+    ``forbidden_domains`` are domains the character has no experience of.
+    ``current_domains`` is *computed* at plan time from current emotional
+    state and is NOT stored on this model.
+
+    Intended to live on ``Entity.data["metaphor"]`` for CHARACTER entities
+    and be loaded via ``app.planning.metaphor.character_metaphor_profile_for``.
+    """
+    permanent_domains: list[str] = Field(default_factory=list)
+    forbidden_domains: list[str] = Field(default_factory=list)
+    metaphor_density: float = Field(default=0.3, ge=0.0, le=1.0)
+    extends_to_narration: bool = True
+
+
 class CharacterVoice(BaseModel):
     """Persistent voice specification for a character.
 

@@ -17,7 +17,9 @@ from app.planning.schemas import (
     ActionResolution,
     CharacterArcDirective,
     CharacterEmotionalState,
+    CharacterMetaphorProfile,
     CharacterVoice,
+    PerceptualProfile,
     CraftBrief,
     CraftPlan,
     CraftScenePlan,
@@ -57,6 +59,20 @@ from app.planning.voice import (
     derive_excluded_vocabulary,
 )
 
+# Perception grounding helpers (Gap G9)
+from app.planning.perception import (
+    current_preoccupations,
+    default_detail_principle,
+    perceptual_profile_for,
+)
+
+# Metaphor grounding helpers (Gap G10)
+from app.planning.metaphor import (
+    character_metaphor_profile_for,
+    compute_current_domains,
+    default_metaphor_profile,
+)
+
 # Critics module — available as planning.critics
 from app.planning import critics
 
@@ -72,7 +88,9 @@ __all__ = [
     "ActionResolution",
     "CharacterArcDirective",
     "CharacterEmotionalState",
+    "CharacterMetaphorProfile",
     "CharacterVoice",
+    "PerceptualProfile",
     "CraftBrief",
     "CraftPlan",
     "CraftScenePlan",
@@ -108,6 +126,12 @@ __all__ = [
     "default_permeability",
     "derive_bleed_vocabulary",
     "derive_excluded_vocabulary",
+    "current_preoccupations",
+    "default_detail_principle",
+    "perceptual_profile_for",
+    "character_metaphor_profile_for",
+    "compute_current_domains",
+    "default_metaphor_profile",
     # Critics module
     "critics",
 ]

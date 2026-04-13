@@ -4,11 +4,23 @@ from app.craft.library import CraftLibrary
 from app.craft.schemas import Narrator
 from app.engine.prompt_renderer import PromptRenderer
 from app.planning.schemas import (
+    CharacterMetaphorProfile,
     CharacterVoice,
     CraftPlan,
+    DetailPrinciple,
     DramaticPlan,
     EmotionalPlan,
+    MetaphorProfile,
+    PerceptualProfile,
     VoicePermeability,
+)
+from app.planning.metaphor import (
+    character_metaphor_profile_for,
+    default_metaphor_profile,
+)
+from app.planning.perception import (
+    default_detail_principle,
+    perceptual_profile_for,
 )
 from app.planning.voice import (
     blended_voice_samples_for,
@@ -108,23 +120,55 @@ class CraftPlanner:
         blended_samples: dict[str, list[str]] = {}
         scene_permeability_defaults: dict[int, VoicePermeability] = {}
 
+        # ---- Gaps G9/G10: ground detail and metaphor per POV character ----
+        perceptual_profiles: dict[str, PerceptualProfile] = {}
+        metaphor_profiles_persistent: dict[str, CharacterMetaphorProfile] = {}
+        scene_detail_defaults: dict[int, DetailPrinciple] = {}
+        scene_metaphor_defaults: dict[int, MetaphorProfile] = {}
+
         for scene in dramatic.scenes:
             pov_id = scene.pov_character_id
             if not pov_id:
                 continue
             entity = characters.get(pov_id)
             voice = character_voice_for(entity)
-            if voice is None:
-                continue
-            character_voices.setdefault(pov_id, voice)
-            samples = blended_voice_samples_for(entity)
-            if samples:
-                blended_samples.setdefault(pov_id, samples)
-            scene_permeability_defaults[scene.scene_id] = default_permeability(
-                style_register,
-                voice,
-                blended_voice_samples=samples,
-            )
+            if voice is not None:
+                character_voices.setdefault(pov_id, voice)
+                samples = blended_voice_samples_for(entity)
+                if samples:
+                    blended_samples.setdefault(pov_id, samples)
+                scene_permeability_defaults[scene.scene_id] = default_permeability(
+                    style_register,
+                    voice,
+                    blended_voice_samples=samples,
+                )
+
+            # The emotional plan tells us what the scene feels like —
+            # used to activate emotion-triggered preoccupations and
+            # metaphor source domains.
+            emo = emotional_by_scene.get(scene.scene_id)
+            primary_emotion = getattr(emo, "primary_emotion", None)
+            secondary_emotion = getattr(emo, "secondary_emotion", None)
+
+            perc = perceptual_profile_for(entity)
+            if perc is not None:
+                perceptual_profiles.setdefault(pov_id, perc)
+                scene_detail_defaults[scene.scene_id] = default_detail_principle(
+                    pov_id,
+                    perc,
+                    primary_emotion=primary_emotion,
+                    secondary_emotion=secondary_emotion,
+                )
+
+            mprof = character_metaphor_profile_for(entity)
+            if mprof is not None:
+                metaphor_profiles_persistent.setdefault(pov_id, mprof)
+                scene_metaphor_defaults[scene.scene_id] = default_metaphor_profile(
+                    pov_id,
+                    mprof,
+                    primary_emotion=primary_emotion,
+                    secondary_emotion=secondary_emotion,
+                )
 
         schema = CraftPlan.model_json_schema()
 
@@ -146,6 +190,10 @@ class CraftPlanner:
                 "blended_samples": blended_samples,
                 "scene_permeability_defaults": scene_permeability_defaults,
                 "active_motifs": active_motifs or [],
+                "perceptual_profiles": perceptual_profiles,
+                "metaphor_profiles_persistent": metaphor_profiles_persistent,
+                "scene_detail_defaults": scene_detail_defaults,
+                "scene_metaphor_defaults": scene_metaphor_defaults,
             },
         )
 
@@ -181,5 +229,40 @@ class CraftPlanner:
                 vp.excluded_vocabulary = list(default_vp.excluded_vocabulary)
             if not vp.blended_voice_samples:
                 vp.blended_voice_samples = list(default_vp.blended_voice_samples)
+
+        # ---- Gap G9 backfill: DetailPrinciple grounded preoccupations ----
+        for scene in plan.scenes:
+            default_dp = scene_detail_defaults.get(scene.scene_id)
+            if default_dp is None:
+                continue
+            if scene.detail_principle is None:
+                scene.detail_principle = default_dp
+                continue
+            dp = scene.detail_principle
+            if not dp.perceptual_preoccupations:
+                dp.perceptual_preoccupations = list(default_dp.perceptual_preoccupations)
+            if not dp.triple_duty_targets:
+                dp.triple_duty_targets = list(default_dp.triple_duty_targets)
+
+        # ---- Gap G10 backfill: MetaphorProfile grounded domains ----
+        for scene in plan.scenes:
+            default_mp = scene_metaphor_defaults.get(scene.scene_id)
+            if default_mp is None:
+                continue
+            # find MetaphorProfile entry for this character (if LLM emitted one)
+            pov_entry: MetaphorProfile | None = None
+            for mp in scene.metaphor_profiles:
+                if mp.character_id == default_mp.character_id:
+                    pov_entry = mp
+                    break
+            if pov_entry is None:
+                scene.metaphor_profiles.append(default_mp)
+                continue
+            if not pov_entry.permanent_domains:
+                pov_entry.permanent_domains = list(default_mp.permanent_domains)
+            if not pov_entry.current_domains:
+                pov_entry.current_domains = list(default_mp.current_domains)
+            if not pov_entry.forbidden_domains:
+                pov_entry.forbidden_domains = list(default_mp.forbidden_domains)
 
         return plan
