@@ -1,0 +1,82 @@
+from __future__ import annotations
+import sqlite3
+from pathlib import Path
+
+
+SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS entities (
+    id TEXT PRIMARY KEY,
+    entity_type TEXT NOT NULL,
+    name TEXT NOT NULL,
+    data TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active',
+    last_referenced_update INTEGER,
+    created_at_update INTEGER,
+    modified_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS relationships (
+    source_id TEXT NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
+    target_id TEXT NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
+    rel_type TEXT NOT NULL,
+    data TEXT NOT NULL DEFAULT '{}',
+    established_at_update INTEGER,
+    PRIMARY KEY (source_id, target_id, rel_type)
+);
+
+CREATE TABLE IF NOT EXISTS world_rules (
+    id TEXT PRIMARY KEY,
+    category TEXT NOT NULL,
+    description TEXT NOT NULL,
+    constraints TEXT NOT NULL DEFAULT '{}',
+    established_at_update INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS timeline (
+    update_number INTEGER NOT NULL,
+    event_index INTEGER NOT NULL,
+    description TEXT NOT NULL,
+    involved_entities TEXT NOT NULL DEFAULT '[]',
+    causal_links TEXT NOT NULL DEFAULT '[]',
+    PRIMARY KEY (update_number, event_index)
+);
+
+CREATE TABLE IF NOT EXISTS narrative (
+    update_number INTEGER PRIMARY KEY,
+    raw_text TEXT NOT NULL,
+    summary TEXT,
+    chapter_id INTEGER,
+    state_diff TEXT NOT NULL DEFAULT '{}',
+    player_action TEXT,
+    pipeline_trace_id TEXT
+);
+
+CREATE TABLE IF NOT EXISTS foreshadowing (
+    id TEXT PRIMARY KEY,
+    description TEXT NOT NULL,
+    planted_at_update INTEGER NOT NULL,
+    payoff_target TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'planted',
+    paid_off_at_update INTEGER,
+    refs TEXT NOT NULL DEFAULT '[]'
+);
+
+CREATE TABLE IF NOT EXISTS plot_threads (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active',
+    involved_entities TEXT NOT NULL DEFAULT '[]',
+    arc_position TEXT NOT NULL,
+    priority INTEGER NOT NULL DEFAULT 5
+);
+"""
+
+
+def open_db(path: str | Path) -> sqlite3.Connection:
+    conn = sqlite3.connect(str(path))
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.executescript(SCHEMA_SQL)
+    conn.commit()
+    return conn
