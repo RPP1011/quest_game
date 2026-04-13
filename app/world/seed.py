@@ -3,6 +3,7 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from pydantic import ValidationError
+from app.craft.schemas import Narrator
 from .delta import EntityCreate, RelChange, StateDelta
 from .schema import (
     Entity,
@@ -19,6 +20,7 @@ class SeedPayload:
     rules: list[WorldRule] = field(default_factory=list)
     foreshadowing: list[ForeshadowingHook] = field(default_factory=list)
     plot_threads: list[PlotThread] = field(default_factory=list)
+    narrator: Narrator | None = None
 
 
 class SeedLoader:
@@ -38,6 +40,8 @@ class SeedLoader:
             rules = [WorldRule.model_validate(x) for x in raw.get("rules", [])]
             hooks = [ForeshadowingHook.model_validate(x) for x in raw.get("foreshadowing", [])]
             threads = [PlotThread.model_validate(x) for x in raw.get("plot_threads", [])]
+            narrator_raw = raw.get("narrator")
+            narrator = Narrator.model_validate(narrator_raw) if narrator_raw else None
         except ValidationError as e:
             raise ValueError(f"seed file schema error: {e}") from e
 
@@ -47,4 +51,5 @@ class SeedLoader:
         )
         return SeedPayload(
             delta=delta, rules=rules, foreshadowing=hooks, plot_threads=threads,
+            narrator=narrator,
         )

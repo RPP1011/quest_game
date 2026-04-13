@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from app.craft.library import CraftLibrary
+from app.craft.schemas import Narrator
 from app.engine.prompt_renderer import PromptRenderer
 from app.planning.schemas import CraftPlan, DramaticPlan, EmotionalPlan
 from app.runtime.client import ChatMessage, InferenceClient
@@ -34,6 +35,7 @@ class CraftPlanner:
         dramatic: DramaticPlan,
         emotional: EmotionalPlan,
         style_register_id: str | None = None,
+        narrator: Narrator | None = None,
     ) -> CraftPlan:
         """Generate a ``CraftPlan`` translating drama + emotion into a prose blueprint.
 
@@ -87,6 +89,7 @@ class CraftPlanner:
                 "emotional_by_scene": emotional_by_scene,
                 "style_register": style_register,
                 "tool_examples": tool_examples,
+                "narrator": narrator,
             },
         )
 

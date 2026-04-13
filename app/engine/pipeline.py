@@ -273,6 +273,15 @@ class Pipeline:
         self._quest_config = quest_config or {}
         self._quest_id = quest_id
         self._arc_id = arc_id
+        # Parse narrator from quest_config if present. Stored as a dict.
+        self._narrator = None
+        n_raw = self._quest_config.get("narrator") if self._quest_config else None
+        if n_raw:
+            try:
+                from app.craft.schemas import Narrator
+                self._narrator = Narrator.model_validate(n_raw)
+            except Exception:
+                self._narrator = None
 
     @property
     def is_hierarchical(self) -> bool:
@@ -291,7 +300,12 @@ class Pipeline:
             craft_plan, plan_like_dict = await self._run_hierarchical(
                 trace, player_action, update_number
             )
-            prose = await self._run_write(trace, craft_plan)
+            narrator_voice = (
+                list(self._narrator.voice_samples) if self._narrator else None
+            )
+            prose = await self._run_write(
+                trace, craft_plan, voice_samples=narrator_voice
+            )
             # Wood-gap critics on combined prose
             await self._run_craft_critics(trace, craft_plan, prose)
         else:
@@ -456,6 +470,7 @@ class Pipeline:
                 dramatic=dramatic,
                 emotional=emotional,
                 style_register_id=None,
+                narrator=self._narrator,
             ),
             validator=lambda plan: critics.validate_craft(plan, dramatic),
             fallback=lambda: _make_minimal_craft_plan(dramatic),
@@ -670,6 +685,9 @@ class Pipeline:
         all_issues.extend(critics.validate_metaphor_domains(craft_plan, prose))
         all_issues.extend(critics.validate_indirection(craft_plan, prose))
         all_issues.extend(critics.validate_voice_blend(craft_plan, prose))
+        all_issues.extend(
+            critics.validate_narrator_sensory_distribution(self._narrator, prose)
+        )
 
         errors = [
             StageError(

@@ -67,6 +67,35 @@
 {% endfor %}
 
 ---
+{% if narrator %}
+
+## Narrator (persistent — governs every scene)
+
+This narrator is fixed for the entire quest. Derive each scene's
+`narrator_focus`, `narrator_withholding`, and `sensory_palette` from
+these fields rather than inventing them fresh.
+
+- **POV type:** {{ narrator.pov_type }}
+{% if narrator.worldview %}- **Worldview:** {{ narrator.worldview }}{% endif %}
+{% if narrator.editorial_stance %}- **Editorial stance:** {{ narrator.editorial_stance }}{% endif %}
+{% if narrator.register %}- **Register baseline:** {{ narrator.register }}{% if narrator.register_flex and narrator.register_flex[0] %} (flex: {{ narrator.register_flex[0] }} → {{ narrator.register_flex[1] }}){% endif %}{% endif %}
+{% if narrator.knowledge_scope %}- **Knowledge scope:** {{ narrator.knowledge_scope }}{% endif %}
+{% if narrator.withholding_tendency %}- **Withholding tendency:** {{ narrator.withholding_tendency }}{% endif %}
+- **Reliability:** {{ narrator.reliability }}
+{% if narrator.unreliability_axes %}- **Unreliability axes:** {{ narrator.unreliability_axes | join(", ") }}{% endif %}
+{% if narrator.attention_bias %}- **Attention gravitates toward:** {{ narrator.attention_bias | join(", ") }}{% endif %}
+{% if narrator.sensory_bias %}- **Sensory bias (target distribution):** {% for ch, w in narrator.sensory_bias.items() %}{{ ch }}={{ '%.2f'|format(w) }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
+{% if narrator.voice_samples %}
+
+**Narrator voice samples:**
+{% for sample in narrator.voice_samples %}
+> {{ sample | trim }}
+
+{% endfor %}
+{% endif %}
+
+---
+{% endif %}
 {% if style_register %}
 
 ## Style Register: {{ style_register.name }}

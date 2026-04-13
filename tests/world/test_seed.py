@@ -83,3 +83,26 @@ def test_seed_applies_cleanly(db, tmp_path: Path):
     assert [e.id for e in sm.list_entities()] == ["a", "b"]
     assert sm.list_relationships("a")[0].target_id == "b"
     assert sm.get_plot_thread("pt:1").name == "m"
+
+
+def test_load_seed_with_narrator(tmp_path: Path):
+    p = _write_seed(tmp_path, {
+        "entities": [{"id": "a", "entity_type": "character", "name": "A"}],
+        "narrator": {
+            "pov_type": "third_limited",
+            "sensory_bias": {"visual": 0.5, "auditory": 0.5},
+            "worldview": "ironic observer",
+            "voice_samples": ["She turned the key in the lock, slowly."],
+        },
+    })
+    payload = SeedLoader.load(p)
+    assert payload.narrator is not None
+    assert payload.narrator.pov_type == "third_limited"
+    assert payload.narrator.sensory_bias["visual"] == 0.5
+    assert payload.narrator.voice_samples
+
+
+def test_load_seed_without_narrator_is_none(tmp_path: Path):
+    p = _write_seed(tmp_path, {"entities": []})
+    payload = SeedLoader.load(p)
+    assert payload.narrator is None

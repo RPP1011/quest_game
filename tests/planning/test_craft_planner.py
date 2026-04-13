@@ -302,3 +302,36 @@ async def test_craft_planner_includes_tool_examples():
     assert expected_fragment in user_content, (
         f"Expected example fragment {expected_fragment!r} to appear in user prompt"
     )
+
+
+@pytest.mark.asyncio
+async def test_craft_planner_injects_narrator():
+    """When narrator is passed, its voice samples and worldview appear in the user prompt."""
+    from app.craft.schemas import Narrator
+    craft_plan = _make_craft_plan()
+    raw = craft_plan.model_dump_json()
+
+    client = FakeClient(raw)
+    renderer = PromptRenderer(PROMPTS)
+    craft_library = CraftLibrary(CRAFT_DATA)
+
+    narrator = Narrator(
+        pov_type="third_limited",
+        worldview="a quiet observer who watches hands",
+        editorial_stance="sympathetic",
+        sensory_bias={"visual": 0.5, "tactile": 0.5},
+        attention_bias=["hands"],
+        voice_samples=["NARRATORSAMPLEXYZ — distinctive token"],
+    )
+
+    planner = CraftPlanner(client, renderer, craft_library)
+    await planner.plan(
+        dramatic=_DRAMATIC_PLAN,
+        emotional=_EMOTIONAL_PLAN,
+        narrator=narrator,
+    )
+
+    user_content = client.calls[0][0][1].content
+    assert "NARRATORSAMPLEXYZ" in user_content
+    assert "quiet observer who watches hands" in user_content
+    assert "sympathetic" in user_content

@@ -187,7 +187,7 @@ class FakeCraftPlanner:
     def __init__(self, client: ScriptedClient) -> None:
         self._client = client
 
-    async def plan(self, *, dramatic, emotional, style_register_id=None):
+    async def plan(self, *, dramatic, emotional, style_register_id=None, narrator=None):
         from app.planning.schemas import CraftPlan
         raw = await self._client.chat_structured(
             messages=[], json_schema={}, schema_name="CraftPlan"
