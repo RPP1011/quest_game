@@ -41,18 +41,84 @@ def load_passage(work_id: str, passage_id: str) -> str:
     return text
 
 
+_STOPWORDS = frozenset(
+    """a an the and or but if then else of to from in on at by for with without into onto
+    over under is are was were be been being am do does did doing have has had having will
+    would should could shall may might can must not no yes as than that this these those
+    there here it its his her their they them he she we us our your you i me my mine ours
+    yours theirs himself herself itself themselves myself yourself ourselves""".split()
+)
+
+
+def _content_tokens(text: str) -> set[str]:
+    return {
+        w.lower().strip(".,;:!?\"'()-—–[]") for w in text.split()
+    } - _STOPWORDS
+
+
+def _jaccard(a: set[str], b: set[str]) -> float:
+    if not a or not b:
+        return 0.0
+    return len(a & b) / len(a | b)
+
+
 def merge_labels() -> list[dict]:
     merged: list[dict] = []
     for f in sorted(glob.glob(LABEL_GLOB)):
         data = json.loads(Path(f).read_text())
         stem = Path(f).stem.replace("labels_claude_part_", "")
-        for p in data["passages"]:
+        # Some labelers emitted a raw list; others wrapped in {"passages": [...]}.
+        passages = data if isinstance(data, list) else data.get("passages", [])
+        for p in passages:
             if "scores" in p and "dimensions" not in p:
                 p["dimensions"] = p.pop("scores")
             p.setdefault("work_id", stem)
             p.setdefault("is_quest", False)
             merged.append(p)
     return merged
+
+
+def dedup_passages(merged: list[dict], threshold: float = 0.5) -> list[dict]:
+    """Drop near-duplicate passages within a work (sliding-window artifacts).
+
+    Two passages from the same work with content-token Jaccard > threshold
+    are considered near-duplicates. Keep the one with the lexicographically
+    lowest passage_id (p01 before p11, etc.); labels on the dropped passages
+    are discarded. Cross-work pairs are never compared.
+    """
+    by_work: dict[str, list[dict]] = {}
+    for p in merged:
+        by_work.setdefault(p["work_id"], []).append(p)
+
+    kept: list[dict] = []
+    dropped_count = 0
+    for work_id, passages in by_work.items():
+        passages = sorted(passages, key=lambda p: p["passage_id"])
+        token_cache: dict[str, set[str]] = {}
+        for p in passages:
+            try:
+                text = load_passage(work_id, p["passage_id"])
+            except FileNotFoundError:
+                continue
+            token_cache[p["passage_id"]] = _content_tokens(text)
+        work_kept: list[dict] = []
+        for p in passages:
+            pid = p["passage_id"]
+            if pid not in token_cache:
+                continue
+            my_tokens = token_cache[pid]
+            is_dup = False
+            for kept_p in work_kept:
+                other_tokens = token_cache[kept_p["passage_id"]]
+                if _jaccard(my_tokens, other_tokens) > threshold:
+                    is_dup = True
+                    dropped_count += 1
+                    break
+            if not is_dup:
+                work_kept.append(p)
+        kept.extend(work_kept)
+    print(f"dedup: dropped {dropped_count} near-duplicate passages (threshold={threshold})")
+    return kept
 
 
 def build_row(passage: dict, text: str) -> dict:
@@ -101,8 +167,10 @@ def build_row(passage: dict, text: str) -> dict:
 
 def main():
     merged = merge_labels()
+    print(f"merged {len(merged)} raw passage labels")
+    merged = dedup_passages(merged)
     COMBINED.write_text(json.dumps({"passages": merged}, indent=2))
-    print(f"merged {len(merged)} passage labels -> {COMBINED}")
+    print(f"kept {len(merged)} after dedup -> {COMBINED}")
 
     rows = []
     for p in merged:

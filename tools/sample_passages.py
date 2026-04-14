@@ -103,13 +103,14 @@ def _mid_slice(chapter_text: str) -> tuple[list[str], int, int]:
 
 def _candidate_passage(
     chapter: Chapter, rng: random.Random, length: int
-) -> Optional[str]:
+) -> Optional[tuple[str, int]]:
+    """Return (passage_text, start_word_index) or None if no valid window."""
     words, lo, hi = _mid_slice(chapter.text)
     if hi <= lo or len(words) < length + lo:
         return None
     start = rng.randint(lo, hi)
     end = min(len(words), start + length)
-    return " ".join(words[start:end])
+    return " ".join(words[start:end]), start
 
 
 def _pick_chapter_pool(chapters: list[Chapter]) -> list[Chapter]:
@@ -119,8 +120,9 @@ def _pick_chapter_pool(chapters: list[Chapter]) -> list[Chapter]:
     lo = int(n * 0.10)
     hi = int(n * 0.90)
     pool = chapters[lo:hi] or chapters
-    # Filter: chapter must be long enough
-    return [c for c in pool if len(c.text.split()) >= TARGET_MIN_WORDS * 2]
+    # Require chapter can yield at least one min-length passage plus its
+    # 20% mid-slice offset. This is the sampler's hard constraint.
+    return [c for c in pool if len(c.text.split()) >= TARGET_MIN_WORDS + 100]
 
 
 def sample_work(
@@ -141,21 +143,36 @@ def sample_work(
     n_slots = len(slots)
     rng = random.Random(work_id)
 
-    # Produce several candidates, then select per slot.
     target_len = rng.randint(TARGET_MIN_WORDS + 50, TARGET_MAX_WORDS - 50)
+    # Reject any new candidate whose start is within 60% of target_len of
+    # an accepted passage from the same chapter — guarantees ≤40% textual
+    # overlap. Prior cheap hash(passage[:80]) dedup missed offset-window
+    # near-duplicates; this is the structural fix.
+    min_offset = int(target_len * 0.6)
     candidates: list[tuple[Chapter, str, float]] = []
+    candidate_cap = max(n_slots * 2, 30)
+    try_cap = candidate_cap * 6
     tries = 0
     chapter_order = list(pool)
     rng.shuffle(chapter_order)
     for ch in chapter_order:
-        if tries > 30 or len(candidates) >= 12:
+        if tries > try_cap or len(candidates) >= candidate_cap:
             break
         local_rng = random.Random(f"{work_id}:{ch.index}")
-        for _ in range(3):
+        accepted_starts: list[int] = []
+        got = 0
+        for _ in range(16):
             tries += 1
-            passage = _candidate_passage(ch, local_rng, target_len)
-            if passage:
-                candidates.append((ch, passage, dialogue_ratio(passage)))
+            result = _candidate_passage(ch, local_rng, target_len)
+            if result is None:
+                continue
+            passage, start = result
+            if any(abs(start - s) < min_offset for s in accepted_starts):
+                continue
+            accepted_starts.append(start)
+            candidates.append((ch, passage, dialogue_ratio(passage)))
+            got += 1
+            if got >= 4:
                 break
 
     if len(candidates) < n_slots:

@@ -61,7 +61,7 @@ works:
     pacing: 0.6
   passages:
   - id: p01
-    sha256: 7505adc86de302124879877a28853512cbc6be7d35711d5b9e7bae9b5fcee333
+    sha256: 717a2f3988d1065d4f1a40fcb469b62c1318351fccfb26dbf36c52477a3612ec
     expected_high:
     - subtext_presence
     - clarity
@@ -70,13 +70,70 @@ works:
     - interiority_depth
     - sentence_variance
   - id: p02
-    sha256: 84784d1b941c07c316194bb81b3fb6708c82db04ee7b6ca74d15b1fcca2732a0
+    sha256: 7c2e0b229a43b69d6768478c5f9c00c67c27a1e3c8470c181b048befcbeaf3a8
     expected_high:
     - dialogue_ratio
     - clarity
     expected_low:
     - free_indirect_quality
     - interiority_depth
+  - id: p03
+    sha256: f475403c1939896d3ea9bd5afea7f3acd8744d26b2b8af4faf09d4f43ebace95
+    expected_high: &id001
+    - voice_distinctiveness
+    - clarity
+    - subtext_presence
+    expected_low: &id002
+    - interiority_depth
+    - sentence_variance
+  - id: p04
+    sha256: 2654103a67e5a59a151d859e5250efea254ca50f57c2cc8696f120fda8da59f6
+    expected_high: *id001
+    expected_low: *id002
+  - id: p05
+    sha256: 96f4204b159a08911638e3c7486f378f9f3caf78b57697c7fc220f8268edd420
+    expected_high: *id001
+    expected_low: *id002
+  - id: p06
+    sha256: 4db5a1e5139f22e5e9e40fcadef0972e7224ac594eae212faac71827a4342bcb
+    expected_high: *id001
+    expected_low: *id002
+  - id: p07
+    sha256: 265fdacba1f5e09f60d78972fb646701d3d93aa54771ee218d4d512a13c35ff8
+    expected_high: *id001
+    expected_low: *id002
+  - id: p08
+    sha256: 1c7426bb8212a26a0dd5b229b2d98e34d34ef194c6131fb96d51865941a1c9a2
+    expected_high: *id001
+    expected_low: *id002
+  - id: p09
+    sha256: 30cfb7ce6c6ee60cf164ace89473b92d78c8ee7d9a6b4fd5d5a7234e730b8493
+    expected_high: *id001
+    expected_low: *id002
+  - id: p10
+    sha256: 0f101d8f94e6df117a5123d5b88b133bb02473e637e65dcc765b6a07c09e9d57
+    expected_high: *id001
+    expected_low: *id002
+  - id: p11
+    sha256: de0f3d8b31bc57ffc48933b262a56cdb85fbc35de13bffb0f531b45c5a1baea3
+    expected_high: *id001
+    expected_low: *id002
+  - id: p12
+    sha256: 0fb57d4ac55dd4758e7889c5de15a8c588f38c4eee4ea1c3beb2f866fd7a6500
+    expected_high: *id001
+    expected_low: *id002
+  - id: p13
+    sha256: 93751b0b2e250299a2dd89c832ac29715520d66ef350a9eb4cc418a0a8c1ba49
+    expected_high: *id001
+    expected_low: *id002
+  - id: p14
+    sha256: fc5962135425bff43b4620b37d2e6d03cec897d8b79d6063ce57b18417b7b3b1
+    expected_high: *id001
+    expected_low: *id002
+  - id: p15
+    sha256: 55c02acd9e269b03aed5e4f7dc274afafce7a9c09607f0c33a0e265b2363fabb
+    expected_high: *id001
+    expected_low: *id002
 - id: madame_bovary
   title: Madame Bovary
   author: Gustave Flaubert
@@ -98,7 +155,7 @@ works:
     pacing: 0.5
   passages:
   - id: p01
-    sha256: ba63f343a27d9e042241e8b4733f5a5bd63eeca556438cc8044e18b2e2d4cc25
+    sha256: be6e332538fec4b8bfc21ef8f8a7126de2fd0fe07b0726e8da9fe1fd499ca6c3
     expected_high:
     - free_indirect_quality
     - detail_characterization
@@ -107,13 +164,70 @@ works:
     - dialogue_ratio
     - pacing
   - id: p02
-    sha256: 08aab642a6a7dbd82e57bb8e3d0027d5606d0ff1adfc49c1a0e7d9d6fd460ec8
+    sha256: 4a534e3b5b40689f7dfa1ec8c03e8cc3c3b911ebc36251b36b61089823c2b317
     expected_high:
     - sensory_density
     - thematic_presence
     expected_low:
     - dialogue_ratio
     - tension_execution
+  - id: p03
+    sha256: 2430b2633ad894299de101ed09f226b4dace464d3445f2574e743acf2e994551
+    expected_high: &id003
+    - subtext_presence
+    - free_indirect_quality
+    - detail_characterization
+    expected_low: &id004
+    - dialogue_ratio
+    - pacing
+  - id: p04
+    sha256: fd1d603c98a1cc3c0e6bc69ade51ccbc407cd53065d403922b94afccc0151051
+    expected_high: *id003
+    expected_low: *id004
+  - id: p05
+    sha256: 55797d77ba6aa70b37fe9d2aac27910a6c455f3d251ba282dd22b1668e1c82f2
+    expected_high: *id003
+    expected_low: *id004
+  - id: p06
+    sha256: 99330155ab8641278bb6dfb71cb3e63836b8f878cf136514adaacb7536d1eeac
+    expected_high: *id003
+    expected_low: *id004
+  - id: p07
+    sha256: 290a4b1fa53b217ae9fd57204ce4c7a687a5dbb917efd7f94136bf2f1c8740b1
+    expected_high: *id003
+    expected_low: *id004
+  - id: p08
+    sha256: f61362c338b15e54f31003dd383619f2f7b4cdeb807ca5112db6e0d24b8e8733
+    expected_high: *id003
+    expected_low: *id004
+  - id: p09
+    sha256: 702eff0f5a939adbbfb1973813aff41bff9b82babd0f90eabb5b02675ea96fda
+    expected_high: *id003
+    expected_low: *id004
+  - id: p10
+    sha256: a19c0d7288ee68443e6fba2138c4264e3b19cd00e472350740af7e97ffd60dce
+    expected_high: *id003
+    expected_low: *id004
+  - id: p11
+    sha256: f50276f88dd774cb08713bf5140d259bfcefa2bf3d68001cb1540141177775d8
+    expected_high: *id003
+    expected_low: *id004
+  - id: p12
+    sha256: f129f40891e961f7c6efecd690e9606df293153a294fb7544e00eb740dddc8da
+    expected_high: *id003
+    expected_low: *id004
+  - id: p13
+    sha256: 137b1e4f406365145fa74567cdca473edafd6b1a7c4605e25c8bc61ce7d5af10
+    expected_high: *id003
+    expected_low: *id004
+  - id: p14
+    sha256: 14543632d9b99ef705b1031b3286342b4dfc289f37ece4576bf6a798eca49550
+    expected_high: *id003
+    expected_low: *id004
+  - id: p15
+    sha256: 9853db458e8bd34bb7b24852027f8114566783003e7087e4a16e68a7d2b56b84
+    expected_high: *id003
+    expected_low: *id004
 - id: ulysses
   title: Ulysses
   author: James Joyce
@@ -144,13 +258,70 @@ works:
     - clarity
     - pacing
   - id: p02
-    sha256: c781e9df8bef7f7936e07b0648c83b6685d75224d01023f0276b0cc5456b0a94
+    sha256: d7e79ac66d34fde78f19eef420c4a1db4563af9ddcf2b6810a9ea3f7c0c6c004
     expected_high:
     - sensory_density
     - free_indirect_quality
     expected_low:
     - clarity
     - tension_execution
+  - id: p03
+    sha256: d2bd0cc6246bf17393ec03556fae5bf9ebf30d6a504aad94492ea64c3e43db20
+    expected_high: &id005
+    - interiority_depth
+    - voice_distinctiveness
+    - sentence_variance
+    expected_low: &id006
+    - clarity
+    - tension_execution
+  - id: p04
+    sha256: fd022ce37feab0046260118a3f85f75fba440f027b5c6050cf800825fabea5df
+    expected_high: *id005
+    expected_low: *id006
+  - id: p05
+    sha256: cfced2876385afd4b397f52fdb3a4ca4c6940d9084a9b72abc8fcddd8f5a64b4
+    expected_high: *id005
+    expected_low: *id006
+  - id: p06
+    sha256: d7429b6f0644a04154f8b2fda480e747895019783b225e38b57593113c5741e1
+    expected_high: *id005
+    expected_low: *id006
+  - id: p07
+    sha256: 0ed6896e388fc45279688bd900f47470e3d840d7a9c06f5ef786dd87c036b332
+    expected_high: *id005
+    expected_low: *id006
+  - id: p08
+    sha256: 21621dbbf503cf065c22bc51f8f91acb04f33a7f07f120555145120bfd4d96bb
+    expected_high: *id005
+    expected_low: *id006
+  - id: p09
+    sha256: 157c0396a35ed925ac2b6d07547df9b01cc978d159f8187b2d67af5495c86c24
+    expected_high: *id005
+    expected_low: *id006
+  - id: p10
+    sha256: 335b6ed48f3cb399fe491d29f25e802a5c5bfc1c349e233dbd8522b0e9aad832
+    expected_high: *id005
+    expected_low: *id006
+  - id: p11
+    sha256: edd90c7f04daacefd3681d77a076c65d28fc602876dccffda11f0142429b71df
+    expected_high: *id005
+    expected_low: *id006
+  - id: p12
+    sha256: 88ac9e7e9d3fa1004bc93e85daa097e7ec83635db473c70ea72f6bdc60e7a1e2
+    expected_high: *id005
+    expected_low: *id006
+  - id: p13
+    sha256: 9d462ff96e4abfc77cc4bd481f4e62885b0c107fd32922dddb772d92d9e40c5a
+    expected_high: *id005
+    expected_low: *id006
+  - id: p14
+    sha256: 206ec4372af17b91269791235d0caebeb5b5791fc4747aa1638d5b5bb2438f60
+    expected_high: *id005
+    expected_low: *id006
+  - id: p15
+    sha256: 84da2470efd453f7a02a113fa3fa5235bcc51df49a56c68c17ec38dbfbb37815
+    expected_high: *id005
+    expected_low: *id006
 - id: blood_meridian
   title: Blood Meridian
   author: Cormac McCarthy
@@ -209,7 +380,7 @@ works:
     pacing: 0.65
   passages:
   - id: p01
-    sha256: 727724124765a1165b82e97f71448fcebfcd55088613b05e3a78636a49200ed5
+    sha256: dd3f0c57d5a47cdd573aee24993d8e9dfe2e99c260dc4720ebf40a744a7c4042
     expected_high:
     - free_indirect_quality
     - voice_distinctiveness
@@ -218,13 +389,70 @@ works:
     - sensory_density
     - interiority_depth
   - id: p02
-    sha256: 00f35e4077e576c74f7a141656096082b047238c7f62db867eedac7c24a13f1f
+    sha256: fa5fb6326bb69677e8dd7eccd348ee87bb9a177d5758b325b6aaf453e472a0da
     expected_high:
     - dialogue_ratio
     - subtext_presence
     expected_low:
     - sensory_density
     - sentence_variance
+  - id: p03
+    sha256: 5e7ab30a070b1286b3456fbaebe1502ca9a467d38a76778a6b5052ac48f2694c
+    expected_high: &id007
+    - free_indirect_quality
+    - voice_distinctiveness
+    - clarity
+    expected_low: &id008
+    - sensory_density
+    - interiority_depth
+  - id: p04
+    sha256: 72dd0e4a9a9238f9e9815b62f31208e37a9db7b19864eee75744ab39058c9017
+    expected_high: *id007
+    expected_low: *id008
+  - id: p05
+    sha256: 3d3777ee770fae2c8304c3ece652d20b2075f3740108e8d7263d6e1f54ccd0ac
+    expected_high: *id007
+    expected_low: *id008
+  - id: p06
+    sha256: 88c9f28a06e93dd4e3cdfe3146410768b102b49106a98ca507036a440a40abb0
+    expected_high: *id007
+    expected_low: *id008
+  - id: p07
+    sha256: 9709865cbb54d383aefec051282a4d4b420cd3417376ba17fd65db57dc95ff4e
+    expected_high: *id007
+    expected_low: *id008
+  - id: p08
+    sha256: 1f30b2b91e259bb25dbf44063e62aa897b4bc17ee648e925fe900ca7e6926bf5
+    expected_high: *id007
+    expected_low: *id008
+  - id: p09
+    sha256: 1a51634fca84dcc81f079a83fb855bf9de797e43d6c4f59659078b73acfb2e63
+    expected_high: *id007
+    expected_low: *id008
+  - id: p10
+    sha256: 15377cd80391d9fec459b45c54b8fed7eb45b24f99fbe02b16747a39e32b37c8
+    expected_high: *id007
+    expected_low: *id008
+  - id: p11
+    sha256: c2541a0e44c55dca22ffebf9069ebe493e978c2e1cceba4fbea430b73239741c
+    expected_high: *id007
+    expected_low: *id008
+  - id: p12
+    sha256: ca5353a6b80df6cf1ed7478bc5529557f38111e3e37e6b952ad81ddf427f4801
+    expected_high: *id007
+    expected_low: *id008
+  - id: p13
+    sha256: 2e8c5c59d5070bf5e6b52f5c7a9dcbca393a435960b60b9773097c161ef0139b
+    expected_high: *id007
+    expected_low: *id008
+  - id: p14
+    sha256: de595fae85a935fed79a692fc8309d5b85324f135a8667f6b70ebced6c5c4539
+    expected_high: *id007
+    expected_low: *id008
+  - id: p15
+    sha256: d92962c967137f079715e8926a17bef088dad1f9b5f102a94614fbbba741b8a0
+    expected_high: *id007
+    expected_low: *id008
 - id: brothers_karamazov
   title: The Brothers Karamazov
   author: Fyodor Dostoevsky
@@ -246,7 +474,7 @@ works:
     pacing: 0.5
   passages:
   - id: p01
-    sha256: 3f3dbec14e103fad8934b5d5903bc333aaa019c579c213743f9746e06198fcbb
+    sha256: 02d0d5691b3c59ff6479a50a274dcd592690440ef8f27642f75f69f3d27be8e4
     expected_high:
     - thematic_presence
     - interiority_depth
@@ -255,13 +483,70 @@ works:
     - sensory_density
     - subtext_presence
   - id: p02
-    sha256: 3ce5511f63bc574e4dd75181099e48d04115c179041aea1a1775daab13f97cca
+    sha256: 466b5207d7ea0a70c178e31e8adc098e615526511c63c81591708546a56bffba
     expected_high:
     - tension_execution
     - dialogue_ratio
     expected_low:
     - sensory_density
     - subtext_presence
+  - id: p03
+    sha256: 5484e2613688e0cdedf150db81850717e0780da731473c4d7902578849360d9e
+    expected_high: &id009
+    - interiority_depth
+    - voice_distinctiveness
+    - thematic_presence
+    expected_low: &id010
+    - sensory_density
+    - free_indirect_quality
+  - id: p04
+    sha256: d55e39600a07949583fff2b68dd726f60ab20ee70b4bb943a4104c4b310b6936
+    expected_high: *id009
+    expected_low: *id010
+  - id: p05
+    sha256: 328b3e275910a68d6ee1423670f64ee62f0a9aa1bf210ad5f0c8d5530b2b8764
+    expected_high: *id009
+    expected_low: *id010
+  - id: p06
+    sha256: a99ea7b3cb218e8051e03fffe8f2c6eb681360f7431d8c587d22d4833bd453b5
+    expected_high: *id009
+    expected_low: *id010
+  - id: p07
+    sha256: 3d738ed024a9e65d8f8c23c08323157928738e59dca8e13dd699662463d60028
+    expected_high: *id009
+    expected_low: *id010
+  - id: p08
+    sha256: da4fc84e506e0a0e5d1f68ad84deb3935bedc32c19551e438e2826fb9a3b3073
+    expected_high: *id009
+    expected_low: *id010
+  - id: p09
+    sha256: 0093c439b2b1c61e11271fa68d28b9b797e1b5be43715f70a19d2f9ade9e0590
+    expected_high: *id009
+    expected_low: *id010
+  - id: p10
+    sha256: 0d345ee151e844b447760180a6c67f05cf155915b74f9f807384d437f22042c1
+    expected_high: *id009
+    expected_low: *id010
+  - id: p11
+    sha256: a9026038c2ebb25c7f5e27eace0d2c084f9378ffbd1592c5318eef5578b545d3
+    expected_high: *id009
+    expected_low: *id010
+  - id: p12
+    sha256: 5e47194c6d0776eb01c5e772cc82e4f530841c3dd2bda3ec7d43086cd67fe601
+    expected_high: *id009
+    expected_low: *id010
+  - id: p13
+    sha256: 0481fe28a6f90c1473ff636f6ffdf6a545d2800e3a80496971903a48f4cd16b0
+    expected_high: *id009
+    expected_low: *id010
+  - id: p14
+    sha256: 3757a39127251d88b968efa2bd8d18adf2af463d2c84550a6d76f9fb6c957375
+    expected_high: *id009
+    expected_low: *id010
+  - id: p15
+    sha256: e638e8ad0058e392843f92cba8cfab168a64d381e987e28c401d03dfb2eee976
+    expected_high: *id009
+    expected_low: *id010
 - id: left_hand_of_darkness
   title: The Left Hand of Darkness
   author: Ursula K. Le Guin
@@ -283,7 +568,7 @@ works:
     pacing: 0.6
   passages:
   - id: p01
-    sha256: 07974c2f155aad2d3d4e0340c83430462732ccdc861c68f1a33f7030a3c8f412
+    sha256: 25d152bbbfcff927abcc5d309bbd22ee1d5834c745b02fcde6221e4896e1c168
     expected_high:
     - thematic_presence
     - detail_characterization
@@ -292,13 +577,70 @@ works:
     - dialogue_ratio
     - free_indirect_quality
   - id: p02
-    sha256: f98514e0bf9ec089b3b60e4a4797f33ba0a3fec399952106cb346040b689ea84
+    sha256: 5071673ef7b559640bd3710746d3abd1e0ad8bce9cedb3c851fae08a897bc124
     expected_high:
     - sensory_density
     - subtext_presence
     expected_low:
     - dialogue_ratio
     - free_indirect_quality
+  - id: p03
+    sha256: 2aba82afacce31cf94eff11522039baa17521fa16f12464b7bb693ae411534b6
+    expected_high: &id011
+    - voice_distinctiveness
+    - clarity
+    - thematic_presence
+    expected_low: &id012
+    - dialogue_ratio
+    - free_indirect_quality
+  - id: p04
+    sha256: b64266811f3dbe0d9eb9e2bc004a7b9bd7fece76bd70c41c1a4dbbcf812bbb84
+    expected_high: *id011
+    expected_low: *id012
+  - id: p05
+    sha256: 9a81d26b6e1edd0b81771433dd6c94fbfa164b75f5fa8d5a22a06010bce2dd43
+    expected_high: *id011
+    expected_low: *id012
+  - id: p06
+    sha256: e7a8b5c8f23163468f078f3d0b806275c2687724f7c4400377f29a5fb7208e30
+    expected_high: *id011
+    expected_low: *id012
+  - id: p07
+    sha256: 50c9ddbd057166e970a45b5990069fca63ddb7f2c4d6485bf743f6e136032cc6
+    expected_high: *id011
+    expected_low: *id012
+  - id: p08
+    sha256: dd085f5ce6e7fcf648530d0936f4d55d4de5b0b09348a9433af5a9f486b8d0f4
+    expected_high: *id011
+    expected_low: *id012
+  - id: p09
+    sha256: 8296475d9680ca3b28ad82cc031b01c2e664e6c35a60112ee7b49ea3789607d5
+    expected_high: *id011
+    expected_low: *id012
+  - id: p10
+    sha256: 46e9d265a11403e87e6b32901d54660e649a9c265cfa7763cf4d597a97ea92dc
+    expected_high: *id011
+    expected_low: *id012
+  - id: p11
+    sha256: b72f3a1fee111680a4012cad2a47536fdd2a18805d342bdf68af6669e407eb50
+    expected_high: *id011
+    expected_low: *id012
+  - id: p12
+    sha256: e42c2ef6e04c52fb6327b3563c8cb40cbadce4cf41e7ef0572294227b65bb52e
+    expected_high: *id011
+    expected_low: *id012
+  - id: p13
+    sha256: dfc1af00c935dcfd04e8bcb7d5e019ea94c970702c106f298cd617cc28763693
+    expected_high: *id011
+    expected_low: *id012
+  - id: p14
+    sha256: 1e6055ec829db96d4f253f95f6e0c5c5ccf1906ca7637b7a36981c3245c66bee
+    expected_high: *id011
+    expected_low: *id012
+  - id: p15
+    sha256: d806ea84ccb9aa9c1f68ea92dca01b92e545272f00595f406bb799271a39b622
+    expected_high: *id011
+    expected_low: *id012
 - id: get_shorty
   title: Get Shorty
   author: Elmore Leonard
@@ -431,7 +773,7 @@ works:
     pacing: 0.6
   passages:
   - id: p01
-    sha256: 72686a2dcc85c6b9a6128138f7f53b629ccd49f9887f245c575dc86a28f6a085
+    sha256: 43c933f6415e36e70f84fb17f0e200e3104510d207eea46de25c927bc9db5858
     expected_high:
     - clarity
     - tension_execution
@@ -439,13 +781,70 @@ works:
     - subtext_presence
     - free_indirect_quality
   - id: p02
-    sha256: 63919d20c599dd344bf8713e20e355e7385355cd993f4bc28d0524c8275976fe
+    sha256: 2be79cbedf7e1c2af642ca0e3e258a05ff0c33d0f582631c0c21ff0b8b169d5b
     expected_high:
     - clarity
     - pacing
     expected_low:
     - subtext_presence
     - voice_distinctiveness
+  - id: p03
+    sha256: 19bc978be70db222c4f3f7ae24589fce2d2db5add7a5c26a4edd256e1788b1e6
+    expected_high: &id013
+    - pacing
+    - tension_execution
+    - clarity
+    expected_low: &id014
+    - subtext_presence
+    - free_indirect_quality
+  - id: p04
+    sha256: 42636f32b03a377fb7d6181608d51f6ec6033d589b0bab3ccc6b987fe0def10d
+    expected_high: *id013
+    expected_low: *id014
+  - id: p05
+    sha256: 782099107742b19344adc010028f99f55394db803059dc4a0a62fe444c7ea48d
+    expected_high: *id013
+    expected_low: *id014
+  - id: p06
+    sha256: d7b0c148987d001926535b8b5e43a3bddf3336db0b657566eb8c71f19706d283
+    expected_high: *id013
+    expected_low: *id014
+  - id: p07
+    sha256: cc87fcdebf3dee9bcf666466d0180554949404c82be7fe9da069b331f127c7e7
+    expected_high: *id013
+    expected_low: *id014
+  - id: p08
+    sha256: 12569635b952a7de1c205f4be63ad164139b3546f6c0d33a581753f0b2541382
+    expected_high: *id013
+    expected_low: *id014
+  - id: p09
+    sha256: b90701d75101b420e72aa84be974212eca704d15e5fc6497172e7afcb92a39a3
+    expected_high: *id013
+    expected_low: *id014
+  - id: p10
+    sha256: 1283b267897f22c88944bec435b02b1bc167c78fb60bdccd68b1fbf6f644ee0d
+    expected_high: *id013
+    expected_low: *id014
+  - id: p11
+    sha256: ffa3b82a3f6684e00d8376fd6721b43472494598c41eb0774b213d73a242c797
+    expected_high: *id013
+    expected_low: *id014
+  - id: p12
+    sha256: b20394b1db52137725e4b8eb23b1046b71b6495144d6c6773a275933a9d23be2
+    expected_high: *id013
+    expected_low: *id014
+  - id: p13
+    sha256: 34255dad597407d0783e50466c8f26a448371864f8513bf4f1d7809c7d64b292
+    expected_high: *id013
+    expected_low: *id014
+  - id: p14
+    sha256: 31b66a1fb9ba7fd33e7f1939bb6cf7977dff0a24434522191bd78d24d5c0b51a
+    expected_high: *id013
+    expected_low: *id014
+  - id: p15
+    sha256: 33403056adcc70a5f420fc0c552ef288b5a095fe9431d1dd02423790b6602fd0
+    expected_high: *id013
+    expected_low: *id014
 - id: marked_for_death
   title: Marked for Death
   author: eaglejarl & Velorien
@@ -469,7 +868,7 @@ works:
     update_self_containment: 0.75
   passages:
   - id: p01
-    sha256: 10cc070891065dd9bef00ea5a594f775bdf9a0a793434d590460a63019eb027b
+    sha256: d8df87c6dfc0b0167562ed6b709afb8a1df853f720b31c167be009506610e47d
     expected_high:
     - clarity
     - choice_hook_quality
@@ -478,13 +877,70 @@ works:
     - subtext_presence
     - sensory_density
   - id: p02
-    sha256: d111301cb1e6528856c9b6e85fe0ff3ec2f3202ec5da06fbc60e82003b5907ee
+    sha256: 8fb94848a4a01941b1b5fd48811f336bcf83f34f4b81d4fd536f8b3d5f81ba40
     expected_high:
     - action_fidelity
     - update_self_containment
     expected_low:
     - subtext_presence
     - free_indirect_quality
+  - id: p03
+    sha256: ad5de149e2e3cc354e54d3ddc9f4bfec700751ace1e9ff8a40dfac532cb41163
+    expected_high: &id015
+    - choice_hook_quality
+    - action_fidelity
+    - clarity
+    expected_low: &id016
+    - subtext_presence
+    - free_indirect_quality
+  - id: p04
+    sha256: 7c042e2510badf520931959c598c02e6ba20a2b94725a368e341af2789b9bf57
+    expected_high: *id015
+    expected_low: *id016
+  - id: p05
+    sha256: 9fc8157344a0d0ea2038e0194822ac9865425e8bc7d942acec34fb1fdd41a3e2
+    expected_high: *id015
+    expected_low: *id016
+  - id: p06
+    sha256: 0a2b534da1f7b28a86314896094073e416aeec5155600837b4445325731261e8
+    expected_high: *id015
+    expected_low: *id016
+  - id: p07
+    sha256: 01728476ab160be5279362173470c750cb23dd32116286d12836a52f7934e878
+    expected_high: *id015
+    expected_low: *id016
+  - id: p08
+    sha256: 96ade985c5df10c2f9ffa69eccce8b9bca725202a95578796cf8e8644f96af92
+    expected_high: *id015
+    expected_low: *id016
+  - id: p09
+    sha256: 0f9e2cf6191515b615fd68b5ec51c06ab3c0b87a8238cd5b31f1389aca81a22c
+    expected_high: *id015
+    expected_low: *id016
+  - id: p10
+    sha256: 8dd271a37c06b1cf19f20a10e85d48fcb10c83ffbe8ebe8f536387b7ee0d246d
+    expected_high: *id015
+    expected_low: *id016
+  - id: p11
+    sha256: 66f680586d09ef80daf4da21c75f171b8899aa63f0ddaa83ad26b5b0579917eb
+    expected_high: *id015
+    expected_low: *id016
+  - id: p12
+    sha256: 67b16008aa4613b3e5cf7782c34d6850a3fb0922343c8073492f5b0356a40f50
+    expected_high: *id015
+    expected_low: *id016
+  - id: p13
+    sha256: 03963e194c4753d46e05b5b73b3a705c7b1a498bc535ba5f5bbd437f2a2e470f
+    expected_high: *id015
+    expected_low: *id016
+  - id: p14
+    sha256: e68364004ae7063eb66cae7c5b91fd8f307a5f7cfe90a59785660a0a7d12d86e
+    expected_high: *id015
+    expected_low: *id016
+  - id: p15
+    sha256: e6b5b023d486508ae3645b8e56e3bdda6dd1e03c3dbc33a7d15156b726cc55b8
+    expected_high: *id015
+    expected_low: *id016
 - id: forge_of_destiny
   title: Forge of Destiny
   author: yrsillar
@@ -547,7 +1003,7 @@ works:
     update_self_containment: 0.75
   passages:
   - id: p01
-    sha256: 1c841b312b19e14142faa675f43f40975594f49a542358619aa2a1de2bfb6908
+    sha256: bf4215e63baf6bfb6d2c548602a7a4aa450619bc4ee8ad4afca57be8de7e646b
     expected_high:
     - voice_distinctiveness
     - tension_execution
@@ -556,13 +1012,70 @@ works:
     - free_indirect_quality
     - sensory_density
   - id: p02
-    sha256: 80493da970a0d540a27c714498b07ba0bb4a4d91f2cc6fd1df21e8544b1ef10a
+    sha256: 36b6e21a33506377d5509c17766f9fb729bcff4e21a2e03aafc9b8bb76044924
     expected_high:
     - interiority_depth
     - clarity
     expected_low:
     - free_indirect_quality
     - subtext_presence
+  - id: p03
+    sha256: cf8475708523b12c087cbfa3f04e81a044767b65590679673177a96fb9ae0d7b
+    expected_high: &id017
+    - action_fidelity
+    - voice_distinctiveness
+    - clarity
+    expected_low: &id018
+    - free_indirect_quality
+    - sensory_density
+  - id: p04
+    sha256: aa3b97490e37314eeb3025bd157377103a25a2e1a9445ccf6d223b7b3f49cd3e
+    expected_high: *id017
+    expected_low: *id018
+  - id: p05
+    sha256: 82e94bc20456d6c5bc0a055474243f15a1d405f129cc74ceab05c8b0015c62d0
+    expected_high: *id017
+    expected_low: *id018
+  - id: p06
+    sha256: 15da5e2c424715ae4f70f1502d408d1d760ed872a89a359551a7c0d8b04b21fa
+    expected_high: *id017
+    expected_low: *id018
+  - id: p07
+    sha256: ab2e3914a19ab91e869b959f1d5def4a5c304dab6a8a70d7ecd3c0d0c4b54cc8
+    expected_high: *id017
+    expected_low: *id018
+  - id: p08
+    sha256: 03c7bd588fc46b0eb7a7e21821f2480d0f33a8bbb8c8fa91e74e3ae77a4a2072
+    expected_high: *id017
+    expected_low: *id018
+  - id: p09
+    sha256: ee3b10dfeb2294785e7f302745831d8cb3b14a7d3eb6c9bd188d6c997b3d9e94
+    expected_high: *id017
+    expected_low: *id018
+  - id: p10
+    sha256: cbd12fb6524365631927d3486ccfd6116476b2db7e4e693b5e8819c4b0fa849b
+    expected_high: *id017
+    expected_low: *id018
+  - id: p11
+    sha256: 238983bedc75e0d71b3d2b0f99bdcea09e4fcc2506be866c84f3c5e55478290a
+    expected_high: *id017
+    expected_low: *id018
+  - id: p12
+    sha256: 7ea6aef33aab086cf542df09d26e53862984b9291ac21345d7a2ad07450b9aea
+    expected_high: *id017
+    expected_low: *id018
+  - id: p13
+    sha256: 6bc59d80113dbed7f26364e7dfc162b5397aa2e370be308cef00bf59d564964e
+    expected_high: *id017
+    expected_low: *id018
+  - id: p14
+    sha256: 7ab9b279b79a0e452a7e8613a6e8f72bbb97a069b98a27c303178a62b68ce869
+    expected_high: *id017
+    expected_low: *id018
+  - id: p15
+    sha256: 72ff44118591f09e6332dfdcc779a51e9862658345924acef5a07e6435b1c7f6
+    expected_high: *id017
+    expected_low: *id018
 - id: pale_lights
   title: Pale Lights
   author: ErraticErrata
@@ -586,7 +1099,7 @@ works:
     update_self_containment: 0.7
   passages:
   - id: p01
-    sha256: ca19d3e9a45f81a32c8781daa6e2c7bbb9f9aeed1d59489eba2148e35a347d98
+    sha256: f039292439eca71ea06946518e91725186c556f62d8fbb8a9c85b0eeda109e56
     expected_high:
     - voice_distinctiveness
     - tension_execution
@@ -595,13 +1108,70 @@ works:
     - pacing
     - subtext_presence
   - id: p02
-    sha256: dced56a8dcd86a104b68ab581404b43b6800682fd5a3ae9360f928ef69ab8da0
+    sha256: 8130423b27cdd91eabcce6b18bb39d032a70504a073cda87dc6c462985f3a62b
     expected_high:
     - sentence_variance
     - thematic_presence
     expected_low:
     - pacing
     - clarity
+  - id: p03
+    sha256: a89f193873ed7fd74f0fe5e8ff6ce0500588aa1233b0d14a596b4f9a6b2aa9a2
+    expected_high: &id019
+    - clarity
+    - action_fidelity
+    - voice_distinctiveness
+    expected_low: &id020
+    - free_indirect_quality
+    - subtext_presence
+  - id: p04
+    sha256: dcbad11198dc971e7ab887039589393d21940575d67fa62e3a5c1542fdd7d567
+    expected_high: *id019
+    expected_low: *id020
+  - id: p05
+    sha256: e2bdc3078b513227a7ff1d05b5ec2af1941bf1dd3c16b16f294339222a2a20d1
+    expected_high: *id019
+    expected_low: *id020
+  - id: p06
+    sha256: 9761308965bd76382e9fc8f4d71c7ad71ae86ad85e0dba486cc1783865d24d8d
+    expected_high: *id019
+    expected_low: *id020
+  - id: p07
+    sha256: 591009a80773d4b5bf6cfb7334abf9096f88c31c3b19f85949124397b5a9d194
+    expected_high: *id019
+    expected_low: *id020
+  - id: p08
+    sha256: 332247d1362b1c797d6eacb730f827a9d6212ef0667064b760792ed70436e0f1
+    expected_high: *id019
+    expected_low: *id020
+  - id: p09
+    sha256: 2bd87965970908b151d48386ff5a4a0b3ae437893ce3913e0d2711013698df54
+    expected_high: *id019
+    expected_low: *id020
+  - id: p10
+    sha256: 2e43bec78754d3a68a848fb468f6a235f13e0d932ab680086feea159ddd0ac7b
+    expected_high: *id019
+    expected_low: *id020
+  - id: p11
+    sha256: 0413c53528890b6037dfebae4f01d513faf08873da9e13e303adc9a6bb5c1b0f
+    expected_high: *id019
+    expected_low: *id020
+  - id: p12
+    sha256: 804cfb2c944814d12a52a3b52c74523b7237b107b96ecec7a6456cd10c8be69c
+    expected_high: *id019
+    expected_low: *id020
+  - id: p13
+    sha256: a100dc2ea459b3817015ac89537c74aa37af79298b0d5f5d41b206581d1d4041
+    expected_high: *id019
+    expected_low: *id020
+  - id: p14
+    sha256: b2614dfec7ad9a21ee4c7ddb3ca233ec25be9c8092f52cd35650963d16bb5e06
+    expected_high: *id019
+    expected_low: *id020
+  - id: p15
+    sha256: 552132e23eb950fbef28dd876a6b0ea8ed9e7124eaca01d881261ea69813a360
+    expected_high: *id019
+    expected_low: *id020
 - id: my_man_jeeves
   title: My Man Jeeves
   author: P. G. Wodehouse
@@ -623,7 +1193,7 @@ works:
     pacing: 0.8
   passages:
   - id: p01
-    sha256: a74735234b87aa37b6de4872aff2493a6b3a41f42459047215f55f77fed703c9
+    sha256: 83587bf9b55f763bf516bc9cdde30488340b6d985808cd835f6e6c01a1466ede
     expected_high:
     - voice_distinctiveness
     - clarity
@@ -632,7 +1202,7 @@ works:
     - tension_execution
     - thematic_presence
   - id: p02
-    sha256: a3c91b5220433502baaf376b36f211fa3f4da1fdfa86adbdeef0fbae46f68ea6
+    sha256: 9b640978cd679b0143e4e548fe0f2937920f774a3b7a63eeee7a5be68fd115bb
     expected_high:
     - voice_distinctiveness
     - clarity
@@ -641,7 +1211,7 @@ works:
     - tension_execution
     - thematic_presence
   - id: p03
-    sha256: 7644a2058db5e1046eb3896ac0a87eb36e0e88656740d418758161644f191e20
+    sha256: 5a1f166c8760235c1213c42a32094482fd435fa5a84a59a14182ec96b2437cc5
     expected_high:
     - voice_distinctiveness
     - clarity
@@ -650,7 +1220,7 @@ works:
     - tension_execution
     - thematic_presence
   - id: p04
-    sha256: a074099eb8fb357d2d503302e47dddccc682e9ab64578f816856c07b5cdd3b2e
+    sha256: 34fbe73025495825ac8409430b427c2950712d351440cb3b4e8b3ba024aa4727
     expected_high:
     - voice_distinctiveness
     - clarity
@@ -659,7 +1229,7 @@ works:
     - tension_execution
     - thematic_presence
   - id: p05
-    sha256: 92638dff8ff36a87acde467d6615a5f070f300b17375d04ce6246ccda2222135
+    sha256: 47260a4bf82cf4bc7143ffc0174eca670e0feba3e8d4576f2b91436ce8ed2966
     expected_high:
     - voice_distinctiveness
     - clarity
@@ -668,7 +1238,7 @@ works:
     - tension_execution
     - thematic_presence
   - id: p06
-    sha256: 18aa870fd6aae17005f1cdb5bcf808ddad686f65dcf3c22ee03d5a08d5185ea9
+    sha256: e0f128ad611a8cf937ee2eae8e035116ad3b776535912ad43a5e562c32ce3799
     expected_high:
     - voice_distinctiveness
     - clarity
@@ -677,7 +1247,7 @@ works:
     - tension_execution
     - thematic_presence
   - id: p07
-    sha256: f943226d141a4c964de335d372039fb9ad2afdc298130b2391f6b7371b8fb7fa
+    sha256: 6d7368741e774898587b2fc02be87401b4d95ec9c898da2120badc9767724842
     expected_high:
     - voice_distinctiveness
     - clarity
@@ -686,7 +1256,7 @@ works:
     - tension_execution
     - thematic_presence
   - id: p08
-    sha256: 2e0e46974d918a34d1b358c02a7b2dfef296b93b9e6e436f6303fb8c0b02515d
+    sha256: 39f4b98d20da1c349d846a787062e33412ee24ea57c630fdc145f6a5f16c06e6
     expected_high:
     - voice_distinctiveness
     - clarity
@@ -695,7 +1265,7 @@ works:
     - tension_execution
     - thematic_presence
   - id: p09
-    sha256: fd6a1cfe15ec220d63230991e8badd01aaf283664acc6a2f2c9bd0518757e36e
+    sha256: 34232e7e7365b89e184bfbdd85547bcf5ef3624400c6731d08fb56cecb83d7bc
     expected_high:
     - voice_distinctiveness
     - clarity
@@ -704,7 +1274,7 @@ works:
     - tension_execution
     - thematic_presence
   - id: p10
-    sha256: 61d16cb10f350ee146fde412e582b554f61be031845c4728876da09e11e489fc
+    sha256: 23e71aa355d110710e3d4665526cb739f4d53faae416065e688e548f22fa937e
     expected_high:
     - voice_distinctiveness
     - clarity
@@ -712,6 +1282,31 @@ works:
     expected_low:
     - tension_execution
     - thematic_presence
+  - id: p11
+    sha256: 0ece9689db3775e84a25f55e72e9d45284ad864ab63b5774bf89e1c52537c114
+    expected_high: &id021
+    - pacing
+    - clarity
+    - voice_distinctiveness
+    expected_low: &id022
+    - tension_execution
+    - thematic_presence
+  - id: p12
+    sha256: ee684ce3ee7822f197cad796233bdc434269354d29f6580a26c9169781755125
+    expected_high: *id021
+    expected_low: *id022
+  - id: p13
+    sha256: 7c0729829305321ed78922d9d357a2a06743e30c2c586d6f28d256d0d8823134
+    expected_high: *id021
+    expected_low: *id022
+  - id: p14
+    sha256: 0db5837771c54738b5cef007f9bdb9eb40ac9b01671efb274ec69175f21ade71
+    expected_high: *id021
+    expected_low: *id022
+  - id: p15
+    sha256: c9a93e2c01ffc29f2a33368edee4bb3104a008653f601237c5b061f01f2e268b
+    expected_high: *id021
+    expected_low: *id022
 - id: three_men_in_a_boat
   title: Three Men in a Boat
   author: Jerome K. Jerome
@@ -733,7 +1328,7 @@ works:
     pacing: 0.6
   passages:
   - id: p01
-    sha256: 5dcb756a84e62035f412f8991673c7fd7ca731eb7fcb829de54acfd18405a8d4
+    sha256: c5c2640c9569b6a3f2994da9983ed97d5eea2a866d499323c279991855aa8cc6
     expected_high:
     - voice_distinctiveness
     - clarity
@@ -742,7 +1337,7 @@ works:
     - tension_execution
     - free_indirect_quality
   - id: p02
-    sha256: e0d59ddbcc2d7f52da93af1816071416b3f8727914499cd6b5bc13401e230a00
+    sha256: 4a01da7f1ca353ff5fa016e32947335c6d621d8c90c556dafea8f4d8692d1878
     expected_high:
     - voice_distinctiveness
     - clarity
@@ -751,7 +1346,7 @@ works:
     - tension_execution
     - free_indirect_quality
   - id: p03
-    sha256: 5824b4808736379a85c5ac1b76885e46c593c05268b19b5aae570268be41722f
+    sha256: ae121b9142d349de90e46b242cffd934d8c4039208c83e25b9c927cc87269081
     expected_high:
     - voice_distinctiveness
     - clarity
@@ -760,7 +1355,7 @@ works:
     - tension_execution
     - free_indirect_quality
   - id: p04
-    sha256: 7f133ad47117a11e5641c5491336a838fe94091820948de52afb568a45c500db
+    sha256: 99744f1929553d62a74ae5940a1f4182233852fee4ed1bbbb2644507bb52a7a6
     expected_high:
     - voice_distinctiveness
     - clarity
@@ -769,7 +1364,7 @@ works:
     - tension_execution
     - free_indirect_quality
   - id: p05
-    sha256: e85b814e932a91edb2a469d8dd86673d166f3868b43b551fe3d4aaedeb674489
+    sha256: 9636fb09211e091b3b17d99ff888e2453e423453acf8f576a0d12d97a9af625d
     expected_high:
     - voice_distinctiveness
     - clarity
@@ -778,7 +1373,7 @@ works:
     - tension_execution
     - free_indirect_quality
   - id: p06
-    sha256: 7777f424441d8c78a7cd9bda6e138ee348c0b08cdab2ad72b25907c1095d4b05
+    sha256: 936c0205759a617ff6ace225b48b60b1e4a298395e57dcaa4363eba419a3262a
     expected_high:
     - voice_distinctiveness
     - clarity
@@ -787,7 +1382,7 @@ works:
     - tension_execution
     - free_indirect_quality
   - id: p07
-    sha256: c8750d9614ca0f3857a0c74204cc76895147ba6847fdd4b045d4b214d7d7a2fc
+    sha256: 87d8814adf01ca831e0f02351bd8df0932c84af83a8e3db17f382e7d5eca9ed8
     expected_high:
     - voice_distinctiveness
     - clarity
@@ -796,7 +1391,7 @@ works:
     - tension_execution
     - free_indirect_quality
   - id: p08
-    sha256: bb08aa782dd3682e24e53918bd4f853a49dfcbb61ada986b547e8b1b5fae15ee
+    sha256: 5f16d8c1feba9a9656061495e9b8132997e41fb79981ac820b1a3d7be576eb24
     expected_high:
     - voice_distinctiveness
     - clarity
@@ -805,7 +1400,7 @@ works:
     - tension_execution
     - free_indirect_quality
   - id: p09
-    sha256: 144e06cbc6d2db2115ba9c0205ba7b48867aa85b32997172bca973552afb003f
+    sha256: f0fa1f84701b194869bd60d0ee3fb7ca61ce8e0218edf6068e9b352ae1cb3b5e
     expected_high:
     - voice_distinctiveness
     - clarity
@@ -814,7 +1409,7 @@ works:
     - tension_execution
     - free_indirect_quality
   - id: p10
-    sha256: ef5801b8858ed867a0b00effd06c9aed31deadc3284bbeca986963759f9a471b
+    sha256: cea4862491ddbf1d76d60760da64f9db47c5f39f037da78ec7c346f4308fe873
     expected_high:
     - voice_distinctiveness
     - clarity
@@ -822,3 +1417,113 @@ works:
     expected_low:
     - tension_execution
     - free_indirect_quality
+  - id: p11
+    sha256: 18ab7b8d0b3d39d19186b5917105d618864431b1453c1089f6f94bb86bbd9831
+    expected_high: &id023
+    - sentence_variance
+    - voice_distinctiveness
+    - clarity
+    expected_low: &id024
+    - tension_execution
+    - free_indirect_quality
+  - id: p12
+    sha256: 932c0e45e89259ba0118461d250fc9881c94cb11ebf1feec7891a94b8efa735b
+    expected_high: *id023
+    expected_low: *id024
+  - id: p13
+    sha256: 7680862afe4925b784b7d880502c83ff898f29a1e09c53e585b3f44d52a5c96a
+    expected_high: *id023
+    expected_low: *id024
+  - id: p14
+    sha256: b2b546d1e77d4177f4067bb24f4de190c2fc89e2f722b97a068e35c4fd9e48ea
+    expected_high: *id023
+    expected_low: *id024
+  - id: p15
+    sha256: d0956ae0e321f045f4d563d093ccce27312c06c1642d18c9863c6cdb847dfb64
+    expected_high: *id023
+    expected_low: *id024
+- id: guards_guards
+  title: Guards! Guards!
+  author: Terry Pratchett
+  year: 1989
+  pov: third_omniscient_fis
+  is_quest: false
+  expected:
+    free_indirect_quality: 0.75
+    interiority_depth: 0.55
+    detail_characterization: 0.65
+    sensory_density: 0.45
+    voice_distinctiveness: 0.9
+    sentence_variance: 0.65
+    tension_execution: 0.6
+    thematic_presence: 0.75
+    subtext_presence: 0.55
+    clarity: 0.9
+    dialogue_ratio: 0.5
+    pacing: 0.75
+  passages:
+  - id: p01
+    sha256: fe407a68d72cfe163b812e739c77c41e6a675eafc53fc38579ebf9586940228b
+    expected_high: &id025
+    - pacing
+    - voice_distinctiveness
+    - clarity
+    expected_low: &id026
+    - sensory_density
+    - dialogue_ratio
+  - id: p02
+    sha256: fa4e7cdbc85bcf01135ea8ae1325aee9d476c857b262ecfa1ca225ba58ed0d25
+    expected_high: *id025
+    expected_low: *id026
+  - id: p03
+    sha256: af1f479ac030630fa59d6ead15a6cf840d60a05e97b78ecf15495fa6983fc14d
+    expected_high: *id025
+    expected_low: *id026
+  - id: p04
+    sha256: 3c54e95d253703f0d03eeecd46958eb9396e7ee259cb599e421677619cac162a
+    expected_high: *id025
+    expected_low: *id026
+  - id: p05
+    sha256: c3b7f364dbf55dd873df309db1b56eed6cf9f74801bba51ac347cf5f394e052f
+    expected_high: *id025
+    expected_low: *id026
+  - id: p06
+    sha256: e26c5a00be1ed484f9e6b4a6d811b40f6078c0629cc358087e23e2ca15db19e3
+    expected_high: *id025
+    expected_low: *id026
+  - id: p07
+    sha256: 534694f2f26cdd8303f3df6161b087c5f026997e4d21a935d0ddb028535b717b
+    expected_high: *id025
+    expected_low: *id026
+  - id: p08
+    sha256: 1b1ab37eab3b2a6cfb1e1e0e161708f70c71da5c40a3c227f3d08416e42669ff
+    expected_high: *id025
+    expected_low: *id026
+  - id: p09
+    sha256: e2c2d81ca261012e36efe6bc66fa904d4cea4b6a35ac587654a778094711c62d
+    expected_high: *id025
+    expected_low: *id026
+  - id: p10
+    sha256: b2d3bc067ddfa68f59ae72298887c33663c01f998b911e630ee45ce89679464d
+    expected_high: *id025
+    expected_low: *id026
+  - id: p11
+    sha256: 381c41682c4e77bf5b5ac090291beeb3d8e3fc78f66558442efa3c1922ed6825
+    expected_high: *id025
+    expected_low: *id026
+  - id: p12
+    sha256: 2c35fc1834dd8717d3eba547f4dcb55871a606c4e2b9cc82468aafc88484afdc
+    expected_high: *id025
+    expected_low: *id026
+  - id: p13
+    sha256: 06fbd17fe4f9ca00f2208aeddd051df457023db73d087e6413cd4cd6ac8994e3
+    expected_high: *id025
+    expected_low: *id026
+  - id: p14
+    sha256: 639378b142bc351554a08e6766c56eee3ca824eb1b08223bc26325b8ea3646ee
+    expected_high: *id025
+    expected_low: *id026
+  - id: p15
+    sha256: ef295b30243b018b791056a8904fa0df5661f13080b594367cc4f4df702534d4
+    expected_high: *id025
+    expected_low: *id026
