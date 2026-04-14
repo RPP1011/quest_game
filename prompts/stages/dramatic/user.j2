@@ -176,4 +176,19 @@ imitate.
 ---
 
 {% endif %}
+{% if ripe_hooks %}
+## Foreshadowing eligible for payoff
+
+Planted hooks whose payoff window is ripe or overdue. Consider
+selecting a scene that resolves (or meaningfully advances) one of
+these; do not force a payoff if the dramatic shape doesn't support
+it, but treat this list as the layer's live continuity debt.
+
+{% for h in ripe_hooks %}
+- {{ h.description }} (planted update {{ h.planted_at_update }}, target {{ h.target_update_min }}-{{ h.target_update_max }}, status: {{ h.status }}, payoff: {{ h.payoff_description }})
+{% endfor %}
+
+---
+
+{% endif %}
 Produce the dramatic plan now.

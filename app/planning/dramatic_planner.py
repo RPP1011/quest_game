@@ -1,13 +1,22 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from app.craft.library import CraftLibrary
 from app.craft.schemas import Arc, Structure
 from app.engine.prompt_renderer import PromptRenderer
 from app.planning.schemas import ArcDirective, DramaticPlan
-from app.retrieval import Query, QueryFilters, SceneShapeRetriever
+from app.retrieval import (
+    Query,
+    QueryFilters,
+    SceneShapeRetriever,
+)
 from app.runtime.client import ChatMessage, InferenceClient
 from app.world.output_parser import OutputParser
 from app.world.state_manager import WorldStateManager
+
+if TYPE_CHECKING:
+    from app.retrieval.foreshadowing_retriever import ForeshadowingRetriever
 
 
 class DramaticPlanner:
@@ -40,6 +49,8 @@ class DramaticPlanner:
         recent_tool_ids: list[str] | None = None,
         quest_id: str | None = None,
         scene_retriever: SceneShapeRetriever | None = None,
+        foreshadowing_retriever: ForeshadowingRetriever | None = None,
+        update_number: int | None = None,
     ) -> DramaticPlan:
         """Generate a ``DramaticPlan`` for the current update.
 
@@ -118,6 +129,17 @@ class DramaticPlanner:
                 scene_retriever, directive
             )
 
+        # Wave 4b: optional ripe-foreshadowing retrieval. When both a
+        # ``foreshadowing_retriever`` and an ``update_number`` are in
+        # scope, fetch up to k=3 hooks the dramatic layer could now
+        # pay off, so the LLM sees candidates for scene-level payoff
+        # selection.
+        ripe_hooks: list[dict] = []
+        if foreshadowing_retriever is not None and update_number is not None:
+            ripe_hooks = await self._retrieve_ripe_hooks(
+                foreshadowing_retriever, update_number
+            )
+
         schema = DramaticPlan.model_json_schema()
 
         system_prompt = self._renderer.render(
@@ -137,6 +159,7 @@ class DramaticPlanner:
                 "reader_state": reader_state,
                 "information_asymmetries": asymmetries,
                 "scene_exemplars": scene_exemplars,
+                "ripe_hooks": ripe_hooks,
             },
         )
 
@@ -213,3 +236,37 @@ class DramaticPlanner:
                 }
             )
         return exemplars
+
+    async def _retrieve_ripe_hooks(
+        self,
+        foreshadowing_retriever: ForeshadowingRetriever,
+        update_number: int,
+    ) -> list[dict]:
+        """Pull up to k=3 ripe foreshadowing hooks for the current update.
+
+        Retrieval failures are swallowed — the planner runs without
+        ``ripe_hooks`` rather than crashing on an advisory signal.
+        """
+        query = Query(filters={"current_update": int(update_number)})
+        try:
+            results = await foreshadowing_retriever.retrieve(query, k=3)
+        except Exception:
+            return []
+
+        hooks: list[dict] = []
+        for r in results:
+            meta = r.metadata or {}
+            hooks.append(
+                {
+                    "source_id": r.source_id,
+                    "description": r.text,
+                    "hook_id": meta.get("hook_id"),
+                    "status": meta.get("status"),
+                    "planted_at_update": meta.get("planted_at_update"),
+                    "target_update_min": meta.get("target_update_min"),
+                    "target_update_max": meta.get("target_update_max"),
+                    "payoff_description": meta.get("payoff_description"),
+                    "ripeness_status": meta.get("ripeness_status"),
+                }
+            )
+        return hooks
