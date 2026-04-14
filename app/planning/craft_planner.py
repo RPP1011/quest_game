@@ -259,10 +259,16 @@ class CraftPlanner:
         # mid-scene (xgrammar can stop early on long deeply-nested
         # objects). One in-band retry catches those cases — much cheaper
         # than letting _retry_with_critic do it because we keep the
-        # whole context+schema setup intact. ParseError propagates if
-        # the second attempt also fails (caller falls back to stub).
-        # ``max_tokens`` is kept conservative so prompt + completion
-        # stays under the 16k model_max_len even with the full
+        # whole context+schema setup intact.
+        # Day 13: added a third, deterministic retry at ``temperature=0.0``
+        # with a smaller ``max_tokens=4096``. Day 12 showed 9/20 fallbacks
+        # at 20ch despite the Day 11 single retry. Long-context generations
+        # drift sampling; a cold-temperature short-budget pass is the
+        # cheapest way to coerce a clean JSON under context pressure. If
+        # this third attempt also fails, the fallback stub is the correct
+        # behaviour (the model genuinely cannot produce valid JSON here).
+        # ``max_tokens`` on attempts 1-2 is kept at 6144 so prompt +
+        # completion stays under the 16k model_max_len even with the full
         # retriever pile-on; bumping to 12k caused 400 Bad Request
         # responses on long-context updates.
         from app.world.output_parser import ParseError
@@ -275,13 +281,24 @@ class CraftPlanner:
         try:
             plan = OutputParser.parse_json(raw, schema=CraftPlan)
         except ParseError:
-            raw = await self._client.chat_structured(
-                messages,
-                json_schema=schema,
-                schema_name="CraftPlan",
-                max_tokens=6144,
-            )
-            plan = OutputParser.parse_json(raw, schema=CraftPlan)
+            try:
+                raw = await self._client.chat_structured(
+                    messages,
+                    json_schema=schema,
+                    schema_name="CraftPlan",
+                    max_tokens=6144,
+                )
+                plan = OutputParser.parse_json(raw, schema=CraftPlan)
+            except ParseError:
+                # Day 13: final deterministic retry with a smaller budget.
+                raw = await self._client.chat_structured(
+                    messages,
+                    json_schema=schema,
+                    schema_name="CraftPlan",
+                    temperature=0.0,
+                    max_tokens=4096,
+                )
+                plan = OutputParser.parse_json(raw, schema=CraftPlan)
 
         # Day 11: realign craft scene_ids (and brief scene_ids) to
         # dramatic scene_ids by position. Small models routinely

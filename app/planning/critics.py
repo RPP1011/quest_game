@@ -500,7 +500,7 @@ def validate_narrator_sensory_distribution(
     narrator: "object | None",
     prose: str,
     *,
-    threshold: float = 0.6,
+    threshold: float = 0.7,
     min_total_hits: int = 6,
 ) -> list["ValidationIssue"]:
     """Compare prose's sensory-channel distribution to ``narrator.sensory_bias``.
@@ -515,8 +515,11 @@ def validate_narrator_sensory_distribution(
     prose:
         The generated prose to evaluate.
     threshold:
-        L1 distance threshold (0..2). Default 0.6 — a distribution that
-        disagrees on roughly 30% of its mass.
+        L1 distance threshold (0..2). Day 13: loosened from 0.6 → 0.7 after
+        Day 12 showed 11/15 flagged updates sat in [0.6, 1.14] — the 0.6
+        tripwire was overaggressive for short scenes with LFM1.2B's
+        interoceptive-heavy default. 0.7 still catches genuine drift
+        (L1 >= 1.0 is common on broken runs) without flagging noise.
     min_total_hits:
         Skip the check when the prose has fewer sensory-keyword hits than
         this.  Short prose can't yield a reliable distribution.
