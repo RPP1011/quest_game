@@ -1,0 +1,484 @@
+# Calibration Corpus Manifest
+#
+# Ground-truth expected scores per work/dimension. Scores are 0..1 where 1 is
+# maximally present/effective. Passages are supplied at runtime (see
+# docs/calibration.md) — the manifest declares slots with `sha256: PENDING` and
+# `calibrate init` fills in real hashes.
+#
+# Quest-only dimensions (choice_hook_quality, update_self_containment,
+# choice_meaningfulness, world_state_legibility, action_fidelity) only apply
+# when is_quest: true. The harness skips them for novels.
+
+version: 1
+scoring:
+  # Critic-based score mapping (documented in app/calibration/scorer.py):
+  #   score = max(0.0, 1.0 - (num_errors * 0.25 + num_warnings * 0.10))
+  critic_error_weight: 0.25
+  critic_warning_weight: 0.10
+
+works:
+  - id: mrs_dalloway
+    title: Mrs. Dalloway
+    author: Virginia Woolf
+    year: 1925
+    pov: third_omniscient_fis
+    is_quest: false
+    expected:
+      free_indirect_quality: 0.95
+      interiority_depth: 0.95
+      detail_characterization: 0.9
+      sensory_density: 0.8
+      voice_distinctiveness: 0.85
+      sentence_variance: 0.9
+      tension_execution: 0.4
+      thematic_presence: 0.85
+      subtext_presence: 0.9
+      clarity: 0.5
+      dialogue_ratio: 0.3
+      pacing: 0.3
+    passages:
+      - id: p01
+        sha256: PENDING
+        expected_high: [free_indirect_quality, interiority_depth, subtext_presence]
+        expected_low: [tension_execution, clarity]
+      - id: p02
+        sha256: PENDING
+        expected_high: [sentence_variance, thematic_presence]
+        expected_low: [dialogue_ratio, pacing]
+
+  - id: sun_also_rises
+    title: The Sun Also Rises
+    author: Ernest Hemingway
+    year: 1926
+    pov: first
+    is_quest: false
+    expected:
+      free_indirect_quality: 0.3
+      interiority_depth: 0.15
+      detail_characterization: 0.7
+      sensory_density: 0.6
+      voice_distinctiveness: 0.85
+      sentence_variance: 0.2
+      tension_execution: 0.6
+      thematic_presence: 0.7
+      subtext_presence: 0.95
+      clarity: 0.9
+      dialogue_ratio: 0.7
+      pacing: 0.6
+    passages:
+      - id: p01
+        sha256: PENDING
+        expected_high: [subtext_presence, clarity, voice_distinctiveness]
+        expected_low: [interiority_depth, sentence_variance]
+      - id: p02
+        sha256: PENDING
+        expected_high: [dialogue_ratio, clarity]
+        expected_low: [free_indirect_quality, interiority_depth]
+
+  - id: madame_bovary
+    title: Madame Bovary
+    author: Gustave Flaubert
+    year: 1857
+    pov: third_limited_fis
+    is_quest: false
+    expected:
+      free_indirect_quality: 0.9
+      interiority_depth: 0.7
+      detail_characterization: 0.95
+      sensory_density: 0.8
+      voice_distinctiveness: 0.7
+      sentence_variance: 0.7
+      tension_execution: 0.6
+      thematic_presence: 0.85
+      subtext_presence: 0.85
+      clarity: 0.75
+      dialogue_ratio: 0.4
+      pacing: 0.5
+    passages:
+      - id: p01
+        sha256: PENDING
+        expected_high: [free_indirect_quality, detail_characterization, subtext_presence]
+        expected_low: [dialogue_ratio, pacing]
+      - id: p02
+        sha256: PENDING
+        expected_high: [sensory_density, thematic_presence]
+        expected_low: [dialogue_ratio, tension_execution]
+
+  - id: ulysses
+    title: Ulysses
+    author: James Joyce
+    year: 1922
+    pov: mixed_stream
+    is_quest: false
+    expected:
+      free_indirect_quality: 0.9
+      interiority_depth: 0.95
+      detail_characterization: 0.9
+      sensory_density: 0.9
+      voice_distinctiveness: 0.95
+      sentence_variance: 0.95
+      tension_execution: 0.3
+      thematic_presence: 0.8
+      subtext_presence: 0.9
+      clarity: 0.15
+      dialogue_ratio: 0.5
+      pacing: 0.3
+    passages:
+      - id: p01
+        sha256: PENDING
+        expected_high: [interiority_depth, voice_distinctiveness, sentence_variance]
+        expected_low: [clarity, pacing]
+      - id: p02
+        sha256: PENDING
+        expected_high: [sensory_density, free_indirect_quality]
+        expected_low: [clarity, tension_execution]
+
+  - id: blood_meridian
+    title: Blood Meridian
+    author: Cormac McCarthy
+    year: 1985
+    pov: third_omniscient
+    is_quest: false
+    expected:
+      free_indirect_quality: 0.2
+      interiority_depth: 0.1
+      detail_characterization: 0.5
+      sensory_density: 0.95
+      voice_distinctiveness: 0.6
+      sentence_variance: 0.8
+      tension_execution: 0.7
+      thematic_presence: 0.9
+      subtext_presence: 0.6
+      clarity: 0.6
+      dialogue_ratio: 0.25
+      pacing: 0.5
+    passages:
+      - id: p01
+        sha256: PENDING
+        expected_high: [sensory_density, thematic_presence, sentence_variance]
+        expected_low: [interiority_depth, free_indirect_quality]
+      - id: p02
+        sha256: PENDING
+        expected_high: [tension_execution, sensory_density]
+        expected_low: [interiority_depth, dialogue_ratio]
+
+  - id: pride_and_prejudice
+    title: Pride and Prejudice
+    author: Jane Austen
+    year: 1813
+    pov: third_limited_fis
+    is_quest: false
+    expected:
+      free_indirect_quality: 0.85
+      interiority_depth: 0.6
+      detail_characterization: 0.7
+      sensory_density: 0.3
+      voice_distinctiveness: 0.9
+      sentence_variance: 0.6
+      tension_execution: 0.65
+      thematic_presence: 0.8
+      subtext_presence: 0.8
+      clarity: 0.9
+      dialogue_ratio: 0.65
+      pacing: 0.65
+    passages:
+      - id: p01
+        sha256: PENDING
+        expected_high: [free_indirect_quality, voice_distinctiveness, clarity]
+        expected_low: [sensory_density, interiority_depth]
+      - id: p02
+        sha256: PENDING
+        expected_high: [dialogue_ratio, subtext_presence]
+        expected_low: [sensory_density, sentence_variance]
+
+  - id: brothers_karamazov
+    title: The Brothers Karamazov
+    author: Fyodor Dostoevsky
+    year: 1880
+    pov: third_omniscient
+    is_quest: false
+    expected:
+      free_indirect_quality: 0.5
+      interiority_depth: 0.85
+      detail_characterization: 0.6
+      sensory_density: 0.4
+      voice_distinctiveness: 0.95
+      sentence_variance: 0.7
+      tension_execution: 0.8
+      thematic_presence: 0.95
+      subtext_presence: 0.5
+      clarity: 0.7
+      dialogue_ratio: 0.6
+      pacing: 0.5
+    passages:
+      - id: p01
+        sha256: PENDING
+        expected_high: [thematic_presence, interiority_depth, voice_distinctiveness]
+        expected_low: [sensory_density, subtext_presence]
+      - id: p02
+        sha256: PENDING
+        expected_high: [tension_execution, dialogue_ratio]
+        expected_low: [sensory_density, subtext_presence]
+
+  - id: left_hand_of_darkness
+    title: The Left Hand of Darkness
+    author: Ursula K. Le Guin
+    year: 1969
+    pov: first_mixed
+    is_quest: false
+    expected:
+      free_indirect_quality: 0.5
+      interiority_depth: 0.6
+      detail_characterization: 0.8
+      sensory_density: 0.7
+      voice_distinctiveness: 0.8
+      sentence_variance: 0.6
+      tension_execution: 0.7
+      thematic_presence: 0.9
+      subtext_presence: 0.75
+      clarity: 0.8
+      dialogue_ratio: 0.4
+      pacing: 0.6
+    passages:
+      - id: p01
+        sha256: PENDING
+        expected_high: [thematic_presence, detail_characterization, voice_distinctiveness]
+        expected_low: [dialogue_ratio, free_indirect_quality]
+      - id: p02
+        sha256: PENDING
+        expected_high: [sensory_density, subtext_presence]
+        expected_low: [dialogue_ratio, free_indirect_quality]
+
+  - id: get_shorty
+    title: Get Shorty
+    author: Elmore Leonard
+    year: 1990
+    pov: third_limited_fis
+    is_quest: false
+    expected:
+      free_indirect_quality: 0.6
+      interiority_depth: 0.3
+      detail_characterization: 0.6
+      sensory_density: 0.35
+      voice_distinctiveness: 0.9
+      sentence_variance: 0.5
+      tension_execution: 0.75
+      thematic_presence: 0.4
+      subtext_presence: 0.5
+      clarity: 0.95
+      dialogue_ratio: 0.8
+      pacing: 0.85
+    passages:
+      - id: p01
+        sha256: PENDING
+        expected_high: [clarity, dialogue_ratio, voice_distinctiveness]
+        expected_low: [interiority_depth, sensory_density]
+      - id: p02
+        sha256: PENDING
+        expected_high: [pacing, tension_execution]
+        expected_low: [interiority_depth, thematic_presence]
+
+  - id: remains_of_the_day
+    title: The Remains of the Day
+    author: Kazuo Ishiguro
+    year: 1989
+    pov: first
+    is_quest: false
+    expected:
+      free_indirect_quality: 0.4
+      interiority_depth: 0.7
+      detail_characterization: 0.85
+      sensory_density: 0.5
+      voice_distinctiveness: 0.6
+      sentence_variance: 0.5
+      tension_execution: 0.6
+      thematic_presence: 0.9
+      subtext_presence: 0.95
+      clarity: 0.85
+      dialogue_ratio: 0.4
+      pacing: 0.5
+    passages:
+      - id: p01
+        sha256: PENDING
+        expected_high: [subtext_presence, thematic_presence, detail_characterization]
+        expected_low: [dialogue_ratio, free_indirect_quality]
+      - id: p02
+        sha256: PENDING
+        expected_high: [interiority_depth, clarity]
+        expected_low: [dialogue_ratio, free_indirect_quality]
+
+  - id: blade_itself
+    title: The Blade Itself
+    author: Joe Abercrombie
+    year: 2006
+    pov: third_limited_multi
+    is_quest: false
+    expected:
+      free_indirect_quality: 0.65
+      interiority_depth: 0.6
+      detail_characterization: 0.6
+      sensory_density: 0.6
+      voice_distinctiveness: 0.8
+      sentence_variance: 0.6
+      tension_execution: 0.75
+      thematic_presence: 0.5
+      subtext_presence: 0.45
+      clarity: 0.85
+      dialogue_ratio: 0.5
+      pacing: 0.75
+    passages:
+      - id: p01
+        sha256: PENDING
+        expected_high: [voice_distinctiveness, tension_execution, clarity]
+        expected_low: [subtext_presence, thematic_presence]
+      - id: p02
+        sha256: PENDING
+        expected_high: [free_indirect_quality, pacing]
+        expected_low: [subtext_presence, thematic_presence]
+
+  - id: way_of_kings
+    title: The Way of Kings
+    author: Brandon Sanderson
+    year: 2010
+    pov: third_limited_multi
+    is_quest: false
+    expected:
+      free_indirect_quality: 0.3
+      interiority_depth: 0.5
+      detail_characterization: 0.4
+      sensory_density: 0.5
+      voice_distinctiveness: 0.4
+      sentence_variance: 0.4
+      tension_execution: 0.75
+      thematic_presence: 0.6
+      subtext_presence: 0.25
+      clarity: 0.95
+      dialogue_ratio: 0.45
+      pacing: 0.6
+    passages:
+      - id: p01
+        sha256: PENDING
+        expected_high: [clarity, tension_execution]
+        expected_low: [subtext_presence, free_indirect_quality]
+      - id: p02
+        sha256: PENDING
+        expected_high: [clarity, pacing]
+        expected_low: [subtext_presence, voice_distinctiveness]
+
+  - id: marked_for_death
+    title: Marked for Death
+    author: eaglejarl & Velorien
+    year: 2015
+    pov: second
+    is_quest: true
+    expected:
+      free_indirect_quality: 0.4
+      interiority_depth: 0.55
+      detail_characterization: 0.55
+      sensory_density: 0.4
+      voice_distinctiveness: 0.7
+      sentence_variance: 0.5
+      tension_execution: 0.75
+      thematic_presence: 0.6
+      subtext_presence: 0.35
+      clarity: 0.9
+      pacing: 0.7
+      choice_hook_quality: 0.8
+      action_fidelity: 0.85
+      update_self_containment: 0.75
+    passages:
+      - id: p01
+        sha256: PENDING
+        expected_high: [clarity, choice_hook_quality, tension_execution]
+        expected_low: [subtext_presence, sensory_density]
+      - id: p02
+        sha256: PENDING
+        expected_high: [action_fidelity, update_self_containment]
+        expected_low: [subtext_presence, free_indirect_quality]
+
+  - id: forge_of_destiny
+    title: Forge of Destiny
+    author: yrsillar
+    year: 2017
+    pov: third_limited
+    is_quest: true
+    expected:
+      free_indirect_quality: 0.55
+      interiority_depth: 0.6
+      detail_characterization: 0.6
+      sensory_density: 0.65
+      voice_distinctiveness: 0.65
+      sentence_variance: 0.55
+      tension_execution: 0.65
+      thematic_presence: 0.6
+      subtext_presence: 0.45
+      clarity: 0.8
+      pacing: 0.6
+      choice_hook_quality: 0.65
+      action_fidelity: 0.7
+      update_self_containment: 0.7
+    passages:
+      - id: p01
+        sha256: PENDING
+        expected_high: [sensory_density, clarity, update_self_containment]
+        expected_low: [subtext_presence, sentence_variance]
+      - id: p02
+        sha256: PENDING
+        expected_high: [action_fidelity, interiority_depth]
+        expected_low: [subtext_presence, sentence_variance]
+
+  - id: practical_guide_evil
+    title: A Practical Guide to Evil
+    author: ErraticErrata
+    year: 2015
+    pov: first
+    is_quest: true
+    expected:
+      free_indirect_quality: 0.3
+      interiority_depth: 0.7
+      detail_characterization: 0.6
+      sensory_density: 0.5
+      voice_distinctiveness: 0.85
+      sentence_variance: 0.6
+      tension_execution: 0.8
+      thematic_presence: 0.8
+      subtext_presence: 0.5
+      clarity: 0.85
+      pacing: 0.7
+    passages:
+      - id: p01
+        sha256: PENDING
+        expected_high: [voice_distinctiveness, tension_execution, thematic_presence]
+        expected_low: [free_indirect_quality, sensory_density]
+      - id: p02
+        sha256: PENDING
+        expected_high: [interiority_depth, clarity]
+        expected_low: [free_indirect_quality, subtext_presence]
+
+  - id: pale_lights
+    title: Pale Lights
+    author: ErraticErrata
+    year: 2023
+    pov: third_limited_multi
+    is_quest: true
+    expected:
+      free_indirect_quality: 0.6
+      interiority_depth: 0.65
+      detail_characterization: 0.7
+      sensory_density: 0.65
+      voice_distinctiveness: 0.85
+      sentence_variance: 0.7
+      tension_execution: 0.75
+      thematic_presence: 0.7
+      subtext_presence: 0.6
+      clarity: 0.75
+      pacing: 0.6
+    passages:
+      - id: p01
+        sha256: PENDING
+        expected_high: [voice_distinctiveness, tension_execution, detail_characterization]
+        expected_low: [pacing, subtext_presence]
+      - id: p02
+        sha256: PENDING
+        expected_high: [sentence_variance, thematic_presence]
+        expected_low: [pacing, clarity]
