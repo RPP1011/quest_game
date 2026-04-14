@@ -160,13 +160,30 @@ async def main():
 
     # Construct a Scorer so n_candidates>1 actually uses scorer-driven
     # rerank (the weighted 12-dim sum) instead of picking the first
-    # candidate. The Scorer has no I/O on construction, so it's cheap
-    # to always include. Default N stays at 1: at 10-action runs N=4
-    # improved pacing but regressed dialogue_ratio and sentence_variance
-    # (the saturated critic dims dilute the ranking signal). Bump via
-    # ``N=4 python tools/story_gen.py`` when running ablations.
+    # candidate. Default N stays at 1 (fastest); bump via ``N=4
+    # python tools/story_gen.py`` for quality rerank.
     from app.scoring.scorer import Scorer
     scorer = Scorer()
+
+    # Rerank weights tuned on a 10-action noir stress. Equal weights let
+    # the 7 critic-derived dims (which saturate near 1.0 under a lenient
+    # 1.2B critic) dilute the signal from the 5 heuristic/action dims
+    # that actually move. Up-weighting the movers recovered most of the
+    # N=4 quality at 10ch and lifted sentence_variance.
+    rerank_weights = {
+        "dialogue_ratio": 3.0,
+        "sentence_variance": 2.5,
+        "sensory_density": 2.0,
+        "pacing": 1.0,
+        "action_fidelity": 1.0,
+        "free_indirect_quality": 0.1,
+        "detail_characterization": 0.1,
+        "metaphor_domains_score": 0.1,
+        "indirection_score": 0.1,
+        "pov_adherence": 0.1,
+        "named_entity_presence": 0.1,
+        "narrator_sensory_match": 0.1,
+    }
 
     pipeline = Pipeline(
         sm, cb, client,
@@ -177,6 +194,7 @@ async def main():
         craft_library=craft_library,
         structure=structure,
         scorer=scorer,
+        rerank_weights=rerank_weights,
         quest_config={
             "narrator": SEED["narrator"],
             "genre": "low-fantasy noir",
