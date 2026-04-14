@@ -9,6 +9,7 @@ Public names will grow as each retrieval wave adds its retriever.
 
 from __future__ import annotations
 
+from app.retrieval.craft_retriever import CraftRetriever
 from app.retrieval.embeddings import Embedder, EmbeddingCache
 from app.retrieval.interface import Query, QueryFilters, Result, Retriever
 from app.retrieval.passage_retriever import PassageRetriever
@@ -21,4 +22,5 @@ __all__ = [
     "Embedder",
     "EmbeddingCache",
     "PassageRetriever",
+    "CraftRetriever",
 ]
