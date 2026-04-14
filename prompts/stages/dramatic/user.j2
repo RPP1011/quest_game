@@ -157,4 +157,23 @@ No specific tools recommended for this phase.
 
 ---
 
+{% if scene_exemplars %}
+## Scene-shape Exemplars
+
+Arc-scale scenes from the literary corpus whose tension envelope and
+coherence match this directive. Use them as reference shapes for the
+kind of scene the arc layer is asking you to plan — not as prose to
+imitate.
+
+{% for ex in scene_exemplars %}
+### `{{ ex.source_id }}`{% if ex.dramatic_function %} — {{ ex.dramatic_function }}{% endif %}
+
+{% if ex.tension_execution is not none %}*tension_execution: {{ "%.2f" | format(ex.tension_execution) }}*{% endif %}{% if ex.scene_coherence is not none %} · *scene_coherence: {{ "%.2f" | format(ex.scene_coherence) }}*{% endif %}
+
+> {{ ex.preview }}
+
+{% endfor %}
+---
+
+{% endif %}
 Produce the dramatic plan now.

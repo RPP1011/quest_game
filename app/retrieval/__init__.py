@@ -13,6 +13,7 @@ from app.retrieval.craft_retriever import CraftRetriever
 from app.retrieval.embeddings import Embedder, EmbeddingCache
 from app.retrieval.interface import Query, QueryFilters, Result, Retriever
 from app.retrieval.passage_retriever import PassageRetriever
+from app.retrieval.scene_retriever import SceneShapeRetriever
 
 __all__ = [
     "Query",
@@ -23,4 +24,5 @@ __all__ = [
     "EmbeddingCache",
     "PassageRetriever",
     "CraftRetriever",
+    "SceneShapeRetriever",
 ]
