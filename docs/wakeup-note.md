@@ -54,15 +54,16 @@ failure and nothing else.** Further craft improvements need way more SFT data
 
 ## Biggest suggested next moves
 
-1. **LoRA v2 corpus build**. Run `tools/story_gen.py` + `tools/stress_test_50.py`
-   across 3-5 diverse seeds with retrieval ON to collect 200-300 SFT records.
-   Then Claude winner-picks + train LoRA v2 at rank 64, 5 epochs. Expected
-   gains: sentence_variance, dialogue_ratio, pacing all move. This is Phase 2
-   Week 5 pulled forward because it gates everything else.
+1. **LoRA v3 corpus build**. Run `tools/story_gen.py` + `tools/stress_test_50.py`
+   across 3-5 diverse seeds with retrieval ON to collect 200-300 SFT records
+   (v2 was 64). Then Claude winner-picks + train LoRA v3 at rank 64, 5 epochs.
+   Expected gains: sentence_variance, dialogue_ratio, pacing all move further.
 
-2. **Fix the warmup instability**. The Day 14 front-10/back-10 split (20% / 90%)
-   is suspicious — something about initial pipeline state causes early-chapter
-   failures. Worth inspecting the first 5 traces for patterns.
+2. **Fix the warmup instability**. Day 14 front-10/back-10 was 20%/90%. Commit
+   rate is now ~100% at 20ch, but the wider dynamic (prose quality degrades
+   with context) persists — dialogue_ratio and sentence_variance both drop
+   from 10ch to 20ch. Retrieval quest memory (narrative_embeddings) is now
+   live as of 2026-04-14 afternoon — need to verify whether it lifts this.
 
 3. **Make the auto-improvement loop actually automatic.** Day 7 shipped
    `PromptOptimizer` + `ExampleCurator` as libraries. Wrap them in a cron that
@@ -73,6 +74,49 @@ failure and nothing else.** Further craft improvements need way more SFT data
    the r > 0.7 target needs a real model. If LFM2.5 as judge isn't credible
    (it isn't — 1.2B literary judge is too small), pick a 9B+ model for judging
    and accept the latency cost.
+
+## 2026-04-14 afternoon follow-up
+
+Story-gen iteration session shipped 6 focused fixes on top of the Phase-1 close:
+
+- `bcc571e` fix(write): plumbed `player_action` + dialogue directive to writer.
+  Was: every committed chapter had `dialogue_ratio=0` because writer never saw
+  the action verb. After: dialogue appears in 4/5 scenes.
+- `82521be` fix(check): tightened critical-issue bar; check LLM was inventing
+  world rules ('established pattern of guarded behavior', etc) and flagging
+  prose for violating them. Required critical issues to quote a real rule
+  line. Commit rate 60% → 100% on a 5-action run.
+- `15edc97` story_gen: 1 voice sample → 4 rhythmically varied. Killed LFM's
+  default 10-word cadence. `dialogue_ratio 0.03 → 0.14`, `sentence_variance
+  0.14 → 0.18`.
+- `566faa1` fix(write): explicit "no plan summaries", "no reader-addressed
+  questions" bans. 20ch run leaked base-model plan-speak at U7 ("The player
+  must sacrifice the map to keep the secret") and a rhetorical question at
+  U9. First attempt was too strict (killed dialogue); lighter version keeps
+  generation.
+- `7bac612` fix(retrieval): **Embedder defaults to CPU** now. Root cause for
+  the empty `narrative_embeddings` table during live runs: MiniLM was loading
+  on CUDA, vllm holds 22GB, embedder crashed with CUDA-OOM. The pipeline
+  swallowed the error (StageError, outcome still "committed"), so everything
+  looked fine while quest_callbacks + voice_continuity retrievers silently
+  returned 0 hits. Override via `QUEST_EMBEDDER_DEVICE=cuda` when GPU is free.
+  MiniLM is 22MB; CPU encode on short prose is ~10ms.
+- Merged and pushed the v2 LoRA work (`e299851`) that was mid-conflict at
+  session start.
+
+**Cumulative story-gen gains** (20ch noir, retrieval ON, writer_v2):
+| metric            | phase-1 exit | now     |
+|-------------------|--------------|---------|
+| commit rate       | 55%          | 100%    |
+| dialogue_ratio    | 0.00         | ~0.03   |
+| sentence_variance | 0.16         | ~0.16   |
+| pacing            | 0.72         | 0.80    |
+
+The commit-rate lift (55→100%) is the biggest single win — the check-prompt
+fix alone accounts for most of it. Prose-quality metrics still show
+context-degradation: 10ch is meaningfully better than 20ch (dialogue 0.14 vs
+0.03; sv 0.18 vs 0.16). The CPU-embedder fix activates quest memory for the
+first time, which may close that gap — pending verification.
 
 ## What's running right now
 
