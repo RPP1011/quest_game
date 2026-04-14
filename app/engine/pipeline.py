@@ -293,6 +293,7 @@ class Pipeline:
         passage_retriever: "Any | None" = None,
         quest_retriever: "Any | None" = None,
         voice_retriever: "Any | None" = None,
+        scorer: "Any | None" = None,
     ) -> None:
         self._world = world
         self._cb = context_builder
@@ -365,6 +366,15 @@ class Pipeline:
         # ``retrieval.enabled`` flag further gates the call. No POV on the
         # scene ⇒ no retrieval, matching the spec (see §3.6).
         self._voice_retriever: Any | None = voice_retriever
+
+        # Day 2: Scorer for post-commit 12-dim scorecard persistence.
+        # Default-off via quest_config["scoring"]["enabled"] — the kwarg
+        # may be wired by a server/CLI caller, but if the flag is off the
+        # hook stays silent. Also silent when ``quest_id`` is missing,
+        # since scorecards are quest-scoped.
+        self._scorer: Any | None = scorer
+        scoring_cfg = (self._quest_config or {}).get("scoring") or {}
+        self._scoring_enabled: bool = bool(scoring_cfg.get("enabled", False))
 
     @property
     def is_hierarchical(self) -> bool:
@@ -460,6 +470,16 @@ class Pipeline:
                         stage_name="extract", input_prompt="", raw_output="",
                         errors=[StageError(kind="extract_crash", message=str(e))],
                     ))
+
+            # Day 2: post-commit scoring. No-op unless scorer + flag + quest_id.
+            if outcome == "committed":
+                self._persist_scorecard(
+                    trace=trace,
+                    prose=prose,
+                    craft_plan=None,
+                    player_action=player_action,
+                    update_number=update_number,
+                )
 
             return PipelineOutput(
                 prose=prose,
@@ -576,6 +596,16 @@ class Pipeline:
                     stage_name="extract", input_prompt="", raw_output="",
                     errors=[StageError(kind="extract_crash", message=str(e))],
                 ))
+
+        # Day 2: post-commit scoring. No-op unless scorer + flag + quest_id.
+        if outcome == "committed":
+            self._persist_scorecard(
+                trace=trace,
+                prose=prose,
+                craft_plan=craft_plan,
+                player_action=player_action,
+                update_number=update_number,
+            )
 
         suggested_choices = plan_like_dict.get("suggested_choices", [])
         beats = plan_like_dict.get("beats", [])
@@ -1500,6 +1530,58 @@ class Pipeline:
             total += sub
             all_issues.extend(issues)
         return total, breakdown, all_issues
+
+    def _persist_scorecard(
+        self,
+        *,
+        trace: PipelineTrace,
+        prose: str,
+        craft_plan: "Any | None",
+        player_action: str | None,
+        update_number: int,
+    ) -> None:
+        """Day 2 post-commit hook: score ``prose`` and persist a scorecard.
+
+        No-ops unless the pipeline was constructed with a ``scorer`` AND
+        ``quest_config["scoring"]["enabled"]`` is truthy AND a ``quest_id``
+        was provided. Any failure is recorded in the trace — the commit
+        itself is never rolled back.
+        """
+        if self._scorer is None:
+            return
+        if not self._scoring_enabled:
+            return
+        if self._quest_id is None:
+            return
+        try:
+            card = self._scorer.score(
+                prose,
+                craft_plan=craft_plan,
+                narrator=self._narrator,
+                world=self._world,
+                player_action=player_action,
+            )
+            self._world.save_scorecard(
+                card,
+                quest_id=self._quest_id,
+                update_number=update_number,
+                scene_index=0,
+                pipeline_trace_id=trace.trace_id,
+            )
+            trace.add_stage(StageResult(
+                stage_name="scoring",
+                input_prompt="", raw_output="",
+                parsed_output=None,
+                detail={
+                    "overall_score": card.overall_score,
+                    "dimensions": dict(card.dimension_items()),
+                },
+            ))
+        except Exception as e:  # pragma: no cover - defensive
+            trace.add_stage(StageResult(
+                stage_name="scoring", input_prompt="", raw_output="",
+                errors=[StageError(kind="scoring_crash", message=str(e)[:300])],
+            ))
 
     async def _generate_scene_candidates(
         self,
