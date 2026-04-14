@@ -1,30 +1,35 @@
-"""Day 2: 12-dimension heuristic scorer.
+"""Day 2: 12-dimension heuristic scorer (+ Day 6 LLM-judge extension).
 
 The ``Scorer`` turns committed prose into a ``Scorecard`` — a fixed set of
 twelve [0, 1] dimension scores plus an unweighted-mean ``overall_score``.
+Day 6 adds an optional async ``score_with_llm_judges`` that tacks on three
+LLM-judged dims (``tension_execution``, ``emotional_trajectory``,
+``choice_hook_quality``) via a single batched structured call.
 
 Design choices
 --------------
-- **No LLM calls.** v1 is heuristic / critic only. Day 6 adds LLM-judge
-  dimensions that slot into the same schema (extra scorecard rows or a
-  second pass keyed off ``Scorecard`` shape).
+- **Day 2 core stays sync + heuristic-only.** ``Scorer.score()`` does NOT
+  call any LLM; pipelines that don't wire an ``llm_judge_client`` see
+  bit-identical Day 2 behavior.
+- **Day 6 dims are opt-in.** Construct ``Scorer(llm_judge_client=...)`` and
+  call ``await scorer.score_with_llm_judges(...)``. Returns an
+  ``ExtendedScorecard`` with the original 12 dims plus an
+  ``llm_judge_scores`` dict of the three Day 6 dims.
+- **Single batched call.** Re-uses ``app.calibration.judges.BatchJudge``,
+  restricted to the Day 6 dim names. One structured response per passage.
 - **Graceful degradation.** Every dim accepts missing inputs and returns a
-  neutral value (``0.0`` for "signal missing"). A scorer called with
-  ``craft_plan=None`` still produces 12 dims — the craft-plan-dependent
-  critics simply emit empty issue lists and score 1.0 (no detected
-  violations) rather than crashing.
+  neutral value. A scorer called with ``craft_plan=None`` still produces
+  12 dims — the craft-plan-dependent critics simply emit empty issue
+  lists and score 1.0.
 - **Two families of scores.** Heuristic dims wrap ``app.calibration.heuristics``
   primitives directly; critic dims run a validator from
   ``app.planning.critics`` and convert its ``ValidationIssue`` list to a
   scalar via ``app.calibration.scorer.critic_score`` (errors weigh 0.25,
   warnings 0.10).
-- **Async-safe, sync internally.** No I/O in the hot path; callers may
-  ``await asyncio.to_thread(scorer.score, ...)`` if they want off-thread
-  execution. Kept synchronous because the LLM-judge dims (Day 6) are where
-  awaitable work lives.
 """
 from __future__ import annotations
 
+from pathlib import Path
 from statistics import fmean
 from typing import Any
 
@@ -67,6 +72,25 @@ DIMENSION_SOURCES: dict[str, str] = {
     "narrator_sensory_match": "critic",
     "action_fidelity": "critic",
 }
+
+
+# ---------------------------------------------------------------------------
+# Day 6: LLM-judge dims
+# ---------------------------------------------------------------------------
+
+# The three LLM-judged dimensions added on Day 6. Each has an anchored-scale
+# prompt at ``prompts/scoring/dims/<name>.j2``; all three are scored in a
+# single batched structured call via
+# ``app.calibration.judges.BatchJudge.score``. These are persisted alongside
+# the Day 2 heuristic/critic dims in the ``dimension_scores`` table — the
+# header row carries a single ``overall_score`` that still reflects only
+# the Day 2 arithmetic mean (so the dashboard number stays comparable
+# across quests regardless of whether the async judge task ran).
+LLM_JUDGE_DIMS: tuple[str, ...] = (
+    "tension_execution",
+    "emotional_trajectory",
+    "choice_hook_quality",
+)
 
 
 def _clip01(x: float) -> float:
@@ -134,15 +158,60 @@ class Scorecard(BaseModel):
         return [(name, getattr(self, name)) for name in DIMENSION_NAMES]
 
 
+class ExtendedScorecard(BaseModel):
+    """Day 6 wrapper: base :class:`Scorecard` + LLM-judge dim scores.
+
+    Produced by :meth:`Scorer.score_with_llm_judges`. The base scorecard is
+    the exact Day 2 artifact (same ``overall_score``, same dim fields);
+    ``llm_judge_scores`` carries the three additional dim scores with
+    rationales. Persistence writes both into ``dimension_scores`` under the
+    same ``scorecard_id``.
+    """
+
+    base: Scorecard
+    llm_judge_scores: dict[str, float] = Field(default_factory=dict)
+    llm_judge_rationales: dict[str, str] = Field(default_factory=dict)
+
+    def all_dimension_items(self) -> list[tuple[str, float]]:
+        """Return every dim (Day 2 + Day 6) as (name, score) pairs.
+
+        Used by the pipeline's async-persist path to write the full set of
+        ``dimension_scores`` rows under one scorecard header.
+        """
+        return list(self.base.dimension_items()) + [
+            (name, self.llm_judge_scores[name])
+            for name in LLM_JUDGE_DIMS
+            if name in self.llm_judge_scores
+        ]
+
+
 class Scorer:
     """Produce a :class:`Scorecard` from committed prose.
 
     Construction is cheap — no I/O, no model loads. Reuse one instance
     across calls; it holds no per-chapter state.
+
+    Day 6: pass ``llm_judge_client`` to enable the async
+    :meth:`score_with_llm_judges` method. The sync :meth:`score` never
+    calls the client regardless — Day 2 semantics are preserved.
     """
 
-    def __init__(self) -> None:
-        pass
+    def __init__(
+        self,
+        *,
+        llm_judge_client: Any | None = None,
+        prompts_dir: str | Path | None = None,
+    ) -> None:
+        self._llm_judge_client = llm_judge_client
+        self._prompts_dir: Path = (
+            Path(prompts_dir) if prompts_dir is not None
+            else _default_prompts_dir()
+        )
+        self._batch_judge: Any | None = None  # lazy
+
+    @property
+    def has_llm_judge(self) -> bool:
+        return self._llm_judge_client is not None
 
     def score(
         self,
@@ -253,6 +322,98 @@ class Scorer:
         overall = _clip01(fmean(dims.values()))
 
         return Scorecard(overall_score=overall, **dims)
+
+    async def score_with_llm_judges(
+        self,
+        prose: str,
+        *,
+        work_id: str = "quest",
+        pov: str = "second",
+        is_quest: bool = True,
+        craft_plan: Any | None = None,
+        narrator: Any | None = None,
+        world: Any | None = None,
+        player_action: str | None = None,
+    ) -> ExtendedScorecard:
+        """Day 6: score ``prose`` with heuristic + LLM-judge dims.
+
+        Runs the synchronous :meth:`score` first, then issues ONE batched
+        structured call for the three Day 6 dims
+        (``tension_execution``, ``emotional_trajectory``,
+        ``choice_hook_quality``). The returned :class:`ExtendedScorecard`
+        exposes the base scorecard unchanged and the three additional dim
+        scores under ``llm_judge_scores``.
+
+        Parameters
+        ----------
+        work_id, pov, is_quest:
+            Metadata that flows into the batch judge prompt. ``is_quest``
+            does not gate the Day 6 dims — all three apply to any prose —
+            but it is passed through for trace-log fidelity.
+
+        Raises
+        ------
+        RuntimeError
+            If no ``llm_judge_client`` was supplied at construction time.
+            Callers wanting heuristic-only scoring should call
+            :meth:`score` directly.
+
+        Notes
+        -----
+        This method is async but does NOT launch tasks; callers who want
+        fire-and-forget behavior wrap it with ``asyncio.create_task``.
+        The pipeline's post-commit hook does exactly that — the
+        scorecard header and heuristic dims land synchronously at commit,
+        and the three LLM-judge dim rows are persisted when the async
+        task resolves.
+        """
+        if self._llm_judge_client is None:
+            raise RuntimeError(
+                "score_with_llm_judges() called on a Scorer constructed "
+                "without llm_judge_client"
+            )
+
+        base = self.score(
+            prose,
+            craft_plan=craft_plan,
+            narrator=narrator,
+            world=world,
+            player_action=player_action,
+        )
+
+        judge = self._get_batch_judge()
+        judge_scores = await judge.score(
+            client=self._llm_judge_client,
+            passage=prose,
+            work_id=work_id,
+            pov=pov,
+            is_quest=is_quest,
+            dim_names=list(LLM_JUDGE_DIMS),
+        )
+        scores = {d: _clip01(judge_scores[d].score) for d in LLM_JUDGE_DIMS}
+        rationales = {d: judge_scores[d].rationale for d in LLM_JUDGE_DIMS}
+        return ExtendedScorecard(
+            base=base,
+            llm_judge_scores=scores,
+            llm_judge_rationales=rationales,
+        )
+
+    def _get_batch_judge(self) -> Any:
+        """Lazy-construct the BatchJudge; cached between calls."""
+        if self._batch_judge is None:
+            # Local import — the calibration package pulls in yaml/jinja that
+            # we'd rather not pay for at cold-start when LLM dims are off.
+            from app.calibration.judges import BatchJudge
+            self._batch_judge = BatchJudge(self._prompts_dir)
+        return self._batch_judge
+
+
+def _default_prompts_dir() -> Path:
+    """Resolve ``prompts/`` relative to the project root.
+
+    ``app/scoring/scorer.py`` -> project root / prompts.
+    """
+    return Path(__file__).resolve().parent.parent.parent / "prompts"
 
 
 def _safe(fn, *args, **kwargs) -> list:

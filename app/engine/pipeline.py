@@ -319,6 +319,7 @@ class Pipeline:
         quest_retriever: "Any | None" = None,
         voice_retriever: "Any | None" = None,
         scorer: "Any | None" = None,
+        llm_judge_client: "Any | None" = None,
     ) -> None:
         self._world = world
         self._cb = context_builder
@@ -417,6 +418,18 @@ class Pipeline:
         self._scorer: Any | None = scorer
         scoring_cfg = (self._quest_config or {}).get("scoring") or {}
         self._scoring_enabled: bool = bool(scoring_cfg.get("enabled", False))
+
+        # Day 6: optional LLM-judge client for async post-commit scoring of
+        # the three anchored dims (tension_execution, emotional_trajectory,
+        # choice_hook_quality). Default-off via absence of the kwarg; when
+        # both ``scorer`` and ``llm_judge_client`` are present AND the
+        # ``scoring.enabled`` flag is truthy, the post-commit hook fires a
+        # non-blocking ``asyncio.create_task`` that writes the three extra
+        # dim rows onto the already-persisted scorecard when it completes.
+        # Tests that want to await the task should read the most recent
+        # handle via ``pipeline.last_llm_judge_task``.
+        self._llm_judge_client: Any | None = llm_judge_client
+        self.last_llm_judge_task: asyncio.Task[None] | None = None
 
         # Day 4: SFT collection. Default-off via
         # ``quest_config["sft_collection"]["enabled"]``. When enabled AND
@@ -1605,6 +1618,13 @@ class Pipeline:
         ``quest_config["scoring"]["enabled"]`` is truthy AND a ``quest_id``
         was provided. Any failure is recorded in the trace — the commit
         itself is never rolled back.
+
+        Day 6 extension: if a ``llm_judge_client`` was also wired at
+        construction, schedule an ``asyncio.create_task`` that calls
+        :meth:`app.scoring.Scorer.score_with_llm_judges` and writes the
+        three extra dim rows onto the same scorecard_id. The task handle
+        is stashed at :attr:`last_llm_judge_task` for tests / shutdown.
+        The commit return path does NOT await the task.
         """
         if self._scorer is None:
             return
@@ -1620,7 +1640,7 @@ class Pipeline:
                 world=self._world,
                 player_action=player_action,
             )
-            self._world.save_scorecard(
+            scorecard_id = self._world.save_scorecard(
                 card,
                 quest_id=self._quest_id,
                 update_number=update_number,
@@ -1641,6 +1661,66 @@ class Pipeline:
                 stage_name="scoring", input_prompt="", raw_output="",
                 errors=[StageError(kind="scoring_crash", message=str(e)[:300])],
             ))
+            return
+
+        # Day 6: fire-and-forget LLM-judge scoring. Only when a judge
+        # client is wired AND the scorer itself was built to know about
+        # it (``has_llm_judge``), so a Scorer constructed without the
+        # Day 6 kwarg won't try to call it and crash.
+        if (self._llm_judge_client is not None
+                and getattr(self._scorer, "has_llm_judge", False)):
+            self.last_llm_judge_task = asyncio.create_task(
+                self._run_llm_judges_async(
+                    prose=prose,
+                    scorecard_id=scorecard_id,
+                    trace_id=trace.trace_id,
+                    craft_plan=craft_plan,
+                    player_action=player_action,
+                )
+            )
+
+    async def _run_llm_judges_async(
+        self,
+        *,
+        prose: str,
+        scorecard_id: int,
+        trace_id: str,
+        craft_plan: "Any | None",
+        player_action: str | None,
+    ) -> None:
+        """Day 6: async body that calls the LLM judge and writes extra dim rows.
+
+        Exceptions are logged to stderr but never propagate — this is a
+        fire-and-forget task launched from the commit path. If scoring
+        fails, the scorecard header and Day 2 dims are still intact.
+        """
+        try:
+            is_quest = True  # All live chapters are quest scenes.
+            pov = "second"
+            if self._narrator is not None and getattr(self._narrator, "pov", None):
+                pov = str(self._narrator.pov)
+            ext = await self._scorer.score_with_llm_judges(  # type: ignore[union-attr]
+                prose,
+                work_id=self._quest_id or "quest",
+                pov=pov,
+                is_quest=is_quest,
+                craft_plan=craft_plan,
+                narrator=self._narrator,
+                world=self._world,
+                player_action=player_action,
+            )
+            self._world.append_dimension_scores(
+                scorecard_id,
+                ext.llm_judge_scores,
+            )
+        except Exception as e:  # pragma: no cover - defensive
+            # Fire-and-forget; emit one warning so test traces show it.
+            import sys
+            print(
+                f"[pipeline] llm-judge async failed for trace {trace_id}: "
+                f"{type(e).__name__}: {e}",
+                file=sys.stderr,
+            )
 
     async def _dispatch_candidate(
         self,
