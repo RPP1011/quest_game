@@ -290,6 +290,7 @@ class Pipeline:
         candidate_base_temperature: float = 0.8,
         candidate_temperature_step: float = 0.15,
         retrieval_embedder: "Any | None" = None,
+        passage_retriever: "Any | None" = None,
     ) -> None:
         self._world = world
         self._cb = context_builder
@@ -342,6 +343,15 @@ class Pipeline:
         # Retrieval layer (Wave 1c infra; Wave 3b wiring will supply a real
         # embedder). ``None`` disables the extract-stage embedding write.
         self._retrieval_embedder: Any | None = retrieval_embedder
+
+        # Wave 2b: PassageRetriever for writer voice anchors. ``None``
+        # disables retrieval entirely; otherwise retrieval is further
+        # gated by ``quest_config["retrieval"]["enabled"]`` (default False)
+        # so existing callers that pass a retriever but don't flip the
+        # flag see no behavioral change (SUCCESS CRITERIA: default-off).
+        self._passage_retriever: Any | None = passage_retriever
+        retrieval_cfg = (self._quest_config or {}).get("retrieval") or {}
+        self._retrieval_enabled: bool = bool(retrieval_cfg.get("enabled", False))
 
     @property
     def is_hierarchical(self) -> bool:
@@ -769,6 +779,106 @@ class Pipeline:
             embedding=embedding,
             text_preview=text_preview,
         )
+
+    async def _retrieve_voice_anchors(
+        self,
+        *,
+        scene: "Any",
+        emotional_scene: "Any | None",
+        brief_text: str | None,
+    ) -> list[dict]:
+        """Wave 2b: retrieve voice-anchor passages for a single scene write.
+
+        Returns ``[]`` when retrieval is disabled, no retriever is wired, or
+        the retriever yields no hits. Each returned dict carries the fields
+        the prompt template needs: ``text`` (passage body), ``pov``, ``score``,
+        and ``source_id`` for provenance.
+
+        The query is built from:
+          * ``filters["pov"]`` — derived from ``scene.pov`` if present, else
+            the configured ``narrator.pov_type``; defaults to ``"second"``
+            for quests and ``"third_limited"`` otherwise.
+          * ``filters["score_ranges"]`` — always includes a strong
+            ``voice_distinctiveness`` band and, when craft permeability
+            targets exist, a permeability-derived ``free_indirect_quality``
+            range.
+          * ``seed_text`` — the scene brief truncated to 600 chars, with
+            the target emotion appended when available (harmless in
+            metadata-only mode; useful for Wave 2a semantic rerank).
+        """
+        if self._passage_retriever is None or not self._retrieval_enabled:
+            return []
+
+        from app.retrieval.interface import Query
+
+        # ---- Resolve POV filter ----
+        scene_pov = getattr(scene, "pov", None)
+        if scene_pov:
+            pov_filter = scene_pov
+        elif self._narrator is not None and getattr(self._narrator, "pov_type", None):
+            pov_filter = self._narrator.pov_type
+        else:
+            # Quests default to second person; novels to third_limited.
+            is_quest_mode = False
+            cfg = self._quest_config or {}
+            # Treat any config that names a narrator with a non-default
+            # pov_type as "novel-ish"; everything else → quest default.
+            narrator_cfg = cfg.get("narrator") or {}
+            if narrator_cfg.get("pov_type"):
+                pov_filter = narrator_cfg["pov_type"]
+            else:
+                is_quest_mode = True
+                pov_filter = "second" if is_quest_mode else "third_limited"
+
+        # ---- Build score range filters ----
+        score_ranges: dict[str, tuple[float, float]] = {
+            "voice_distinctiveness": (0.7, 1.0),
+        }
+        vp = getattr(scene, "voice_permeability", None)
+        if vp is not None:
+            # Use the permeability baseline/target as the midpoint of a
+            # ±0.2 band for free_indirect_quality. Clamp to [0,1].
+            target = getattr(vp, "current_target", None)
+            if target is None:
+                target = getattr(vp, "baseline", 0.3)
+            lo = max(0.0, float(target) - 0.2)
+            hi = min(1.0, float(target) + 0.2)
+            score_ranges["free_indirect_quality"] = (lo, hi)
+
+        # ---- Build seed text from brief + target emotion ----
+        seed_parts: list[str] = []
+        if brief_text:
+            seed_parts.append(brief_text)
+        if emotional_scene is not None:
+            emo = getattr(emotional_scene, "primary_emotion", None)
+            if emo:
+                seed_parts.append(f"[emotion: {emo}]")
+        seed_text = " ".join(seed_parts)[:600] or None
+
+        query = Query(
+            seed_text=seed_text,
+            filters={
+                "pov": pov_filter,
+                "score_ranges": score_ranges,
+            },
+        )
+
+        try:
+            results = await self._passage_retriever.retrieve(query, k=3)
+        except Exception:
+            # Best-effort: retrieval failure must not break the write stage.
+            return []
+
+        anchors: list[dict] = []
+        for r in results:
+            meta = getattr(r, "metadata", None) or {}
+            anchors.append({
+                "source_id": getattr(r, "source_id", ""),
+                "text": getattr(r, "text", ""),
+                "pov": meta.get("pov", ""),
+                "score": float(getattr(r, "score", 0.0)),
+            })
+        return anchors
 
     def _persist_motif_occurrences(self, craft_plan: "Any", update_number: int) -> None:
         """Post-COMMIT: record each ``MotifInstruction`` on the craft plan as an
@@ -1300,6 +1410,7 @@ class Pipeline:
                     "brief": None,
                     "scene": None,
                     "voice_samples": voice_samples or [],
+                    "voice_anchors": [],
                     "recent_prose_tail": "",
                 },
             )
@@ -1335,6 +1446,15 @@ class Pipeline:
         # Build a brief lookup by scene_id
         briefs_by_scene: dict[int, Any] = {b.scene_id: b for b in plan.briefs}
 
+        # Build an emotional-plan lookup by scene_id, if one was stashed by
+        # the hierarchical run. Used by Wave 2b retrieval to enrich the
+        # seed text with target emotion. Missing entries fall back to None.
+        emotional_by_scene: dict[int, Any] = {}
+        emo_plan = getattr(self, "_last_emotional", None)
+        if emo_plan is not None:
+            for s in getattr(emo_plan, "scenes", []) or []:
+                emotional_by_scene[s.scene_id] = s
+
         prose_parts: list[str] = []
         recent_prose_tail = ""
 
@@ -1350,6 +1470,16 @@ class Pipeline:
                     scene.voice_permeability.blended_voice_samples + effective_voice_samples
                 )
 
+            # Wave 2b: retrieve voice anchors for this scene. Returns [] when
+            # retrieval is disabled, no retriever is wired, or the retriever
+            # finds no hits; in all those cases the prompt template skips
+            # the anchor block (default-off behavior preserved).
+            voice_anchors = await self._retrieve_voice_anchors(
+                scene=scene,
+                emotional_scene=emotional_by_scene.get(scene.scene_id),
+                brief_text=brief_text,
+            )
+
             write_ctx = self._cb.build(
                 spec=WRITE_SPEC,
                 stage_name="write",
@@ -1358,6 +1488,7 @@ class Pipeline:
                     "brief": brief_text,
                     "scene": scene.model_dump() if hasattr(scene, "model_dump") else scene,
                     "voice_samples": effective_voice_samples,
+                    "voice_anchors": voice_anchors,
                     "recent_prose_tail": recent_prose_tail,
                     "anti_patterns": anti_patterns or [],
                     "plan": None,
