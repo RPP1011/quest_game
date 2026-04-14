@@ -1,0 +1,184 @@
+version: 1
+# Scene-scale calibration manifest. Counterpart of manifest.yaml but for arc
+# dimensions (2000-4000 word scenes). Expected scores are for arc dims only;
+# passage-scale dims live in manifest.yaml.
+#
+# Quest-only dims (choice_hook_quality, update_self_containment,
+# choice_meaningfulness, world_state_legibility) are scored only when
+# is_quest=true.
+#
+# Works listed here must have raw corpus available under data/calibration/raw/
+# so that tools/sample_scenes.py can produce s01..s05. Works whose passage
+# slots are still PENDING in manifest.yaml are intentionally omitted.
+scoring:
+  critic_error_weight: 0.25
+  critic_warning_weight: 0.1
+works:
+- id: sun_also_rises
+  title: The Sun Also Rises
+  author: Ernest Hemingway
+  pov: first
+  is_quest: false
+  expected:
+    tension_execution: 0.6
+  passages:
+  - {id: s01, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s02, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s03, sha256: PENDING, expected_high: [], expected_low: [tension_execution]}
+  - {id: s04, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s05, sha256: PENDING, expected_high: [], expected_low: [tension_execution]}
+- id: madame_bovary
+  title: Madame Bovary
+  author: Gustave Flaubert
+  pov: third_limited_fis
+  is_quest: false
+  expected:
+    tension_execution: 0.6
+  passages:
+  - {id: s01, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s02, sha256: PENDING, expected_high: [], expected_low: [tension_execution]}
+  - {id: s03, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s04, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s05, sha256: PENDING, expected_high: [], expected_low: [tension_execution]}
+- id: ulysses
+  title: Ulysses
+  author: James Joyce
+  pov: mixed_stream
+  is_quest: false
+  expected:
+    tension_execution: 0.3
+  passages:
+  - {id: s01, sha256: PENDING, expected_high: [], expected_low: [tension_execution]}
+  - {id: s02, sha256: PENDING, expected_high: [], expected_low: [tension_execution]}
+  - {id: s03, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s04, sha256: PENDING, expected_high: [], expected_low: [tension_execution]}
+  - {id: s05, sha256: PENDING, expected_high: [], expected_low: [tension_execution]}
+- id: pride_and_prejudice
+  title: Pride and Prejudice
+  author: Jane Austen
+  pov: third_limited_fis
+  is_quest: false
+  expected:
+    tension_execution: 0.65
+  passages:
+  - {id: s01, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s02, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s03, sha256: PENDING, expected_high: [], expected_low: [tension_execution]}
+  - {id: s04, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s05, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+- id: brothers_karamazov
+  title: The Brothers Karamazov
+  author: Fyodor Dostoevsky
+  pov: third_omniscient
+  is_quest: false
+  expected:
+    tension_execution: 0.8
+  passages:
+  - {id: s01, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s02, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s03, sha256: PENDING, expected_high: [], expected_low: [tension_execution]}
+  - {id: s04, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s05, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+- id: left_hand_of_darkness
+  title: The Left Hand of Darkness
+  author: Ursula K. Le Guin
+  pov: first_mixed
+  is_quest: false
+  expected:
+    tension_execution: 0.7
+  passages:
+  - {id: s01, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s02, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s03, sha256: PENDING, expected_high: [], expected_low: [tension_execution]}
+  - {id: s04, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s05, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+- id: way_of_kings
+  title: The Way of Kings
+  author: Brandon Sanderson
+  pov: third_limited_multi
+  is_quest: false
+  expected:
+    tension_execution: 0.75
+  passages:
+  - {id: s01, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s02, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s03, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s04, sha256: PENDING, expected_high: [], expected_low: [tension_execution]}
+  - {id: s05, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+- id: marked_for_death
+  title: Marked for Death
+  author: eaglejarl & Velorien
+  pov: second
+  is_quest: true
+  expected:
+    tension_execution: 0.75
+    choice_hook_quality: 0.8
+    update_self_containment: 0.75
+    choice_meaningfulness: 0.7
+    world_state_legibility: 0.75
+  passages:
+  - {id: s01, sha256: PENDING, expected_high: [tension_execution, choice_hook_quality], expected_low: []}
+  - {id: s02, sha256: PENDING, expected_high: [update_self_containment, world_state_legibility], expected_low: []}
+  - {id: s03, sha256: PENDING, expected_high: [choice_meaningfulness], expected_low: []}
+  - {id: s04, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s05, sha256: PENDING, expected_high: [choice_hook_quality, choice_meaningfulness], expected_low: []}
+- id: practical_guide_evil
+  title: A Practical Guide to Evil
+  author: ErraticErrata
+  pov: first
+  is_quest: true
+  expected:
+    tension_execution: 0.8
+    choice_hook_quality: 0.75
+    update_self_containment: 0.75
+    choice_meaningfulness: 0.75
+    world_state_legibility: 0.7
+  passages:
+  - {id: s01, sha256: PENDING, expected_high: [tension_execution, choice_hook_quality], expected_low: []}
+  - {id: s02, sha256: PENDING, expected_high: [update_self_containment], expected_low: []}
+  - {id: s03, sha256: PENDING, expected_high: [choice_meaningfulness, world_state_legibility], expected_low: []}
+  - {id: s04, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s05, sha256: PENDING, expected_high: [choice_hook_quality], expected_low: []}
+- id: pale_lights
+  title: Pale Lights
+  author: ErraticErrata
+  pov: third_limited_multi
+  is_quest: true
+  expected:
+    tension_execution: 0.75
+    choice_hook_quality: 0.6
+    update_self_containment: 0.7
+    choice_meaningfulness: 0.65
+    world_state_legibility: 0.7
+  passages:
+  - {id: s01, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s02, sha256: PENDING, expected_high: [world_state_legibility], expected_low: [choice_hook_quality]}
+  - {id: s03, sha256: PENDING, expected_high: [update_self_containment], expected_low: []}
+  - {id: s04, sha256: PENDING, expected_high: [tension_execution], expected_low: []}
+  - {id: s05, sha256: PENDING, expected_high: [choice_meaningfulness], expected_low: []}
+- id: my_man_jeeves
+  title: My Man Jeeves
+  author: P. G. Wodehouse
+  pov: first
+  is_quest: false
+  expected:
+    tension_execution: 0.3
+  passages:
+  - {id: s01, sha256: PENDING, expected_high: [], expected_low: [tension_execution]}
+  - {id: s02, sha256: PENDING, expected_high: [], expected_low: [tension_execution]}
+  - {id: s03, sha256: PENDING, expected_high: [], expected_low: [tension_execution]}
+  - {id: s04, sha256: PENDING, expected_high: [], expected_low: [tension_execution]}
+  - {id: s05, sha256: PENDING, expected_high: [], expected_low: [tension_execution]}
+- id: three_men_in_a_boat
+  title: Three Men in a Boat
+  author: Jerome K. Jerome
+  pov: first
+  is_quest: false
+  expected:
+    tension_execution: 0.2
+  passages:
+  - {id: s01, sha256: PENDING, expected_high: [], expected_low: [tension_execution]}
+  - {id: s02, sha256: PENDING, expected_high: [], expected_low: [tension_execution]}
+  - {id: s03, sha256: PENDING, expected_high: [], expected_low: [tension_execution]}
+  - {id: s04, sha256: PENDING, expected_high: [], expected_low: [tension_execution]}
+  - {id: s05, sha256: PENDING, expected_high: [], expected_low: [tension_execution]}
