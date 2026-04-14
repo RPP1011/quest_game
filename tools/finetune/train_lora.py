@@ -71,6 +71,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--warmup-ratio", type=float, default=0.05)
     ap.add_argument("--save-total-limit", type=int, default=2)
     ap.add_argument("--log-steps", type=int, default=5)
+    ap.add_argument("--device", type=str, default="auto",
+                    choices=("auto", "cpu", "cuda"),
+                    help="Training device_map. Use 'cpu' when a vllm server "
+                         "holds the GPU.")
     return ap.parse_args(argv)
 
 
@@ -93,8 +97,10 @@ def main(argv: list[str] | None = None) -> None:
     train_ds = Dataset.from_list([format_example(r, tokenizer) for r in train_raw])
     test_ds = Dataset.from_list([format_example(r, tokenizer) for r in test_raw])
 
+    device_map = args.device if args.device != "auto" else "auto"
+    dtype = torch.float32 if args.device == "cpu" else torch.bfloat16
     model = AutoModelForCausalLM.from_pretrained(
-        base_model, dtype=torch.bfloat16, device_map="auto"
+        base_model, dtype=dtype, device_map=device_map
     )
     model.config.use_cache = False
 
@@ -130,8 +136,8 @@ def main(argv: list[str] | None = None) -> None:
         eval_strategy="epoch",
         save_strategy="epoch",
         save_total_limit=args.save_total_limit,
-        bf16=True,
-        gradient_checkpointing=True,
+        bf16=(args.device != "cpu"),
+        gradient_checkpointing=(args.device != "cpu"),
         max_length=args.max_length,
         packing=False,
         report_to="none",

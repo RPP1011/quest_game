@@ -198,12 +198,80 @@ def _meta_echo_penalty(text: str, brief: str) -> float:
 
 def _extract_pov_mode(brief: str) -> str:
     low = brief.lower()
+    if "third_limited" in low or "third-person limited" in low or "third limited" in low:
+        return "third_limited"
     if "second person" in low or "second-person" in low:
         return "second"
     if "first person" in low or "first-person" in low:
         return "first"
     # Default to second-person (the Writer prompt default).
     return "second"
+
+
+# ---------------------------------------------------------------------------
+# v3 additions — plan-summary / reader-question detection, sentence-variance
+# heuristic, and a composable quality gate for "reject all N candidates".
+
+
+# Plan-summary leaks: phrases the writer sometimes emits when it regurgitates
+# its craft brief instead of rendering prose.
+PLAN_LEAK_MARKERS = (
+    "scene intent:", "beat purpose:", "craft brief:", "outcome:",
+    "scene goal:", "objective:", "plan:", "beat:",
+    "this scene will", "the scene should", "we will show",
+    "in this scene, ", "in this scene:",
+)
+
+
+def _plan_leak_count(text: str) -> int:
+    low = text.lower()
+    return sum(1 for m in PLAN_LEAK_MARKERS if m in low)
+
+
+# Reader-addressed questions: rhetorical questions directed at "you" qua
+# reader (not "you" qua second-person narration). Heuristic: any question
+# mark ending a sentence is flagged, plus reader-breaking verbs.
+READER_QUESTION_PATTERNS = (
+    r"\bhave you ever\b",
+    r"\bdo you remember\b",
+    r"\bdon't you\b",
+    r"\bwouldn't you\b",
+    r"\bcan you imagine\b",
+    r"\bpicture this\b",
+    r"\bdear reader\b",
+    r"\byou see,\b",
+)
+
+
+def _reader_question_count(text: str) -> int:
+    low = text.lower()
+    hits = 0
+    for pat in READER_QUESTION_PATTERNS:
+        hits += len(re.findall(pat, low))
+    return hits
+
+
+def _sentence_variance(text: str) -> float:
+    """Coefficient-of-variation of sentence lengths in the narration.
+
+    Returns 0.0 for fewer than 2 sentences. Higher is better (prose rhythm).
+    The task's quality bar is >0.10; 0.30+ is good; over 0.80 is probably
+    artifact of a 1-word fragment next to a long cascade, still desirable.
+    """
+    norm = text.replace("\u201c", '"').replace("\u201d", '"')
+    stripped = re.sub(r'"[^"]*"', "", norm)
+    # Split on sentence-ending punctuation.
+    sents = [s.strip() for s in re.split(r"(?<=[\.\!\?])\s+", stripped)
+             if s.strip()]
+    if len(sents) < 2:
+        return 0.0
+    lens = [len(s.split()) for s in sents]
+    n = len(lens)
+    mean_l = sum(lens) / n
+    if mean_l == 0:
+        return 0.0
+    var = sum((x - mean_l) ** 2 for x in lens) / n
+    return (var ** 0.5) / mean_l  # coefficient of variation
 
 
 def _dialogue_bonus(text: str, calls_for_dialogue: bool) -> float:
@@ -225,6 +293,9 @@ class PickReport:
     has_dialogue: bool
     foreign_penalty: float
     rationale_bits: list[str]
+    plan_leaks: int = 0
+    reader_questions: int = 0
+    sentence_variance: float = 0.0
 
 
 def score_candidate(cand: dict, brief: str) -> PickReport:
@@ -246,6 +317,15 @@ def score_candidate(cand: dict, brief: str) -> PickReport:
     echo = _meta_echo_penalty(prose, brief)
     dialogue = _dialogue_bonus(prose, calls_dialogue)
 
+    # v3 additions
+    plan_leaks = _plan_leak_count(prose)
+    plan_leak_pen = 2.5 * plan_leaks
+    reader_qs = _reader_question_count(prose)
+    reader_q_pen = 2.0 * reader_qs
+    sent_var = _sentence_variance(prose)
+    # Reward variance above 0.10 threshold up to +0.8, saturate at 0.60 CV.
+    variance_bonus = max(0.0, min(sent_var - 0.10, 0.50)) * 1.6
+
     # Scorer-weighted overall adds a soft prior (weighted by 1 point).
     scorer_overall = float(cand.get("overall_score") or 0.0)
     scorer_prior = 0.5 * scorer_overall  # 0..0.5
@@ -255,11 +335,14 @@ def score_candidate(cand: dict, brief: str) -> PickReport:
         + dialogue
         + scorer_prior
         + length  # positive or slightly negative
+        + variance_bonus
         - cliche_pen
         - pov_pen
         - generic
         - foreign
         - echo
+        - plan_leak_pen
+        - reader_q_pen
     )
 
     rationale_bits: list[str] = []
@@ -286,6 +369,14 @@ def score_candidate(cand: dict, brief: str) -> PickReport:
         rationale_bits.append("foreign-token leak")
     if echo > 0:
         rationale_bits.append("echoes the outcome line")
+    if plan_leaks:
+        rationale_bits.append(f"{plan_leaks} plan-summary leak(s)")
+    if reader_qs:
+        rationale_bits.append(f"{reader_qs} reader-addressed question(s)")
+    if sent_var > 0.20:
+        rationale_bits.append(f"sentence variance {sent_var:.2f}")
+    elif sent_var < 0.10:
+        rationale_bits.append(f"flat rhythm (variance {sent_var:.2f})")
 
     return PickReport(
         index=int(cand.get("index", -1)),
@@ -296,7 +387,40 @@ def score_candidate(cand: dict, brief: str) -> PickReport:
         has_dialogue=_has_dialogue(prose),
         foreign_penalty=foreign,
         rationale_bits=rationale_bits,
+        plan_leaks=plan_leaks,
+        reader_questions=reader_qs,
+        sentence_variance=round(sent_var, 4),
     )
+
+
+def meets_quality_bar(report: PickReport) -> tuple[bool, list[str]]:
+    """v3 quality gate.
+
+    Returns ``(accept, reasons)``. A candidate must:
+    - have NO plan-summary leaks,
+    - have NO reader-addressed questions,
+    - have POV drift ≤ 1 (tiny slips forgiven),
+    - carry no foreign-token leak,
+    - have sentence variance > 0.10,
+    - score > 0.0 overall (not net-negative).
+
+    ``reasons`` collects the specific failures so the ``.picked.json`` sidecar
+    can explain rejections.
+    """
+    reasons: list[str] = []
+    if report.plan_leaks > 0:
+        reasons.append(f"plan-summary leak x{report.plan_leaks}")
+    if report.reader_questions > 0:
+        reasons.append(f"reader-addressed question x{report.reader_questions}")
+    if report.pov_drift > 1:
+        reasons.append(f"POV drift ({report.pov_drift} wrong-mode pronouns)")
+    if report.foreign_penalty > 0:
+        reasons.append("foreign-token leak")
+    if report.sentence_variance <= 0.10:
+        reasons.append(f"flat rhythm (variance {report.sentence_variance:.2f})")
+    if report.score <= 0.0:
+        reasons.append(f"net-negative score ({report.score})")
+    return (len(reasons) == 0, reasons)
 
 
 def pick_best(record: dict) -> tuple[PickReport, list[PickReport]]:
@@ -344,14 +468,19 @@ def iter_sft_records(root: Path, quest_id: str | None = None) -> Iterable[Path]:
                 yield f
 
 
-def pick_and_persist(src: Path) -> Path:
+def pick_and_persist(src: Path, *, apply_quality_bar: bool = False) -> Path:
     record = json.loads(src.read_text())
     winner, reports = pick_best(record)
     rationale = _build_rationale(winner, reports)
+    rejected = False
+    reject_reasons: list[str] = []
+    if apply_quality_bar:
+        ok, reject_reasons = meets_quality_bar(winner)
+        rejected = not ok
     dst = src.with_suffix("").with_suffix(".picked.json")
     out = dict(record)
-    out["claude_pick"] = {
-        "chosen_index": winner.index,
+    pick_block = {
+        "chosen_index": -1 if rejected else winner.index,
         "rationale": rationale,
         "model": "claude-opus-4-6-inline-rater-v2",
         "all_scores": [
@@ -362,10 +491,17 @@ def pick_and_persist(src: Path) -> Path:
                 "pov_drift": r.pov_drift,
                 "concrete_score": r.concrete_score,
                 "has_dialogue": r.has_dialogue,
+                "plan_leaks": r.plan_leaks,
+                "reader_questions": r.reader_questions,
+                "sentence_variance": r.sentence_variance,
             }
             for r in reports
         ],
     }
+    if rejected:
+        pick_block["rejected"] = True
+        pick_block["reject_reasons"] = reject_reasons
+    out["claude_pick"] = pick_block
     tmp = dst.with_suffix(dst.suffix + ".tmp")
     tmp.write_text(json.dumps(out, indent=2, default=str))
     os.replace(tmp, dst)
@@ -377,21 +513,32 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--root", type=Path, default=Path("data/sft"))
     ap.add_argument("--quest", type=str, default=None)
     ap.add_argument("--force", action="store_true")
+    ap.add_argument("--quality-bar", action="store_true",
+                    help="Enable v3 quality-gate (plan leaks, reader questions, "
+                         "sentence variance, POV drift) — scenes that fail are "
+                         "written with chosen_index=-1.")
     args = ap.parse_args(argv)
 
     written = 0
     skipped = 0
+    rejected = 0
     for src in iter_sft_records(args.root, args.quest):
         dst = src.with_suffix("").with_suffix(".picked.json")
         if not args.force and dst.exists() and dst.stat().st_mtime > src.stat().st_mtime:
             skipped += 1
             continue
         try:
-            pick_and_persist(src)
+            pick_and_persist(src, apply_quality_bar=args.quality_bar)
             written += 1
+            # Re-read to count rejections without doing the scoring twice.
+            if args.quality_bar:
+                picked = json.loads(dst.read_text())
+                if picked.get("claude_pick", {}).get("chosen_index", 0) == -1:
+                    rejected += 1
         except Exception as e:
             print(f"{src}: ERROR {type(e).__name__}: {e}")
-    print(f"Wrote {written} picked records; skipped {skipped} up-to-date.")
+    note = f" ({rejected} rejected by quality bar)" if args.quality_bar else ""
+    print(f"Wrote {written} picked records; skipped {skipped} up-to-date{note}.")
     return 0
 
 
