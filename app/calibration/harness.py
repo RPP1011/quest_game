@@ -118,6 +118,12 @@ class Harness:
     async def run(self) -> Report:
         passage_scores: list[PassageScore] = []
         for work in self.manifest.works:
+            work_dir = self.passages_dir / work.id
+            if not work_dir.is_dir():
+                # Works whose passages aren't supplied are silently skipped
+                # (not logged as errors). Only report "missing file" for works
+                # that have a passage dir but individual files absent.
+                continue
             for p in work.passages:
                 passage_scores.append(await self.score_passage(work, p))
         return self._build_report(passage_scores)
