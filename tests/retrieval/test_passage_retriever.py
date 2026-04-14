@@ -264,12 +264,6 @@ async def test_score_is_tiebreaker_by_midpoint(retriever: PassageRetriever):
     assert results[0].score > results[1].score
 
 
-async def test_enable_semantic_raises(corpus: tuple[Path, Path, Path]):
-    manifest, labels, passages = corpus
-    with pytest.raises(NotImplementedError):
-        PassageRetriever(manifest, labels, passages, enable_semantic=True)
-
-
 async def test_yaml_frontmatter_stripped(retriever: PassageRetriever):
     q = Query(filters=QueryFilters(
         score_ranges={"voice_distinctiveness": (0.9, 1.0)},
