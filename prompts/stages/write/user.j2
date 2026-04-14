@@ -23,14 +23,14 @@ Scene {{ scene.scene_id }}
 {% if scene.indirection %}Indirection:{% for ind in scene.indirection %}
   - {{ ind.character_id }}: surface as {{ ind.surface_manifestations | join(", ") }}. Do NOT write: {{ ind.what_not_to_say | join("; ") }}.{% endfor %}{% endif %}
 
-{% endif %}{% if voice_samples is defined and voice_samples %}## Narrator Voice (primary style anchor — match this voice)
-{% for vs in voice_samples %}> {{ vs | trim }}
-
-{% endfor %}
-{% endif %}{% if voice_continuity is defined and voice_continuity %}## CHARACTER VOICE — past utterances by this POV character
+{% endif %}{% if voice_continuity is defined and voice_continuity %}## CHARACTER VOICE — past quoted lines (reuse cadences and vocabulary, not content)
 {% for vc in voice_continuity %}- "{{ vc.text | trim }}"{% if vc.source_update_number is defined and vc.source_update_number is not none %} (update {{ vc.source_update_number }}){% elif vc.seed %} (seed){% endif %}
 {% endfor %}
 
+{% endif %}{% if voice_samples is defined and voice_samples %}## Narrator Voice — primary style anchor (match this rhythm above all else)
+{% for vs in voice_samples %}> {{ vs | trim }}
+
+{% endfor %}
 {% endif %}{% if recent_prose_tail is defined and recent_prose_tail %}## Rhythm Continuity (last ~300 chars of prior prose)
 {{ recent_prose_tail }}
 
