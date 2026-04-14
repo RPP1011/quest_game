@@ -255,14 +255,52 @@ class CraftPlanner:
             ChatMessage(role="user", content=user_prompt),
         ]
 
+        # Day 11: weak models occasionally truncate the structured-output
+        # mid-scene (xgrammar can stop early on long deeply-nested
+        # objects). One in-band retry catches those cases — much cheaper
+        # than letting _retry_with_critic do it because we keep the
+        # whole context+schema setup intact. ParseError propagates if
+        # the second attempt also fails (caller falls back to stub).
+        # ``max_tokens`` is kept conservative so prompt + completion
+        # stays under the 16k model_max_len even with the full
+        # retriever pile-on; bumping to 12k caused 400 Bad Request
+        # responses on long-context updates.
+        from app.world.output_parser import ParseError
         raw = await self._client.chat_structured(
             messages,
             json_schema=schema,
             schema_name="CraftPlan",
+            max_tokens=6144,
         )
+        try:
+            plan = OutputParser.parse_json(raw, schema=CraftPlan)
+        except ParseError:
+            raw = await self._client.chat_structured(
+                messages,
+                json_schema=schema,
+                schema_name="CraftPlan",
+                max_tokens=6144,
+            )
+            plan = OutputParser.parse_json(raw, schema=CraftPlan)
 
-        # ParseError propagates to caller as-is
-        plan = OutputParser.parse_json(raw, schema=CraftPlan)
+        # Day 11: realign craft scene_ids (and brief scene_ids) to
+        # dramatic scene_ids by position. Small models routinely
+        # collapse all emitted scene_ids to a single literal value
+        # (``scene_id: 42`` was the canonical Day-10 fingerprint) or
+        # produce more/fewer scenes than the dramatic plan declared,
+        # which trips the cross-layer scene-coverage critic. Aligning
+        # by position (and truncating extras) keeps the invariant.
+        dramatic_ids = [s.scene_id for s in dramatic.scenes]
+        if dramatic_ids:
+            n = len(dramatic_ids)
+            if len(plan.scenes) > n:
+                plan.scenes = plan.scenes[:n]
+            for i, scene in enumerate(plan.scenes):
+                scene.scene_id = dramatic_ids[i]
+            if len(plan.briefs) > n:
+                plan.briefs = plan.briefs[:n]
+            for i, brief in enumerate(plan.briefs):
+                brief.scene_id = dramatic_ids[i]
 
         # Backfill any scene whose LLM-emitted permeability is missing or has
         # empty grounded vocabulary with the grounded defaults. This enforces

@@ -78,11 +78,37 @@ class EmotionalPlanner:
             ChatMessage(role="user", content=user_prompt),
         ]
 
+        # Day 11: in-band retry on ParseError catches xgrammar
+        # truncations cheaply.
+        from app.world.output_parser import ParseError as _ParseError
         raw = await self._client.chat_structured(
             messages,
             json_schema=schema,
             schema_name="EmotionalPlan",
+            max_tokens=4096,
         )
+        try:
+            plan = OutputParser.parse_json(raw, schema=EmotionalPlan)
+        except _ParseError:
+            raw = await self._client.chat_structured(
+                messages,
+                json_schema=schema,
+                schema_name="EmotionalPlan",
+                max_tokens=4096,
+            )
+            plan = OutputParser.parse_json(raw, schema=EmotionalPlan)
 
-        # ParseError propagates to caller as-is
-        return OutputParser.parse_json(raw, schema=EmotionalPlan)
+        # Day 11: realign emotional scene_ids to dramatic scene_ids by
+        # position. Small models routinely emit ``scene_id: 42`` for
+        # every scene; the critic then flags duplicate scene_id 42.
+        # Aligning by position (and truncating extras) keeps the
+        # cross-layer invariant the critic enforces while letting weak
+        # models off the hook for the literal id.
+        dramatic_ids = [s.scene_id for s in dramatic.scenes]
+        if dramatic_ids:
+            n = len(dramatic_ids)
+            if len(plan.scenes) > n:
+                plan.scenes = plan.scenes[:n]
+            for i, scene in enumerate(plan.scenes):
+                scene.scene_id = dramatic_ids[i]
+        return plan

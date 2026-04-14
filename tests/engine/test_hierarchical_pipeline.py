@@ -161,7 +161,8 @@ class FakeDramaticPlanner:
         self._client = client
 
     async def plan(self, *, directive, player_action, world, arc, structure,
-                   recent_tool_ids=None, quest_id=None):
+                   recent_tool_ids=None, quest_id=None, scene_retriever=None,
+                   foreshadowing_retriever=None, update_number=None):
         from app.planning.schemas import DramaticPlan
         raw = await self._client.chat_structured(
             messages=[], json_schema={}, schema_name="DramaticPlan"
@@ -189,7 +190,10 @@ class FakeCraftPlanner:
         self._client = client
         self.last_kwargs: dict = {}
 
-    async def plan(self, *, dramatic, emotional, style_register_id=None, narrator=None, active_parallels=None, active_motifs=None, characters=None, world=None):
+    async def plan(self, *, dramatic, emotional, style_register_id=None,
+                   narrator=None, active_parallels=None, active_motifs=None,
+                   characters=None, world=None, motif_retriever=None,
+                   foreshadowing_retriever=None, update_number=None):
         self.last_kwargs = {
             "characters": characters,
             "narrator": narrator,

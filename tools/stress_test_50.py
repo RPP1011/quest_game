@@ -243,6 +243,11 @@ async def _bootstrap(workdir: Path, lora: str, llm_url: str, n_candidates: int,
         passage_retriever=passage_retriever,
         quest_retriever=quest_retriever,
         voice_retriever=voice_retriever,
+        # Day 11: the next three were constructed-but-never-invoked
+        # in Day 10. Now wired through the Pipeline.
+        motif_retriever=motif_retriever_wrapped,
+        foreshadowing_retriever=foreshadow_retriever_wrapped,
+        scene_retriever=scene_retriever,
         retrieval_embedder=embedder,
         scorer=scorer,
         llm_judge_client=llm_judge_client,
