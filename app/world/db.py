@@ -169,6 +169,17 @@ CREATE TABLE IF NOT EXISTS arcs (
     last_directive TEXT,
     PRIMARY KEY (quest_id, arc_id)
 );
+
+CREATE TABLE IF NOT EXISTS narrative_embeddings (
+    update_number INTEGER NOT NULL,
+    scene_index INTEGER NOT NULL,
+    quest_id TEXT NOT NULL,
+    embedding BLOB NOT NULL,
+    text_preview TEXT NOT NULL,
+    PRIMARY KEY (quest_id, update_number, scene_index)
+);
+
+CREATE INDEX IF NOT EXISTS idx_ne_quest ON narrative_embeddings(quest_id);
 """
 
 

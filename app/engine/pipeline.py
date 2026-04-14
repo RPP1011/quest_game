@@ -289,6 +289,7 @@ class Pipeline:
         rerank_weights: dict[str, float] | None = None,
         candidate_base_temperature: float = 0.8,
         candidate_temperature_step: float = 0.15,
+        retrieval_embedder: "Any | None" = None,
     ) -> None:
         self._world = world
         self._cb = context_builder
@@ -337,6 +338,10 @@ class Pipeline:
         self._candidate_temperature_step = float(
             cfg.get("candidate_temperature_step", candidate_temperature_step)
         )
+
+        # Retrieval layer (Wave 1c infra; Wave 3b wiring will supply a real
+        # embedder). ``None`` disables the extract-stage embedding write.
+        self._retrieval_embedder: Any | None = retrieval_embedder
 
     @property
     def is_hierarchical(self) -> bool:
@@ -405,6 +410,21 @@ class Pipeline:
                 pipeline_trace_id=trace.trace_id,
             ))
             trace.outcome = outcome
+
+            # Wave 1c: gated narrative-embedding write. No-op while
+            # ``_retrieval_embedder`` is ``None`` (default); Wave 3b activates.
+            if outcome == "committed":
+                try:
+                    self._persist_narrative_embedding(prose, update_number)
+                except Exception as e:  # pragma: no cover - defensive
+                    trace.add_stage(StageResult(
+                        stage_name="narrative_embedding_persist",
+                        input_prompt="", raw_output="",
+                        errors=[StageError(
+                            kind="narrative_embedding_persist_crash",
+                            message=str(e),
+                        )],
+                    ))
 
             # EXTRACT stage: only when not critical. Best-effort — any failure
             # is recorded in the trace but never breaks the chapter commit.
@@ -505,6 +525,22 @@ class Pipeline:
                     stage_name="motif_occurrences_persist",
                     input_prompt="", raw_output="",
                     errors=[StageError(kind="motif_occurrences_persist_crash", message=str(e))],
+                ))
+
+        # Wave 1c: infrastructure hook. ``_retrieval_embedder`` is ``None``
+        # by default so this is a no-op in every current caller; Wave 3b
+        # activates the embedder and flips this on.
+        if outcome == "committed":
+            try:
+                self._persist_narrative_embedding(prose, update_number)
+            except Exception as e:  # pragma: no cover - defensive
+                trace.add_stage(StageResult(
+                    stage_name="narrative_embedding_persist",
+                    input_prompt="", raw_output="",
+                    errors=[StageError(
+                        kind="narrative_embedding_persist_crash",
+                        message=str(e),
+                    )],
                 ))
 
         if not check_out.has_critical:
@@ -708,6 +744,31 @@ class Pipeline:
                     "status": ParallelStatus.DELIVERED,
                     "delivered_at_update": update_number,
                 })
+
+    def _persist_narrative_embedding(self, prose: str, update_number: int) -> None:
+        """Post-COMMIT: compute and persist a retrieval embedding for ``prose``.
+
+        Wave 1c — infrastructure hook; Wave 3b activates the embedder.
+        Early-exits when no embedder is configured, no quest id is set, or
+        the prose is empty. ``scene_index=0`` is used as a pragmatic default
+        for the whole-commit embedding (Wave 3b decides per-scene split).
+        """
+        if self._retrieval_embedder is None or self._quest_id is None:
+            return
+        if not prose:
+            return
+        # Compute embedding and upsert. ``embed`` is expected to return a
+        # numpy-compatible vector (list, tuple, or np.ndarray); the writer
+        # normalizes to float32 bytes.
+        embedding = self._retrieval_embedder.embed(prose)
+        text_preview = prose[:200]
+        self._world.upsert_narrative_embedding(
+            quest_id=self._quest_id,
+            update_number=update_number,
+            scene_index=0,
+            embedding=embedding,
+            text_preview=text_preview,
+        )
 
     def _persist_motif_occurrences(self, craft_plan: "Any", update_number: int) -> None:
         """Post-COMMIT: record each ``MotifInstruction`` on the craft plan as an
