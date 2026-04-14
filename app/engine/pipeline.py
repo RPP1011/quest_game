@@ -2104,6 +2104,7 @@ class Pipeline:
                     "quest_callbacks": [],
                     "voice_continuity": [],
                     "recent_prose_tail": "",
+                    "player_action": player_action,
                 },
             )
             if self._n_candidates == 1:
@@ -2202,6 +2203,7 @@ class Pipeline:
                     "anti_patterns": anti_patterns or [],
                     "plan": None,
                     "style": "",
+                    "player_action": player_action,
                 },
             )
             if self._n_candidates == 1:

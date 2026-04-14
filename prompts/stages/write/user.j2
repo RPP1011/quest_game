@@ -39,4 +39,9 @@ Scene {{ scene.scene_id }}
 {% endfor %}{% endif %}{% if plan is defined and plan %}## Plan
 {{ plan }}
 
+{% endif %}{% if player_action is defined and player_action %}## Player Action (render this faithfully)
+{{ player_action }}
+
+If the action involves speaking, asking, answering, negotiating, or describing something aloud, render the words as quoted dialogue. Do not summarize speech as narration.
+
 {% endif %}Write the scene now. Output prose only — no headings, no labels.
