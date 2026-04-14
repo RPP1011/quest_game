@@ -37,8 +37,9 @@ class Embedder:
     dot product.
     """
 
-    def __init__(self, model_name: str = _DEFAULT_MODEL) -> None:
+    def __init__(self, model_name: str = _DEFAULT_MODEL, device: str | None = None) -> None:
         self._model_name = model_name
+        self._device = device
         self._model: SentenceTransformer | None = None
 
     # ---------------------------------------------------------------
@@ -49,7 +50,13 @@ class Embedder:
             # Imported lazily to avoid pulling torch at import time.
             from sentence_transformers import SentenceTransformer
 
-            model = SentenceTransformer(self._model_name)
+            # MiniLM is 22MB; CPU is plenty fast and avoids fighting
+            # vllm for GPU memory. Override with device="cuda" when
+            # vllm is not running (e.g. test suite with no LLM server).
+            # ``QUEST_EMBEDDER_DEVICE`` env var is the recommended lever.
+            import os as _os
+            device = self._device or _os.environ.get("QUEST_EMBEDDER_DEVICE", "cpu")
+            model = SentenceTransformer(self._model_name, device=device)
             model.max_seq_length = _MAX_SEQ_LENGTH
             self._model = model
         return self._model
