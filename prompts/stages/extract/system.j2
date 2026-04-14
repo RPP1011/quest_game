@@ -5,3 +5,4 @@ Rules:
 - Only report changes that are clearly supported by the prose or plan.
 - Return a JSON object matching the required schema exactly.
 - If nothing changed, return empty arrays for every field.
+- Be CONSERVATIVE with `theme_stance_updates` and `motive_resolutions`: these reflect rare, high-signal shifts. Default is to emit empty arrays. Fire these only when the committed prose provides strong, concrete evidence — not mere thematic touching or motive-adjacent behavior.
