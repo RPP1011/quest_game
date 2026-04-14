@@ -9,3 +9,7 @@ dist/
 build/
 node_modules/
 .DS_Store
+
+# Calibration corpus (local only; regenerate via tools/build_corpus.py)
+data/calibration/raw/
+data/calibration/passages/

@@ -1,0 +1,80 @@
+# Source map for calibration corpus fetchers.
+#
+# Keys are work_ids matching data/calibration/manifest.yaml. Each entry
+# declares the fetcher type and its parameters. Fields with "VERIFY" have
+# not been confirmed against a live HTTPS probe and should be checked by
+# the user before relying on them.
+#
+# Types:
+#   gutenberg      — Project Gutenberg plain-text by numeric id
+#   standard_ebooks — Standard Ebooks plain-text (fallback)
+#   sv_forum       — Sufficient Velocity quest thread with threadmarks
+#   wordpress      — WordPress TOC page whose anchors enumerate chapters
+
+works:
+  pride_and_prejudice:
+    type: gutenberg
+    gutenberg_id: 1342
+    license: public_domain_us
+
+  madame_bovary:
+    type: gutenberg
+    gutenberg_id: 2413
+    license: public_domain_us
+    note: Eleanor Marx-Aveling translation
+
+  brothers_karamazov:
+    type: gutenberg
+    gutenberg_id: 28054
+    license: public_domain_us
+    note: Constance Garnett translation
+
+  ulysses:
+    type: gutenberg
+    gutenberg_id: 4300
+    license: public_domain_us
+
+  mrs_dalloway:
+    type: gutenberg
+    gutenberg_id: 63107  # VERIFY: Gutenberg added Mrs. Dalloway after 2021 PD
+    fallback:
+      type: standard_ebooks
+      slug: virginia-woolf/mrs-dalloway
+    license: public_domain_us
+
+  sun_also_rises:
+    # The Sun Also Rises (1926) entered US PD in 2022 but as of writing has
+    # no confirmed Gutenberg entry. Users should verify or supply manually.
+    type: gutenberg
+    gutenberg_id: null  # UNVERIFIED
+    fallback:
+      type: standard_ebooks
+      slug: ernest-hemingway/the-sun-also-rises  # UNVERIFIED
+    license: public_domain_us
+    skip_if_unavailable: true
+
+  marked_for_death:
+    type: sv_forum
+    # Verified: SV returns 200 for thread id 24481 (canonical URL includes
+    # "a-rational-naruto-quest" slug but id-only URL redirects there).
+    thread_url: https://forums.sufficientvelocity.com/threads/marked-for-death-a-rational-naruto-quest.24481/
+    license: fan_work_public_web
+
+  forge_of_destiny:
+    type: sv_forum
+    # UNVERIFIED: the exact SV thread id for "Forge of Destiny" could not be
+    # confirmed by a live probe during setup. User should replace this URL
+    # with the canonical thread (search SV for "Forge of Destiny" by yrsillar).
+    thread_url: https://forums.sufficientvelocity.com/threads/forge-of-destiny-xianxia-original-fiction.0/
+    license: fan_work_public_web
+
+  practical_guide_evil:
+    type: wordpress
+    toc_url: https://practicalguidetoevil.wordpress.com/table-of-contents/
+    license: author_public_web
+
+  pale_lights:
+    type: wordpress
+    # Verified: palelights.com (custom domain, not wordpress.com subdomain).
+    toc_url: https://palelights.com/table-of-contents/
+    license: author_public_web
