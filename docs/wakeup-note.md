@@ -77,11 +77,16 @@ failure and nothing else.** Further craft improvements need way more SFT data
 ## What's running right now
 
 - `vllm serve` on port 8082 with `--max-model-len 32768 --enable-lora
-  --lora-modules writer_v1=data/sft/lora_writer_v1` (process still alive)
-- **LoRA v2 corpus collection subagent** (dispatched after this note was written).
-  Collects ~150 SFT records across 3 diverse seeds (noir / political intrigue /
-  SFF heist), Claude-picks winners, trains LoRA v2 at rank 64 / 5 epochs,
-  A/Bs vs v1. Results will land in `docs/phase2-kickoff-lora-v2.md`.
+  --lora-modules writer_v1=... writer_v2=...` (process still alive; serving
+  both v1 and v2 simultaneously).
+- **LoRA v2 completed**: 64 SFT records across 3 diverse seeds (noir / political
+  intrigue / SFF heist), rank 64 / 5 epochs, eval_loss 2.50→1.78. A/B vs v1:
+  overall +0.013, pacing +0.057, sensory_density +0.099. sentence_variance and
+  dialogue_ratio did not move. See `docs/phase2-kickoff-lora-v2.md`.
+- **WARNING**: v2 adapter safetensors are only in vllm GPU memory — the
+  training worktree was force-removed before the merge completed. vllm still
+  serves them, but a vllm restart will lose v2 until we retrain from
+  `tools/sft/collect_v2_corpus.py`.
 
 ## Repo state
 
