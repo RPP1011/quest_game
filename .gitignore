@@ -13,6 +13,7 @@ node_modules/
 # Calibration corpus (local only; regenerate via tools/build_corpus.py)
 data/calibration/raw/
 data/calibration/passages/
+data/calibration/scenes/
 # LoRA training artifacts (copyrighted passage text embedded; 300MB adapter)
 data/calibration/train.jsonl
 data/calibration/test.jsonl
