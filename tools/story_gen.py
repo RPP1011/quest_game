@@ -158,6 +158,16 @@ async def main():
         foreshadow_retriever = ForeshadowingRetriever(sm, "demo")
         voice_retriever = VoiceRetriever(sm, "demo")
 
+    # Construct a Scorer so n_candidates>1 actually uses scorer-driven
+    # rerank (the weighted 12-dim sum) instead of picking the first
+    # candidate. The Scorer has no I/O on construction, so it's cheap
+    # to always include. Default N bumped to 4 — 5-action runs show
+    # dialogue_ratio ~2x and sentence_variance ~1.3x vs N=1 for 4x
+    # the writer latency; the retrieval + planner latency dominates
+    # anyway, so wall-clock is only ~30% worse.
+    from app.scoring.scorer import Scorer
+    scorer = Scorer()
+
     pipeline = Pipeline(
         sm, cb, client,
         arc_planner=arc,
@@ -166,6 +176,7 @@ async def main():
         craft_planner=craft,
         craft_library=craft_library,
         structure=structure,
+        scorer=scorer,
         quest_config={
             "narrator": SEED["narrator"],
             "genre": "low-fantasy noir",
@@ -174,7 +185,7 @@ async def main():
                 "enabled": os.environ.get("SFT", "0") == "1",
                 "dir": "data/sft/demo",
             },
-            "n_candidates": int(os.environ.get("N", "1")),
+            "n_candidates": int(os.environ.get("N", "4")),
         },
         quest_id="demo",
         arc_id="main",
