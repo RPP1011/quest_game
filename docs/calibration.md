@@ -108,3 +108,72 @@ prompt is composed from:
 Quest-only dims (`choice_hook_quality`, `update_self_containment`,
 `choice_meaningfulness`, `world_state_legibility`) are only included when
 `is_quest: true`.
+
+## Fetching the corpus automatically
+
+The 18-work manifest mixes public-domain novels, fan-written quests published
+on public web forums, and copyrighted modern novels. Ten are auto-fetchable;
+six must be supplied by hand.
+
+Build a local corpus in one shot:
+
+```
+python -m tools.build_corpus --all-public
+```
+
+This runs, per work, `tools/corpus_fetchers/<source>.py` then
+`tools/sample_passages.py` then `python -m app.calibration init`. Raw
+downloads land in `data/calibration/raw/` and passage samples in
+`data/calibration/passages/`; both are gitignored so the repo never ships
+third-party text.
+
+### Per-source notes
+
+| Source | Fetcher | Etiquette |
+| --- | --- | --- |
+| Project Gutenberg | `gutenberg.py` | 1 req/s, 3 retries, honor `Retry-After`. Fetches `/cache/epub/<id>/pg<id>.txt`, falls back to `/files/<id>/<id>-0.txt`. Strips the `*** START OF` / `*** END OF` banner. |
+| Standard Ebooks | `standard_ebooks.py` | Fallback for PD works missing on Gutenberg. Pulls the single plain-text download. |
+| Sufficient Velocity | `sv_forum.py` | Uses threadmarks to enumerate chapter posts. Public fan-work; respect SV ToS and the author's wishes if they opt out. |
+| WordPress TOC | `wordpress.py` | Walks a Table-of-Contents page. Works for serials that publish a canonical TOC. |
+
+All fetchers share `tools/corpus_fetchers/_http.py`: `User-Agent:
+quest_game-calibration-fetcher/1.0 (local research)`, 1s min per-request
+delay, exponential backoff on 429/5xx. Each fetcher is idempotent — if a
+valid raw file already exists, it is left alone.
+
+### What is NOT automatable
+
+Six works in the manifest are under active copyright and must be sourced
+manually. Drop a plain-text chapter file into
+`data/calibration/raw/<work_id>/full.txt` (single file) or
+`data/calibration/raw/<work_id>/chap_0001.txt`, `chap_0002.txt`, ... (one
+per chapter):
+
+- `blood_meridian` (Cormac McCarthy)
+- `left_hand_of_darkness` (Ursula K. Le Guin)
+- `get_shorty` (Elmore Leonard)
+- `remains_of_the_day` (Kazuo Ishiguro)
+- `blade_itself` (Joe Abercrombie)
+- `way_of_kings` (Brandon Sanderson)
+
+`sun_also_rises` is PD as of 2022 but its Gutenberg availability has not
+been verified at the time of writing; it is included in `--all-public` but
+will be skipped with a clear warning if the lookup fails.
+
+### Sampler
+
+`python -m tools.sample_passages` produces 500-1000 word mid-chapter slices
+from raw corpora into `data/calibration/passages/<work_id>/pNN.txt` with a
+YAML frontmatter block (`work`, `author`, `passage_id`, `source`,
+`pov_character`). Selection is deterministic (seeded by `work_id`) and
+enforces:
+
+- drop the first 20% and last 15% of each chapter's words
+- prefer chapters from the middle 80% of the book
+- when two passage slots exist, emit one dialogue-lighter and one
+  dialogue-heavier sample (measured via
+  `app.calibration.heuristics.dialogue_ratio`)
+
+Re-run `python -m app.calibration init --passages-dir
+data/calibration/passages` after any change so the manifest's `sha256`
+pins match the passages on disk.
