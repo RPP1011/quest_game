@@ -18,11 +18,13 @@ class InferenceClient:
         timeout: float = 120.0,
         retries: int = 0,
         retry_backoff: float = 0.5,
+        model: str | None = None,
     ) -> None:
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
         self._retries = retries
         self._retry_backoff = retry_backoff
+        self._model = model
 
     async def chat(
         self,
@@ -124,6 +126,8 @@ class InferenceClient:
             "stream": stream,
             "chat_template_kwargs": {"enable_thinking": thinking},
         }
+        if self._model is not None:
+            payload["model"] = self._model
         if max_tokens is not None:
             payload["max_tokens"] = max_tokens
         payload.update(extra)

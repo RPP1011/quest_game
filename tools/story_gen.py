@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -53,6 +54,13 @@ ACTIONS = [
     "I study the room, looking for who's trying too hard not to be noticed.",
     "I sit at Merrin's bar and ask whether the Gannet crew came through last week.",
     "I wait for her answer without filling the silence.",
+    "I order a second drink to give her time to talk.",
+    "I describe the silver shipment to her — weight, markings, the broker's name.",
+    "I let my hand show on the bar, the old burn scar facing up where she'll see it.",
+    "I leave the inn and follow whoever pretends not to follow me.",
+    "I find an alley with one entrance and wait there.",
+    "When my pursuer rounds the corner, I step out and ask their name.",
+    "I make the offer plain: tell me about the cargo or I tell the harbour master what I already know.",
 ]
 
 
@@ -98,7 +106,11 @@ async def main():
     ))
     sm.upsert_reader_state(ReaderState(quest_id="demo"))
 
-    client = InferenceClient(base_url="http://127.0.0.1:8081", retries=1)
+    client = InferenceClient(
+        base_url=os.environ.get("LLM_URL", "http://127.0.0.1:8082"),
+        retries=1,
+        model=os.environ.get("LLM_MODEL", "LiquidAI/LFM2.5-1.2B-Instruct"),
+    )
     renderer = PromptRenderer(PROMPTS)
     cb = ContextBuilder(sm, renderer, TokenBudget())
 
@@ -111,7 +123,6 @@ async def main():
     arc = ArcPlanner(client, renderer)
 
     # Retrieval layer (Waves 1-4): wire up all retrievers + flip the flag.
-    import os
     retrieval_on = os.environ.get("RETRIEVAL", "1") != "0"
     passage_retriever = quest_retriever = scene_retriever = None
     motif_retriever = foreshadow_retriever = voice_retriever = None
@@ -150,6 +161,11 @@ async def main():
             "narrator": SEED["narrator"],
             "genre": "low-fantasy noir",
             "retrieval": {"enabled": retrieval_on},
+            "sft_collection": {
+                "enabled": os.environ.get("SFT", "0") == "1",
+                "dir": "data/sft/demo",
+            },
+            "n_candidates": int(os.environ.get("N", "1")),
         },
         quest_id="demo",
         arc_id="main",

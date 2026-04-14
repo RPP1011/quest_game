@@ -153,6 +153,8 @@ def build_delta(
     issues: list[ValidationIssue] = []
     valid = known_ids  # None means no filtering
 
+    from app.world.schema import EntityStatus
+    valid_statuses = {s.value for s in EntityStatus}
     entity_updates: list[EntityUpdate] = []
     for item in extracted.get("entity_updates", []):
         eid = item.get("id", "")
@@ -163,7 +165,17 @@ def build_delta(
                 subject=eid,
             ))
             continue
-        entity_updates.append(EntityUpdate(id=eid, patch=item.get("patch", {})))
+        patch = dict(item.get("patch", {}))
+        # Drop unknown enum values (e.g. LLM emitting status="revealed")
+        # so a free-form output doesn't crash later Entity validation.
+        if "status" in patch and patch["status"] not in valid_statuses:
+            issues.append(ValidationIssue(
+                severity="warning",
+                message=f"dropped invalid entity status {patch['status']!r} for {eid}",
+                subject=eid,
+            ))
+            patch.pop("status", None)
+        entity_updates.append(EntityUpdate(id=eid, patch=patch))
 
     relationship_changes: list[RelChange] = []
     for item in extracted.get("new_relationships", []):
