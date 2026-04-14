@@ -1,0 +1,19 @@
+choice_hook_quality (scene-scale): The input is a FULL SCENE. Score the
+quality of the decision hook at/near its end. For quest fiction this is the
+voting prompt; for novels it is the implicit next-choice the POV faces.
+
+0.0 = no hook at all; scene ends on pure denouement with nothing to decide.
+0.3 = a hook exists but is vague ("what now?") with no concrete options.
+0.5 = 2+ options implied but they differ only in flavor, not consequence.
+0.7 = sharp, specific options with visible stakes; a voter or reader can
+      name what is being traded against what.
+1.0 = options are stakes-laden, mutually exclusive, and each one implies a
+      visibly different next scene; tone of the choice matches the scene's
+      built pressure.
+
+Anchors:
+  HIGH: scene ends with "pay the ransom and lose the ship, or refuse and
+        watch the envoy die — decide before sunrise."
+  MID : scene ends with the protagonist debating whether to tell a friend
+        a secret, but nothing external forces the timing.
+  LOW : scene ends mid-conversation or with "they went to bed, thinking."
