@@ -237,17 +237,24 @@ class DramaticPlanner:
     def _default_pov_character_id(characters: list) -> str | None:
         """Pick a deterministic fallback POV when the planner omits one.
 
-        Walks the entity list and returns the first entity whose
-        ``entity_type`` is a CHARACTER. Falls back to ``None`` when the
-        world has no character entities yet (earliest seed state).
+        Prefers an entity with id=="player" (the quest-game convention for
+        the protagonist). Falls back to the first CHARACTER entity by list
+        order. Returns ``None`` when no characters exist yet.
         """
         from app.world.schema import EntityType
+        player = None
+        first_char = None
         for entity in characters:
             etype = getattr(entity, "entity_type", None)
-            # Tolerate enum or string values.
-            if etype == EntityType.CHARACTER or etype == "character":
-                return entity.id
-        return None
+            is_character = etype == EntityType.CHARACTER or etype == "character"
+            if not is_character:
+                continue
+            if entity.id == "player":
+                player = entity.id
+                break
+            if first_char is None:
+                first_char = entity.id
+        return player or first_char
 
     # -- Helpers --------------------------------------------------------
 

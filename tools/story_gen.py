@@ -38,6 +38,7 @@ SEED = {
          "stance": "exploring"},
     ],
     "narrator": {
+        "pov_character_id": "player",
         "pov_type": "third_limited",
         "worldview": "a weathered observer; notices hands and silences",
         "editorial_stance": "sympathetic but unsentimental",

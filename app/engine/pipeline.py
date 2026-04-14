@@ -814,6 +814,19 @@ class Pipeline:
             "_emotional_plan": emotional,
         }
 
+        # Force player-character POV across all scenes when the narrator
+        # config identifies a single protagonist. The dramatic LLM often
+        # picks an NPC's POV (e.g. the innkeeper), which puts voice
+        # retrieval and narrative-embedding persistence on the wrong
+        # character and breaks quest memory. Narrator config convention:
+        # ``pov_character_id`` names the entity whose POV the narrator
+        # follows. Defaults to id="player" when set.
+        narrator_cfg = (self._quest_config or {}).get("narrator") or {}
+        forced_pov = narrator_cfg.get("pov_character_id")
+        if forced_pov:
+            for scene in dramatic.scenes:
+                scene.pov_character_id = forced_pov
+
         # Stash for post-commit reader_state mutation (Gap G6).
         self._last_dramatic = dramatic
         self._last_emotional = emotional
