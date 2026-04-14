@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio
 import json
 import time
 import uuid
@@ -266,6 +267,30 @@ DEFAULT_RERANK_WEIGHTS: dict[str, float] = {
 }
 
 
+# Day 3: rerank weights for the Scorer-driven path. Keys match
+# ``app.scoring.DIMENSION_NAMES``; weights are multiplied against the
+# per-dim [0, 1] score and summed for candidate ranking. Default = every
+# dim at 1.0 so the rerank objective coincides with the unweighted mean
+# that ``Scorer`` returns as ``overall_score``. Callers who want to bias
+# rerank toward specific dims (e.g. 2.0 on ``pov_adherence`` because
+# small models drift there first) override per-key via the
+# ``rerank_weights`` ctor kwarg or ``quest_config["rerank_weights"]``.
+DEFAULT_SCORER_RERANK_WEIGHTS: dict[str, float] = {
+    "sentence_variance": 1.0,
+    "dialogue_ratio": 1.0,
+    "pacing": 1.0,
+    "sensory_density": 1.0,
+    "free_indirect_quality": 1.0,
+    "detail_characterization": 1.0,
+    "metaphor_domains_score": 1.0,
+    "indirection_score": 1.0,
+    "pov_adherence": 1.0,
+    "named_entity_presence": 1.0,
+    "narrator_sensory_match": 1.0,
+    "action_fidelity": 1.0,
+}
+
+
 class Pipeline:
     def __init__(
         self,
@@ -336,6 +361,23 @@ class Pipeline:
         cfg_weights = cfg.get("rerank_weights")
         if isinstance(cfg_weights, dict):
             self._rerank_weights.update(cfg_weights)
+
+        # Day 3: Scorer-driven rerank weights. The 12 dim keys are disjoint
+        # from the legacy critic keys in ``_rerank_weights`` (critic names
+        # vs. dim names — e.g. ``free_indirect`` vs ``free_indirect_quality``),
+        # so the same ``rerank_weights`` ctor kwarg can carry both sets and
+        # we slice out the dim-shaped entries here. Missing keys default to
+        # 1.0; extra keys (legacy critic names, or unknown) are ignored for
+        # scorer scoring.
+        self._scorer_rerank_weights = dict(DEFAULT_SCORER_RERANK_WEIGHTS)
+        if rerank_weights:
+            for k, v in rerank_weights.items():
+                if k in self._scorer_rerank_weights:
+                    self._scorer_rerank_weights[k] = float(v)
+        if isinstance(cfg_weights, dict):
+            for k, v in cfg_weights.items():
+                if k in self._scorer_rerank_weights:
+                    self._scorer_rerank_weights[k] = float(v)
         self._candidate_base_temperature = float(
             cfg.get("candidate_base_temperature", candidate_base_temperature)
         )
@@ -1583,6 +1625,90 @@ class Pipeline:
                 errors=[StageError(kind="scoring_crash", message=str(e)[:300])],
             ))
 
+    async def _dispatch_candidate(
+        self,
+        *,
+        index: int,
+        write_ctx: "Any",
+        n: int,
+    ) -> "tuple[int, float, float, str, int, float]":
+        """Dispatch a single candidate inference call.
+
+        Returns ``(index, temperature, start_ts, raw, latency_ms, end_ts)``.
+        ``start_ts`` and ``end_ts`` are ``time.perf_counter()`` values used by
+        the concurrency tests to assert that N calls launched near-together.
+
+        Temperature jitter: candidate i uses base_temp + i*step (clamped to
+        [0.1, 1.3]). If the client accepts a ``seed`` kwarg we also vary it;
+        unrecognised kwargs are handled by falling back to a temperature-only
+        call. Clients that forward ``**extra`` (the default InferenceClient,
+        and vllm-style batching backends that accept ``seed``) get both.
+        """
+        temp = self._candidate_base_temperature + index * self._candidate_temperature_step
+        temp = max(0.1, min(1.3, temp))
+        kw: dict[str, Any] = {"temperature": temp}
+        # Best-effort seed jitter: only pass if the client likely supports it.
+        # The default InferenceClient forwards **extra kwargs, so passing
+        # seed is safe; fake clients that don't accept it would fail — so
+        # we only pass seed when N>1 (dev fake clients use N=1 by default).
+        if n > 1:
+            kw["seed"] = 1000 + index
+        t0 = time.perf_counter()
+        try:
+            raw = await self._client.chat(
+                messages=[
+                    ChatMessage(role="system", content=write_ctx.system_prompt),
+                    ChatMessage(role="user", content=write_ctx.user_prompt),
+                ],
+                **kw,
+            )
+        except TypeError:
+            # Client doesn't accept one of our kwargs (e.g. seed). Retry
+            # with only temperature — sampling non-determinism still gives
+            # us variance between candidates.
+            raw = await self._client.chat(
+                messages=[
+                    ChatMessage(role="system", content=write_ctx.system_prompt),
+                    ChatMessage(role="user", content=write_ctx.user_prompt),
+                ],
+                temperature=temp,
+            )
+        t1 = time.perf_counter()
+        latency = int((t1 - t0) * 1000)
+        return index, temp, t0, raw, latency, t1
+
+    def _scorer_rerank_candidate(
+        self,
+        *,
+        prose: str,
+        craft_plan: "Any | None",
+        player_action: str | None,
+    ) -> "tuple[float, dict[str, float], float]":
+        """Day 3: rerank a single candidate via the ``Scorer``.
+
+        Returns ``(weighted_score, per_dim_scores, overall_score)``. The
+        ``weighted_score`` is ``sum(weight_i * dim_i)`` across the 12 dims
+        using ``self._scorer_rerank_weights``; ``overall_score`` is the
+        unweighted mean produced by the scorer (mirrors what the post-
+        commit scorecard would persist). Consumers log both — the weighted
+        one drives winner selection, the overall one is the interpretable
+        "how good is this candidate overall" number shown in A/B output.
+        """
+        assert self._scorer is not None
+        card = self._scorer.score(
+            prose,
+            craft_plan=craft_plan,
+            narrator=self._narrator,
+            world=self._world,
+            player_action=player_action,
+        )
+        dims = dict(card.dimension_items())
+        weighted = 0.0
+        for name, val in dims.items():
+            w = self._scorer_rerank_weights.get(name, 1.0)
+            weighted += w * float(val)
+        return weighted, dims, float(card.overall_score)
+
     async def _generate_scene_candidates(
         self,
         *,
@@ -1597,56 +1723,77 @@ class Pipeline:
         return (winner_prose, records). Each record is a dict suitable for
         trace ``detail``.
 
-        Temperature jitter: candidate i uses base_temp + i*step (clamped to
-        [0.1, 1.3]). If the client accepts a ``seed`` kwarg we also vary it;
-        unrecognised kwargs are passed through to `chat` and ignored by
-        clients that don't support them.
+        Day 3 changes:
+        - The N inference calls are dispatched concurrently via
+          ``asyncio.gather`` so batching backends like vllm can coalesce
+          them into a single forward pass. Per-candidate seed / temperature
+          jitter is preserved.
+        - If a ``scorer`` was wired on the pipeline, rerank scoring uses
+          the Day 2 :class:`~app.scoring.Scorer` (weighted sum over the 12
+          dims). Otherwise we fall back to the legacy
+          :meth:`_score_candidate` critic-sum — bit-identical behavior for
+          callers that don't opt in.
+        - A single ``write_rerank`` trace stage logs every candidate, its
+          dim-level scores, and the winning index.
         """
+        # ---- Concurrent dispatch (Day 3) ----
+        # Build N inference coroutines and await them as a single gather.
+        # Slow / fast candidates return in source order regardless of
+        # completion order, since gather preserves the input list order.
+        dispatches = [
+            self._dispatch_candidate(index=i, write_ctx=write_ctx, n=n)
+            for i in range(n)
+        ]
+        results = await asyncio.gather(*dispatches)
+
+        use_scorer = self._scorer is not None
         records: list[dict] = []
-        for i in range(n):
-            temp = self._candidate_base_temperature + i * self._candidate_temperature_step
-            temp = max(0.1, min(1.3, temp))
-            kw: dict[str, Any] = {"temperature": temp}
-            # Best-effort seed jitter: only pass if the client likely supports it.
-            # The default InferenceClient forwards **extra kwargs, so passing
-            # seed is safe; fake clients that don't accept it would fail — so
-            # we only pass seed when N>1 (dev fake clients use N=1 by default).
-            if n > 1:
-                kw["seed"] = 1000 + i
-            t0 = time.perf_counter()
-            try:
-                raw = await self._client.chat(
-                    messages=[
-                        ChatMessage(role="system", content=write_ctx.system_prompt),
-                        ChatMessage(role="user", content=write_ctx.user_prompt),
-                    ],
-                    **kw,
-                )
-            except TypeError:
-                # Client doesn't accept one of our kwargs (e.g. seed). Retry
-                # with only temperature — sampling non-determinism still gives
-                # us variance between candidates.
-                raw = await self._client.chat(
-                    messages=[
-                        ChatMessage(role="system", content=write_ctx.system_prompt),
-                        ChatMessage(role="user", content=write_ctx.user_prompt),
-                    ],
-                    temperature=temp,
-                )
-            latency = int((time.perf_counter() - t0) * 1000)
+        for index, temp, _t0, raw, latency, _t1 in results:
             scene_prose = OutputParser.parse_prose(raw)
-            score, breakdown, _issues = self._score_candidate(
-                prose=scene_prose,
-                craft_plan=craft_plan,
-                player_action=player_action,
-            )
+            if use_scorer:
+                try:
+                    weighted, dim_scores, overall = self._scorer_rerank_candidate(
+                        prose=scene_prose,
+                        craft_plan=craft_plan,
+                        player_action=player_action,
+                    )
+                    breakdown: dict[str, Any] = dict(dim_scores)
+                    rerank_source = "scorer"
+                    score_value = weighted
+                    overall_value: float | None = overall
+                except Exception as e:  # pragma: no cover - defensive
+                    # Scorer crash ⇒ fall back to legacy per-candidate.
+                    weighted_leg, leg_breakdown, _ = self._score_candidate(
+                        prose=scene_prose,
+                        craft_plan=craft_plan,
+                        player_action=player_action,
+                    )
+                    breakdown = dict(leg_breakdown)
+                    breakdown["_scorer_error"] = str(e)[:200]
+                    rerank_source = "legacy_fallback"
+                    score_value = weighted_leg
+                    overall_value = None
+            else:
+                weighted_leg, leg_breakdown, _ = self._score_candidate(
+                    prose=scene_prose,
+                    craft_plan=craft_plan,
+                    player_action=player_action,
+                )
+                breakdown = dict(leg_breakdown)
+                rerank_source = "legacy"
+                score_value = weighted_leg
+                overall_value = None
+
             detail: dict[str, Any] = {
-                "candidate_index": i,
+                "candidate_index": index,
                 "n_candidates": n,
                 "temperature": temp,
-                "weighted_score": score,
+                "weighted_score": score_value,
                 "dimension_scores": breakdown,
+                "rerank_source": rerank_source,
             }
+            if overall_value is not None:
+                detail["overall_score"] = overall_value
             if scene_id is not None:
                 detail["scene_id"] = scene_id
             trace.add_stage(StageResult(
@@ -1659,10 +1806,12 @@ class Pipeline:
                 detail=detail,
             ))
             records.append({
-                "index": i,
+                "index": index,
                 "prose": scene_prose,
-                "score": score,
+                "score": score_value,
                 "breakdown": breakdown,
+                "overall_score": overall_value,
+                "rerank_source": rerank_source,
             })
 
         # Rerank: highest weighted_score wins. Ties broken by lowest index.
@@ -1676,6 +1825,18 @@ class Pipeline:
             "winner_score": winner["score"],
             "ranking": [{"index": idx, "score": sc} for idx, sc in ranking],
             "n_candidates": n,
+            "rerank_source": (
+                "scorer" if use_scorer else "legacy"
+            ),
+            "candidates": [
+                {
+                    "index": r["index"],
+                    "weighted_score": r["score"],
+                    "overall_score": r["overall_score"],
+                    "dimension_scores": r["breakdown"],
+                }
+                for r in records
+            ],
         }
         if scene_id is not None:
             rerank_detail["scene_id"] = scene_id
