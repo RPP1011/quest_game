@@ -55,22 +55,36 @@ def merge_labels() -> list[dict]:
     return merged
 
 
-def build_row(passage: dict, dim: str, score: float, rationale: str, text: str) -> dict:
-    rubric = DIM_RUBRICS[dim]
+def build_row(passage: dict, text: str) -> dict:
+    """Batched row: all 8 dims scored in one assistant response.
+
+    Matches production format — the judge is called once per passage and
+    returns all dimensions at once. Forces the model to attend to each dim
+    name and differentiate scores within a single generation.
+    """
+    rubric_lines = "\n".join(f"- **{d}**: {r}" for d, r in DIM_RUBRICS.items())
     system = (
-        "You are a literary-critic scorer. Given a prose passage and a scoring "
-        "dimension, output a JSON object with keys `score` (float 0..1) and "
-        "`rationale` (one sentence citing concrete signals). Score on an "
-        "absolute scale; high-quality prose in other dimensions does not "
-        "inflate this one."
+        "You are a literary-critic scorer. Score the passage on every listed "
+        "dimension independently on a 0.0–1.0 absolute scale; high quality on "
+        "one dim does not inflate another. For each dim, return a score and a "
+        "one-sentence rationale citing concrete signals from the passage."
     )
     user = (
-        f"Dimension: **{dim}**\n"
-        f"Rubric: {rubric}\n\n"
+        f"Dimensions:\n{rubric_lines}\n\n"
         f"Passage:\n---\n{text.strip()}\n---\n\n"
-        "Respond with JSON only."
+        "Respond with a single JSON object keyed by dimension, each value "
+        "`{\"score\": float, \"rationale\": str}`."
     )
-    assistant = json.dumps({"score": round(float(score), 2), "rationale": rationale})
+    dims = passage["dimensions"]
+    rationale = passage.get("rationale", "")
+    out: dict[str, dict] = {}
+    for d in DIM_RUBRICS:
+        if d not in dims:
+            continue
+        out[d] = {"score": round(float(dims[d]), 2), "rationale": rationale}
+    if len(out) != len(DIM_RUBRICS):
+        return {}
+    assistant = json.dumps(out)
     return {
         "messages": [
             {"role": "system", "content": system},
@@ -80,8 +94,7 @@ def build_row(passage: dict, dim: str, score: float, rationale: str, text: str) 
         "meta": {
             "work_id": passage["work_id"],
             "passage_id": passage["passage_id"],
-            "dim": dim,
-            "score": score,
+            "dims": {d: float(dims[d]) for d in DIM_RUBRICS if d in dims},
         },
     }
 
@@ -97,13 +110,10 @@ def main():
             text = load_passage(p["work_id"], p["passage_id"])
         except FileNotFoundError:
             continue
-        rationale = p.get("rationale", "")
-        for dim, score in p["dimensions"].items():
-            if dim not in DIM_RUBRICS:
-                continue
-            rows.append(build_row(p, dim, score, rationale, text))
-    passages_covered = len({(r['meta']['work_id'], r['meta']['passage_id']) for r in rows})
-    print(f"built {len(rows)} training rows across {passages_covered} passages")
+        row = build_row(p, text)
+        if row:
+            rows.append(row)
+    print(f"built {len(rows)} batched rows (one per passage, all dims per row)")
 
     by_passage: dict[tuple[str, str], list[dict]] = {}
     for r in rows:

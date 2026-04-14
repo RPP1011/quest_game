@@ -65,22 +65,23 @@ def main():
 
     cfg = SFTConfig(
         output_dir=str(OUT_DIR),
-        num_train_epochs=4,
-        per_device_train_batch_size=2,
-        gradient_accumulation_steps=4,
-        per_device_eval_batch_size=2,
-        learning_rate=2e-4,
-        warmup_ratio=0.03,
+        num_train_epochs=8,
+        per_device_train_batch_size=1,
+        gradient_accumulation_steps=8,
+        per_device_eval_batch_size=1,
+        learning_rate=5e-5,
+        warmup_ratio=0.05,
         lr_scheduler_type="cosine",
-        logging_steps=10,
+        logging_steps=5,
         eval_strategy="epoch",
         save_strategy="epoch",
         save_total_limit=2,
         bf16=True,
         gradient_checkpointing=True,
-        max_length=3072,
+        max_length=4096,
         packing=False,
         report_to="none",
+        completion_only_loss=True,  # mask prompt tokens; loss only on assistant
     )
     trainer = SFTTrainer(
         model=model, args=cfg, train_dataset=train_ds, eval_dataset=test_ds,
