@@ -1,4 +1,9 @@
-{% if brief is defined and brief %}## Craft Brief (primary — execute this vision)
+{% if voice_anchors is defined and voice_anchors %}## VOICE ANCHORS — passages to match in style and rhythm (do NOT copy content)
+{% for a in voice_anchors %}--- anchor {{ loop.index }} (pov: {{ a.pov }}, voice_dist: {{ "%.2f"|format(a.score) }}) ---
+{{ a.text.split()[:300] | join(" ") }}
+
+{% endfor %}
+{% endif %}{% if brief is defined and brief %}## Craft Brief (primary — execute this vision)
 {{ brief }}
 
 {% endif %}{% if scene is defined and scene %}## Scene Reference (structural — consult, do not transcribe)
