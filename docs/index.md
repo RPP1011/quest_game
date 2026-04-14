@@ -73,7 +73,7 @@ and can be queried by any stage. Everything runs on one machine: vllm
 serves the writer model, sentence-transformers handles embeddings, SQLite
 holds quest state.
 
-<div class="mermaid">
+<pre class="mermaid" markdown="0">
 flowchart TB
     subgraph Planning
         ARC[ARC planner<br/>long-arc shape]
@@ -99,7 +99,7 @@ flowchart TB
 
     Retrieval -.-> Planning
     Retrieval -.-> WRT
-</div>
+</pre>
 
 ### The planners
 
@@ -579,12 +579,16 @@ Planning:
 - [Roadmap]({{ "/roadmap-3mo.html" | relative_url }})
 - [Retrieval layer design spec]({{ "/superpowers/specs/2026-04-14-retrieval-layer-design.html" | relative_url }})
 
-<script>
-window.addEventListener('load', function () {
-  if (!document.querySelector('.mermaid')) return;
-  var s = document.createElement('script');
-  s.src = 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js';
-  s.onload = function () { window.mermaid.initialize({ startOnLoad: true, theme: 'neutral' }); };
-  document.head.appendChild(s);
-});
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+  const nodes = document.querySelectorAll('pre.mermaid, div.mermaid');
+  for (const n of nodes) {
+    const src = n.textContent.trim();
+    const id = 'm' + Math.random().toString(36).slice(2, 9);
+    const { svg } = await mermaid.render(id, src);
+    const wrap = document.createElement('div');
+    wrap.innerHTML = svg;
+    n.replaceWith(wrap);
+  }
 </script>
