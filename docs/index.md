@@ -10,7 +10,7 @@ description: >-
 *A hierarchical narrative-generation engine for text-based quest games,
 running locally on a 1.2B open-weight model.*
 
-> **Status**: Two weeks in. Pipeline works end-to-end. Commit rate on a 20-chapter
+> **Status**: Pipeline works end-to-end. Commit rate on a 20-chapter
 > stress test is 100%. Prose quality is decent-not-great and reports
 > honestly below. Source at
 > [github.com/RPP1011/quest_game](https://github.com/RPP1011/quest_game).
@@ -209,7 +209,7 @@ two families:
   from `app.planning.critics` and turn its `ValidationIssue` list into
   a scalar (errors weigh 0.25, warnings 0.10).
 
-A Day-6 extension adds three **LLM-judged** dims on an async post-commit
+A later extension adds three **LLM-judged** dims on an async post-commit
 task: `tension_execution`, `emotional_trajectory`,
 `choice_hook_quality`. Single batched structured call. Judge model is
 LFM2.5 for now; planned migration to a 9B judge if calibration
@@ -262,7 +262,7 @@ it needs a v3 on 200-300 records to break it.
 
 ## Findings from iteration
 
-Six stories from the last two weeks of build-out. These are the
+Six stories from the build-out so far. These are the
 interesting ones — not just the numbers that moved, but why they moved.
 
 ### 1. LLMs hallucinate world rules under the "check" prompt
@@ -314,8 +314,8 @@ when the GPU is free.
 The lesson: wrap-and-log isn't the same as handle-the-failure.
 Every silent-except-in-logs catch is a latent bug waiting to
 matter. (Our stress-test harness was passing
-`CUDA_VISIBLE_DEVICES=""` to the embedder subprocess for weeks, so
-none of our measurements surfaced it — only live runs did.)
+`CUDA_VISIBLE_DEVICES=""` to the embedder subprocess, so none of our
+measurements surfaced it — only live runs did.)
 
 ### 3. POV attribution bug — "innkeeper" everywhere instead of "player"
 
@@ -382,9 +382,9 @@ you're writing in".
 ### 6. Prompt engineering has a plateau
 
 We've now extracted most of what the current writer can do via prompt
-alone. We spent two weeks adding structure, retrieval, and CHECK rigor.
-Commit rate went from 32% → 100%. Per-dim prose scores went from
-overall 0.72 → 0.85-ish on good runs.
+alone. Iterating on structure, retrieval, and CHECK rigor took commit
+rate from 32% → 100%. Per-dim prose scores went from overall
+0.72 → 0.85-ish on good runs.
 
 But the *structural* dims — sentence variance at 0.15, dialogue ratio
 at 0.04 — have not moved meaningfully. Our writer LoRA has been
@@ -403,7 +403,7 @@ on the horizon.
 Measured on a 20-chapter noir stress test
 (`/tmp/storygen_20ch_final/quest.db`, writer LoRA v2, retrieval on):
 
-| metric | Day-14 baseline | After today's fixes | What changed |
+| metric | baseline | after these fixes | What changed |
 |---|---|---|---|
 | commit rate | 11/20 (55%) | **20/20 (100%)** | CHECK prompt tightening |
 | dialogue_ratio | 0.000 | 0.038 | `player_action` plumbed, dialogue directive |
@@ -491,7 +491,7 @@ measurement.
 
 ### LoRA v3
 
-Phase-2 Week 5 scope from the roadmap, but we're pulling it earlier.
+Later scope from the phased plan, but we're pulling it earlier.
 A 200-300 record corpus with explicit dialogue-heavy scenes, Claude
 (as in: the model) picking winners instead of heuristic picks. That's
 the lever most likely to move the structural dims.
@@ -509,8 +509,8 @@ ground truth on a 50-passage sample.
 
 Six of the eight critic-derived dims saturate at 1.0 on every
 committed chapter. That's a too-lenient-critic problem — the critics
-are pass/fail gates, not continuous quality signals. Phase 2 Week 1
-tightens them. Until then, `overall_score` has very little dynamic
+are pass/fail gates, not continuous quality signals. An early Phase 2
+pass tightens them. Until then, `overall_score` has very little dynamic
 range above ~0.80.
 
 ### "Prose meaningfully better than Royal Road"
@@ -554,9 +554,9 @@ questions" ban) that did exactly that.
 
 We don't know yet whether this approach gets to the quality bar we
 want. We *do* know it produces coherent prose end-to-end on a stress
-test, from a model that two weeks ago was emitting scene-summaries
-instead of scenes. That's the first mile. The rest of the 3-month
-roadmap is the other nine.
+test, from a model that at the start of the project was emitting
+scene-summaries instead of scenes. That's the first mile. The rest of
+the roadmap is the other nine.
 
 ---
 
@@ -564,22 +564,20 @@ roadmap is the other nine.
 
 Source: [github.com/RPP1011/quest_game](https://github.com/RPP1011/quest_game).
 
-Daily iteration notes (the journal to this report's synthesis):
+Iteration notes (the journal to this report's synthesis):
 
-- [Phase 1 summary]({{ "/phase1-summary.html" | relative_url }}) — two-week consolidation
-- [Day 10 — 50-chapter stress test]({{ "/day10-stress-test.html" | relative_url }}) — baseline
-- [Day 11 — bottleneck fix]({{ "/day11-bottleneck-fix.html" | relative_url }})
-- [Day 12 — 20-chapter verification]({{ "/day12-verification.html" | relative_url }})
-- [Day 13 — targeted fixes]({{ "/day13-fixes.html" | relative_url }})
-- [Day 5 — writer LoRA v1]({{ "/day5-writer-lora-v1.html" | relative_url }})
+- [Phase 1 summary]({{ "/phase1-summary.html" | relative_url }}) — consolidation
+- [50-chapter stress test]({{ "/day10-stress-test.html" | relative_url }}) — baseline
+- [Bottleneck fix]({{ "/day11-bottleneck-fix.html" | relative_url }})
+- [20-chapter verification]({{ "/day12-verification.html" | relative_url }})
+- [Targeted fixes]({{ "/day13-fixes.html" | relative_url }})
+- [Writer LoRA v1]({{ "/day5-writer-lora-v1.html" | relative_url }})
 - [Phase 2 kickoff — writer LoRA v2]({{ "/phase2-kickoff-lora-v2.html" | relative_url }})
 
 Planning:
 
-- [3-month roadmap]({{ "/roadmap-3mo.html" | relative_url }})
+- [Roadmap]({{ "/roadmap-3mo.html" | relative_url }})
 - [Retrieval layer design spec]({{ "/superpowers/specs/2026-04-14-retrieval-layer-design.html" | relative_url }})
-
-*Last updated: 2026-04-14.*
 
 <script>
 window.addEventListener('load', function () {
