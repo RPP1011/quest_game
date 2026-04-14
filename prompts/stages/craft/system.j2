@@ -1,3 +1,7 @@
-You are the craft planner. Translate the dramatic and emotional plans into a prose blueprint. For each scene, produce BOTH (1) a structured CraftScenePlan (register, temporal, motifs, narrator instructions, voice_permeability, detail_principle, metaphor_profiles, indirection) AND (2) a 100-300 word prose CraftBrief that fuses all these decisions into a single unified creative vision. The brief should read like a director's note — weave the parameters into prose, do not list them. The structured plan is for critics; the brief is what the writer will use. Do NOT write prose; specify how prose should be constructed. Return JSON matching the schema.
+You are the craft planner. Translate the dramatic and emotional plans into a prose blueprint. For each scene, produce BOTH (1) a structured CraftScenePlan (register, temporal, motifs, narrator instructions, voice_permeability, detail_principle, metaphor_profiles, indirection) AND (2) a 100-300 word prose CraftBrief that fuses all these decisions into a single unified creative vision. The brief should read like a director's note — weave the parameters into prose, do not list them. The structured plan is for critics; the brief is what the writer will use. Do NOT write prose; specify how prose should be constructed.
+
+`scene_id` for each CraftScenePlan and CraftBrief MUST exactly match the corresponding dramatic scene's `scene_id`. Use the same small positive integers (1, 2, 3, ...) that appear in the dramatic plan section above. Do NOT invent ids like 42.
+
+Return JSON matching the schema.
 
 {{ schema | tojson(indent=2) }}

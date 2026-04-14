@@ -1,8 +1,30 @@
 from __future__ import annotations
 
+import re as _re
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+def _coerce_scene_id(v: object) -> int:
+    """Coerce a scene_id to int.
+
+    Day 11: small models routinely emit ``scene_id: "scene_1"``,
+    ``scene_id: "1"``, or ``scene_id: 42`` (literal hallucinated default)
+    despite the schema declaring ``int``. xgrammar/strict structured
+    output catches the literal cases but the schema-name-as-string case
+    still slips through when callers pre-validate. This validator pulls
+    the first integer substring out of any input and coerces.
+    """
+    if isinstance(v, int):
+        return v
+    if isinstance(v, float):
+        return int(v)
+    if isinstance(v, str):
+        m = _re.search(r"-?\d+", v)
+        if m:
+            return int(m.group(0))
+    raise ValueError(f"cannot coerce scene_id from {v!r}")
 
 # ---- shared mini-models ----
 Intensity = Literal["background", "emerging", "foregrounded", "climactic"]
@@ -49,6 +71,11 @@ class ToolSelection(BaseModel):
     scene_id: int
     application: str
 
+    @field_validator("scene_id", mode="before")
+    @classmethod
+    def _coerce_scene_id(cls, v):
+        return _coerce_scene_id(v)
+
 
 class ThreadAdvance(BaseModel):
     thread_id: str
@@ -76,6 +103,11 @@ class DramaticScene(BaseModel):
     theme_ids: list[str] = []
     reveals: list[str] = []
     withholds: list[str] = []
+
+    @field_validator("scene_id", mode="before")
+    @classmethod
+    def _coerce_scene_id(cls, v):
+        return _coerce_scene_id(v)
 
 
 class DramaticPlan(BaseModel):
@@ -110,6 +142,11 @@ class EmotionalScenePlan(BaseModel):
     emotional_source: str
     surface_vs_depth: str | None = None
     character_emotions: dict[str, CharacterEmotionalState] = {}
+
+    @field_validator("scene_id", mode="before")
+    @classmethod
+    def _coerce_scene_id(cls, v):
+        return _coerce_scene_id(v)
 
 
 class EmotionalPlan(BaseModel):
@@ -187,6 +224,11 @@ class CraftScenePlan(BaseModel):
     detail_principle: DetailPrinciple | None = None
     metaphor_profiles: list[MetaphorProfile] = []
     indirection: list[IndirectionInstruction] = []
+
+    @field_validator("scene_id", mode="before")
+    @classmethod
+    def _coerce_scene_id(cls, v):
+        return _coerce_scene_id(v)
 
 
 class CraftPlan(BaseModel):
@@ -325,3 +367,8 @@ class CraftBrief(BaseModel):
     """
     scene_id: int
     brief: str                             # 100-300 words of prose brief
+
+    @field_validator("scene_id", mode="before")
+    @classmethod
+    def _coerce_scene_id(cls, v):
+        return _coerce_scene_id(v)

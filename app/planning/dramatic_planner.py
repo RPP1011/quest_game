@@ -140,11 +140,28 @@ class DramaticPlanner:
                 foreshadowing_retriever, update_number
             )
 
+        # Day 11: build a closed-enum list of valid tool ids for the
+        # prompt + schema. The 1.2B model otherwise hallucinates plausible
+        # tool ids ('chekhov_plant', 'map_planting') the critic rejects.
+        valid_tool_ids = sorted(t.id for t in self._craft_library.tools())
+
         schema = DramaticPlan.model_json_schema()
+        # Constrain ``ToolSelection.tool_id`` and
+        # ``DramaticScene.tools_used[]`` to the valid set via
+        # JSON-schema enum so xgrammar enforces it at decode time.
+        if valid_tool_ids:
+            defs = schema.get("$defs", {})
+            ts = defs.get("ToolSelection")
+            if ts is not None and "tool_id" in ts.get("properties", {}):
+                ts["properties"]["tool_id"]["enum"] = list(valid_tool_ids)
+            ds = defs.get("DramaticScene")
+            if ds is not None and "tools_used" in ds.get("properties", {}):
+                items = ds["properties"]["tools_used"].get("items", {})
+                items["enum"] = list(valid_tool_ids)
 
         system_prompt = self._renderer.render(
             "stages/dramatic/system.j2",
-            {"schema": schema},
+            {"schema": schema, "valid_tool_ids": valid_tool_ids},
         )
         user_prompt = self._renderer.render(
             "stages/dramatic/user.j2",
@@ -160,6 +177,7 @@ class DramaticPlanner:
                 "information_asymmetries": asymmetries,
                 "scene_exemplars": scene_exemplars,
                 "ripe_hooks": ripe_hooks,
+                "valid_tool_ids": valid_tool_ids,
             },
         )
 
@@ -168,14 +186,40 @@ class DramaticPlanner:
             ChatMessage(role="user", content=user_prompt),
         ]
 
+        # Day 11: in-band retry on ParseError catches xgrammar
+        # truncations cheaply (no validator round-trip) before
+        # _retry_with_critic burns its retry budget on a fallback.
+        from app.world.output_parser import ParseError as _ParseError
         raw = await self._client.chat_structured(
             messages,
             json_schema=schema,
             schema_name="DramaticPlan",
+            max_tokens=4096,
         )
+        try:
+            plan = OutputParser.parse_json(raw, schema=DramaticPlan)
+        except _ParseError:
+            raw = await self._client.chat_structured(
+                messages,
+                json_schema=schema,
+                schema_name="DramaticPlan",
+                max_tokens=4096,
+            )
+            plan = OutputParser.parse_json(raw, schema=DramaticPlan)
 
-        # ParseError propagates to caller as-is
-        return OutputParser.parse_json(raw, schema=DramaticPlan)
+        # Day 11: Small models routinely emit ``scene_id: 42`` (literal
+        # hallucinated default) for every scene. Renumber dramatic scenes
+        # 1..N by position so downstream emotional/craft layers see a
+        # clean monotonic sequence. The mapping is also applied to
+        # ``tools_selected`` so cross-references don't dangle.
+        if plan.scenes:
+            old_to_new: dict[int, int] = {}
+            for i, scene in enumerate(plan.scenes, start=1):
+                old_to_new.setdefault(scene.scene_id, i)
+                scene.scene_id = i
+            for sel in plan.tools_selected:
+                sel.scene_id = old_to_new.get(sel.scene_id, sel.scene_id)
+        return plan
 
     # -- Helpers --------------------------------------------------------
 

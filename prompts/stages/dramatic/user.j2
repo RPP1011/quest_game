@@ -131,6 +131,16 @@ _No open questions tracked._
 ---
 
 {% endif %}
+{% if valid_tool_ids %}
+## Valid craft tool ids (closed enum)
+
+`tool_id` and `tools_used` entries MUST be drawn from this list. Do not invent new ids:
+
+{{ valid_tool_ids | tojson }}
+
+---
+
+{% endif %}
 ## Recommended Craft Tools
 
 {% if tools_with_examples %}

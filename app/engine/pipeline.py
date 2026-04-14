@@ -318,6 +318,9 @@ class Pipeline:
         passage_retriever: "Any | None" = None,
         quest_retriever: "Any | None" = None,
         voice_retriever: "Any | None" = None,
+        motif_retriever: "Any | None" = None,
+        foreshadowing_retriever: "Any | None" = None,
+        scene_retriever: "Any | None" = None,
         scorer: "Any | None" = None,
         llm_judge_client: "Any | None" = None,
     ) -> None:
@@ -409,6 +412,14 @@ class Pipeline:
         # ``retrieval.enabled`` flag further gates the call. No POV on the
         # scene ⇒ no retrieval, matching the spec (see §3.6).
         self._voice_retriever: Any | None = voice_retriever
+
+        # Day 11: MotifRetriever, ForeshadowingRetriever, SceneShapeRetriever.
+        # These were constructed but never invoked in the Day 10 stress test
+        # (the pipeline accepted them only as planner.plan() kwargs and
+        # _run_hierarchical did not pass them). Now wired.
+        self._motif_retriever: Any | None = motif_retriever
+        self._foreshadowing_retriever: Any | None = foreshadowing_retriever
+        self._scene_retriever: Any | None = scene_retriever
 
         # Day 2: Scorer for post-commit 12-dim scorecard persistence.
         # Default-off via quest_config["scoring"]["enabled"] — the kwarg
@@ -706,6 +717,9 @@ class Pipeline:
         directive = await self._load_or_generate_arc(trace)
 
         # ---- DRAMATIC layer ----
+        # Day 11: pass scene_retriever + foreshadowing_retriever +
+        # update_number so the dramatic planner actually consults them
+        # (Day 10 surfaced them as constructed-but-never-invoked).
         dramatic = await self._retry_with_critic(
             trace=trace,
             stage_name="dramatic",
@@ -717,6 +731,9 @@ class Pipeline:
                 structure=self._structure,
                 recent_tool_ids=None,
                 quest_id=self._quest_id,
+                scene_retriever=self._scene_retriever,
+                foreshadowing_retriever=self._foreshadowing_retriever,
+                update_number=update_number,
             ),
             validator=lambda plan: critics.validate_dramatic(
                 plan,
@@ -767,6 +784,8 @@ class Pipeline:
             except WorldStateError:
                 continue
 
+        # Day 11: pass motif_retriever + foreshadowing_retriever +
+        # update_number so the craft planner actually consults them.
         craft_plan = await self._retry_with_critic(
             trace=trace,
             stage_name="craft",
@@ -779,6 +798,9 @@ class Pipeline:
                 active_motifs=self._build_motif_context(update_number),
                 characters=characters,
                 world=self._world,
+                motif_retriever=self._motif_retriever,
+                foreshadowing_retriever=self._foreshadowing_retriever,
+                update_number=update_number,
             ),
             validator=lambda plan: critics.validate_craft(plan, dramatic),
             fallback=lambda: _make_minimal_craft_plan(dramatic),
