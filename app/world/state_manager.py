@@ -1280,6 +1280,96 @@ class WorldStateManager:
             for r in rows
         ]
 
+    # ---- scorecards (Day 2 — 12-dim scoring) ----
+
+    def save_scorecard(
+        self,
+        scorecard: "Any",
+        *,
+        quest_id: str,
+        update_number: int,
+        scene_index: int = 0,
+        pipeline_trace_id: str | None = None,
+    ) -> int:
+        """Persist a :class:`app.scoring.Scorecard` and its dimension rows.
+
+        Returns the new ``scorecards.id``. A single transaction writes the
+        header row plus one ``dimension_scores`` row per dim — partial
+        writes can't occur.
+        """
+        with self._conn:
+            cur = self._conn.execute(
+                "INSERT INTO scorecards"
+                "(quest_id, update_number, scene_index, pipeline_trace_id, overall_score) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (
+                    quest_id,
+                    int(update_number),
+                    int(scene_index),
+                    pipeline_trace_id,
+                    float(scorecard.overall_score),
+                ),
+            )
+            scorecard_id = int(cur.lastrowid)
+            self._conn.executemany(
+                "INSERT INTO dimension_scores(scorecard_id, dimension, score) "
+                "VALUES (?, ?, ?)",
+                [
+                    (scorecard_id, name, float(score))
+                    for name, score in scorecard.dimension_items()
+                ],
+            )
+        return scorecard_id
+
+    def list_scorecards(
+        self, quest_id: str, limit: int | None = None,
+    ) -> "list[Any]":
+        """Return scorecards for ``quest_id`` oldest-first.
+
+        Each element is a :class:`app.scoring.Scorecard` reconstructed from
+        its persisted dim rows. Ordering is
+        ``(update_number, scene_index, id)`` ascending so callers get a
+        natural time series for the dashboard.
+        """
+        from app.scoring import Scorecard  # local import to keep cold-start light
+
+        sql = (
+            "SELECT id, overall_score FROM scorecards WHERE quest_id=? "
+            "ORDER BY update_number ASC, scene_index ASC, id ASC"
+        )
+        params: tuple[Any, ...] = (quest_id,)
+        if limit is not None:
+            sql += " LIMIT ?"
+            params = (quest_id, int(limit))
+        header_rows = self._conn.execute(sql, params).fetchall()
+        if not header_rows:
+            return []
+
+        ids = [r["id"] for r in header_rows]
+        placeholders = ",".join("?" for _ in ids)
+        dim_rows = self._conn.execute(
+            f"SELECT scorecard_id, dimension, score FROM dimension_scores "
+            f"WHERE scorecard_id IN ({placeholders})",
+            tuple(ids),
+        ).fetchall()
+
+        by_card: dict[int, dict[str, float]] = {sid: {} for sid in ids}
+        for r in dim_rows:
+            by_card[r["scorecard_id"]][r["dimension"]] = float(r["score"])
+
+        out: list[Any] = []
+        for r in header_rows:
+            dims = by_card.get(r["id"], {})
+            try:
+                out.append(Scorecard(
+                    overall_score=float(r["overall_score"]),
+                    **dims,
+                ))
+            except Exception:
+                # Partial / legacy row — skip rather than fail the listing.
+                continue
+        return out
+
     def snapshot(self) -> WorldSnapshot:
         return WorldSnapshot(
             entities=self.list_entities(),

@@ -181,6 +181,26 @@ CREATE TABLE IF NOT EXISTS narrative_embeddings (
 );
 
 CREATE INDEX IF NOT EXISTS idx_ne_quest ON narrative_embeddings(quest_id);
+
+CREATE TABLE IF NOT EXISTS scorecards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    quest_id TEXT NOT NULL,
+    update_number INTEGER NOT NULL,
+    scene_index INTEGER NOT NULL DEFAULT 0,
+    pipeline_trace_id TEXT,
+    overall_score REAL NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS dimension_scores (
+    scorecard_id INTEGER NOT NULL,
+    dimension TEXT NOT NULL,
+    score REAL NOT NULL,
+    PRIMARY KEY (scorecard_id, dimension),
+    FOREIGN KEY (scorecard_id) REFERENCES scorecards(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_scorecards_quest ON scorecards(quest_id, update_number);
 """
 
 
