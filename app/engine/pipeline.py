@@ -1380,6 +1380,41 @@ class Pipeline:
         entities = self._world.list_entities()
         from app.world.schema import EntityStatus
         active_entities = [e for e in entities if e.status == EntityStatus.ACTIVE]
+
+        # Gap G4: surface current themes (with proposition + stance) so the
+        # extractor can emit theme_stance_updates on material shifts.
+        themes: list[dict[str, Any]] = []
+        if self._quest_id is not None:
+            try:
+                for th in self._world.list_themes(self._quest_id):
+                    themes.append({
+                        "id": th.id,
+                        "proposition": th.proposition,
+                        "stance": th.stance,
+                    })
+            except Exception:
+                themes = []
+
+        # Gap G13: surface per-character *active* unconscious motives so the
+        # extractor can emit motive_resolutions when prose shows a character
+        # confronting / moving past one.
+        from app.planning.motives import unconscious_motives_for
+        character_motives: list[dict[str, Any]] = []
+        for e in active_entities:
+            try:
+                active_motives = unconscious_motives_for(e)
+            except Exception:
+                active_motives = []
+            if not active_motives:
+                continue
+            character_motives.append({
+                "character_id": e.id,
+                "character_name": e.name,
+                "motives": [
+                    {"id": m.id, "motive": m.motive} for m in active_motives
+                ],
+            })
+
         ctx = self._cb.build(
             spec=EXTRACT_SPEC,
             stage_name="extract",
@@ -1387,7 +1422,13 @@ class Pipeline:
                 "system": "stages/extract/system.j2",
                 "user": "stages/extract/user.j2",
             },
-            extras={"plan": plan_text, "prose": prose, "entities": active_entities},
+            extras={
+                "plan": plan_text,
+                "prose": prose,
+                "entities": active_entities,
+                "themes": themes,
+                "character_motives": character_motives,
+            },
         )
         t0 = time.perf_counter()
         raw = await self._client.chat_structured(
@@ -1425,7 +1466,9 @@ class Pipeline:
             return
 
         known_ids = {e.id for e in active_entities}
-        delta, build_issues = build_delta(extracted, update_number, known_ids=known_ids)
+        delta, build_issues = build_delta(
+            extracted, update_number, known_ids=known_ids, world=self._world,
+        )
 
         # Also validate via WorldStateManager
         validation = self._world.validate_delta(delta)

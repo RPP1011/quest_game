@@ -11,9 +11,35 @@
 (none)
 {% endfor %}
 
+## Current themes (id - proposition - current stance)
+{% for theme in themes or [] %}
+- {{ theme.id }} - {{ theme.proposition }} - stance: {{ theme.stance }}
+{% else %}
+(none)
+{% endfor %}
+
+## Active unconscious motives (by character)
+{% for cm in character_motives or [] %}
+- {{ cm.character_id }} ({{ cm.character_name }}):
+{% for m in cm.motives %}  - {{ m.id }}: {{ m.motive }}
+{% endfor %}{% else %}
+(none)
+{% endfor %}
+
 Return a JSON object with these fields:
 - entity_updates: list of {id, patch: {status?, last_referenced_update?, data?}}
 - new_relationships: list of {source_id, target_id, rel_type, data?}
 - removed_relationships: list of {source_id, target_id, rel_type}
 - timeline_events: list of {description, involved_entities: [string]}
 - foreshadowing_updates: list of {id, new_status, add_reference?}
+- theme_stance_updates: list of {id, new_stance}. ONLY emit when the prose
+  *materially* shifts how a listed theme is being treated (e.g. moving from
+  "exploring" to "questioning" a proposition, or from "questioning" to
+  "subverting"). Do NOT emit for every chapter — most updates should have
+  an empty list here. Valid stances: exploring, affirming, questioning,
+  subverting.
+- motive_resolutions: list of {character_id, motive_id, resolved_at_update}.
+  ONLY emit when the prose shows the character confronting, naming, or
+  decisively moving past the listed unconscious motive. This is a rare
+  event. Set resolved_at_update to the current update number. Do NOT emit
+  speculative resolutions — default is an empty list.
