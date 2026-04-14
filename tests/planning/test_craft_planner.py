@@ -632,3 +632,72 @@ async def test_craft_planner_no_world_no_motive_injection():
 
     user_content = client.calls[0][0][1].content
     assert "Unconscious Motives" not in user_content
+
+
+# ---------------------------------------------------------------------------
+# Day 13 — three-attempt in-band retry
+# ---------------------------------------------------------------------------
+
+
+class ScriptedClient:
+    """Returns a canned sequence of responses, one per call.
+
+    Records each call's keyword arguments so tests can assert the third
+    retry is sent with temperature=0.0 and max_tokens=4096.
+    """
+
+    def __init__(self, responses: list[str]) -> None:
+        self._responses = list(responses)
+        self.calls: list[dict] = []
+
+    async def chat_structured(
+        self, messages, *, json_schema, schema_name="Output", **kw
+    ) -> str:
+        self.calls.append({"messages": messages, "schema_name": schema_name, **kw})
+        return self._responses.pop(0)
+
+
+@pytest.mark.asyncio
+async def test_craft_planner_three_attempt_retry_succeeds_on_third():
+    """Two garbage responses then a valid JSON → third attempt is used.
+
+    The third attempt must be sent with temperature=0.0 and max_tokens=4096.
+    """
+    valid = _make_craft_plan().model_dump_json()
+    client = ScriptedClient(["garbage one!!", "still garbage??", valid])
+    renderer = PromptRenderer(PROMPTS)
+    craft_library = CraftLibrary(CRAFT_DATA)
+
+    planner = CraftPlanner(client, renderer, craft_library)
+    result = await planner.plan(
+        dramatic=_DRAMATIC_PLAN, emotional=_EMOTIONAL_PLAN,
+    )
+
+    assert isinstance(result, CraftPlan)
+    assert len(client.calls) == 3
+
+    # Third call must be the deterministic short-budget retry.
+    third = client.calls[2]
+    assert third.get("temperature") == 0.0
+    assert third.get("max_tokens") == 4096
+
+    # First two calls should use the default (no temperature override)
+    # and the 6144 max_tokens budget.
+    assert client.calls[0].get("max_tokens") == 6144
+    assert client.calls[1].get("max_tokens") == 6144
+
+
+@pytest.mark.asyncio
+async def test_craft_planner_three_attempt_retry_surfaces_on_all_fail():
+    """All three attempts return garbage → ParseError propagates."""
+    from app.world.output_parser import ParseError
+    client = ScriptedClient(["garbage", "garbage", "still garbage"])
+    renderer = PromptRenderer(PROMPTS)
+    craft_library = CraftLibrary(CRAFT_DATA)
+
+    planner = CraftPlanner(client, renderer, craft_library)
+    with pytest.raises(ParseError):
+        await planner.plan(dramatic=_DRAMATIC_PLAN, emotional=_EMOTIONAL_PLAN)
+
+    # Verify three attempts were made — no silent stub fallback in planner.
+    assert len(client.calls) == 3

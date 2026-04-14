@@ -41,8 +41,13 @@ SEED = {
         "pov_type": "third_limited",
         "worldview": "a weathered observer; notices hands and silences",
         "editorial_stance": "sympathetic but unsentimental",
-        "sensory_bias": {"visual": 0.4, "auditory": 0.2, "tactile": 0.2,
-                         "kinesthetic": 0.2},
+        # Day 13: widened bias — the original 0.4/0.2/0.2/0.2 demanded
+        # 40% visual which LFM1.2B (interoceptive-heavy default) cannot
+        # hit without over-steering. New profile allows the writer's
+        # natural interoceptive tilt while still favouring visual+tactile.
+        "sensory_bias": {"visual": 0.3, "tactile": 0.2, "auditory": 0.15,
+                         "kinesthetic": 0.15, "interoceptive": 0.15,
+                         "olfactory": 0.05},
         "attention_bias": ["hands", "doorways", "what people don't say"],
         "voice_samples": [
             "She set the cup down the way she did everything else — like the cup owed her rent.",
