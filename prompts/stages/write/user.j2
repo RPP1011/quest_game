@@ -3,6 +3,11 @@
 {{ a.text.split()[:300] | join(" ") }}
 
 {% endfor %}
+{% endif %}{% if quest_callbacks is defined and quest_callbacks %}## IN-QUEST CALLBACKS — continuity to honor (do NOT repeat verbatim)
+{% for cb in quest_callbacks %}--- callback {{ loop.index }} (update {{ cb.metadata.update_number }}) ---
+{{ cb.text }}
+
+{% endfor %}
 {% endif %}{% if brief is defined and brief %}## Craft Brief (primary — execute this vision)
 {{ brief }}
 

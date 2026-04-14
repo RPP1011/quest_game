@@ -291,6 +291,7 @@ class Pipeline:
         candidate_temperature_step: float = 0.15,
         retrieval_embedder: "Any | None" = None,
         passage_retriever: "Any | None" = None,
+        quest_retriever: "Any | None" = None,
     ) -> None:
         self._world = world
         self._cb = context_builder
@@ -352,6 +353,11 @@ class Pipeline:
         self._passage_retriever: Any | None = passage_retriever
         retrieval_cfg = (self._quest_config or {}).get("retrieval") or {}
         self._retrieval_enabled: bool = bool(retrieval_cfg.get("enabled", False))
+
+        # Wave 3b: QuestRetriever for writer in-quest callbacks. Same default-off
+        # semantics as the voice-anchor path: ``None`` disables entirely, and
+        # ``quest_config["retrieval"]["enabled"]`` further gates it.
+        self._quest_retriever: Any | None = quest_retriever
 
     @property
     def is_hierarchical(self) -> bool:
@@ -767,10 +773,15 @@ class Pipeline:
             return
         if not prose:
             return
-        # Compute embedding and upsert. ``embed`` is expected to return a
-        # numpy-compatible vector (list, tuple, or np.ndarray); the writer
-        # normalizes to float32 bytes.
-        embedding = self._retrieval_embedder.embed(prose)
+        # Compute embedding and upsert. The embedder's primary API is
+        # ``embed_one`` (see :class:`app.retrieval.embeddings.Embedder`); we
+        # fall back to ``embed`` so test fakes that expose the shorter name
+        # still work. The upsert helper normalizes whatever array-likes come
+        # back to float32 bytes.
+        if hasattr(self._retrieval_embedder, "embed_one"):
+            embedding = self._retrieval_embedder.embed_one(prose)
+        else:
+            embedding = self._retrieval_embedder.embed(prose)
         text_preview = prose[:200]
         self._world.upsert_narrative_embedding(
             quest_id=self._quest_id,
@@ -879,6 +890,141 @@ class Pipeline:
                 "score": float(getattr(r, "score", 0.0)),
             })
         return anchors
+
+    def _collect_scene_entity_mentions(
+        self,
+        *,
+        scene: "Any",
+        craft_plan: "Any | None",
+    ) -> set[str]:
+        """Pull the entity names/ids mentioned by a scene plan.
+
+        Sources (all best-effort, absent fields are skipped):
+          * Stashed :attr:`_last_dramatic` plan — POV character id,
+            ``characters_present``, and the ``dramatic_question`` (whose
+            free-text we scan against the world's entity-name list).
+          * Craft scene's ``narrator_focus`` ids.
+          * Any ``voice_notes[*].character_id``.
+
+        Returns a string set; caller passes it straight to the retriever
+        query under ``filters["entity_mentions"]``.
+        """
+        mentions: set[str] = set()
+
+        # ---- Craft scene (narrator_focus + voice_notes) ----
+        for field in ("narrator_focus", "narrator_withholding"):
+            try:
+                for name in getattr(scene, field, None) or []:
+                    if isinstance(name, str) and name:
+                        mentions.add(name)
+            except Exception:
+                pass
+        try:
+            for vn in getattr(scene, "voice_notes", None) or []:
+                cid = getattr(vn, "character_id", None)
+                if isinstance(cid, str) and cid:
+                    mentions.add(cid)
+        except Exception:
+            pass
+
+        # ---- Matching DramaticScene (by scene_id) on the stashed plan ----
+        dramatic = getattr(self, "_last_dramatic", None)
+        scene_id = getattr(scene, "scene_id", None)
+        if dramatic is not None and scene_id is not None:
+            try:
+                for ds in getattr(dramatic, "scenes", None) or []:
+                    if getattr(ds, "scene_id", None) != scene_id:
+                        continue
+                    pov = getattr(ds, "pov_character_id", None)
+                    if isinstance(pov, str) and pov:
+                        mentions.add(pov)
+                    for cid in getattr(ds, "characters_present", None) or []:
+                        if isinstance(cid, str) and cid:
+                            mentions.add(cid)
+                    # dramatic_question is free text — match any known
+                    # entity name as a substring (case-insensitive).
+                    dq = getattr(ds, "dramatic_question", None)
+                    if isinstance(dq, str) and dq:
+                        try:
+                            entities = list(self._world.list_entities())
+                        except Exception:
+                            entities = []
+                        dq_low = dq.lower()
+                        for e in entities:
+                            nm = getattr(e, "name", None)
+                            if isinstance(nm, str) and nm and nm.lower() in dq_low:
+                                mentions.add(nm)
+            except Exception:
+                pass
+
+        return mentions
+
+    async def _retrieve_quest_callbacks(
+        self,
+        *,
+        scene: "Any",
+        brief_text: str | None,
+        craft_plan: "Any | None" = None,
+    ) -> list[dict]:
+        """Wave 3b: retrieve in-quest callback passages for a single scene write.
+
+        Mirrors the shape of :meth:`_retrieve_voice_anchors` but sources
+        candidates from the quest's own ``narrative_embeddings`` table.
+        Returns ``[]`` when retrieval is disabled, no retriever is wired,
+        or the retriever yields no hits (in all of which the prompt
+        template skips the callback block — default-off behavior).
+
+        The query uses:
+          * ``seed_text`` — same brief text fed to the voice-anchor
+            retriever, so both retrievers see the same scene framing.
+          * ``filters["last_n_records"] = 12`` — cap the candidate pool
+            to the 12 most-recent records to keep retrieval fast.
+          * ``filters["entity_mentions"]`` — every entity name/id the
+            scene plan references (see
+            :meth:`_collect_scene_entity_mentions`), so callbacks that
+            name those entities bubble up.
+        """
+        if self._quest_retriever is None or not self._retrieval_enabled:
+            return []
+
+        from app.retrieval.interface import Query
+
+        seed_text = (brief_text or "")[:600] or None
+        if seed_text is None:
+            # No seed means nothing to semantically match against; skip.
+            return []
+
+        entity_mentions = self._collect_scene_entity_mentions(
+            scene=scene, craft_plan=craft_plan,
+        )
+
+        query = Query(
+            seed_text=seed_text,
+            filters={
+                "last_n_records": 12,
+                "entity_mentions": entity_mentions,
+            },
+        )
+
+        try:
+            results = await self._quest_retriever.retrieve(query, k=2)
+        except Exception:
+            return []
+
+        callbacks: list[dict] = []
+        for r in results:
+            meta = getattr(r, "metadata", None) or {}
+            callbacks.append({
+                "source_id": getattr(r, "source_id", ""),
+                "text": getattr(r, "text", ""),
+                "score": float(getattr(r, "score", 0.0)),
+                "metadata": {
+                    "update_number": meta.get("update_number"),
+                    "scene_index": meta.get("scene_index"),
+                    "quest_id": meta.get("quest_id"),
+                },
+            })
+        return callbacks
 
     def _persist_motif_occurrences(self, craft_plan: "Any", update_number: int) -> None:
         """Post-COMMIT: record each ``MotifInstruction`` on the craft plan as an
@@ -1411,6 +1557,7 @@ class Pipeline:
                     "scene": None,
                     "voice_samples": voice_samples or [],
                     "voice_anchors": [],
+                    "quest_callbacks": [],
                     "recent_prose_tail": "",
                 },
             )
@@ -1480,6 +1627,15 @@ class Pipeline:
                 brief_text=brief_text,
             )
 
+            # Wave 3b: retrieve in-quest callbacks — previously-committed
+            # narrative passages that touch the same entities / framing as
+            # this scene. Same default-off semantics as voice anchors.
+            quest_callbacks = await self._retrieve_quest_callbacks(
+                scene=scene,
+                brief_text=brief_text,
+                craft_plan=plan,
+            )
+
             write_ctx = self._cb.build(
                 spec=WRITE_SPEC,
                 stage_name="write",
@@ -1489,6 +1645,7 @@ class Pipeline:
                     "scene": scene.model_dump() if hasattr(scene, "model_dump") else scene,
                     "voice_samples": effective_voice_samples,
                     "voice_anchors": voice_anchors,
+                    "quest_callbacks": quest_callbacks,
                     "recent_prose_tail": recent_prose_tail,
                     "anti_patterns": anti_patterns or [],
                     "plan": None,
