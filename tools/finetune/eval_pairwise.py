@@ -24,8 +24,22 @@ MAX_EVAL = 1200  # cap to keep eval under 10 min at ~0.5s/pair
 
 
 def load_jsonl(path: Path, limit: int | None = None) -> list[dict]:
+    """Load test pairs, stratifying by dim so small `limit` covers all dims."""
+    import random as _random
     rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
-    return rows[:limit] if limit else rows
+    if not limit or len(rows) <= limit:
+        return rows
+    # Group by dim, take roughly equal share
+    by_dim: dict[str, list[dict]] = {}
+    for r in rows:
+        by_dim.setdefault(r["meta"]["dim"], []).append(r)
+    per_dim = max(1, limit // len(by_dim))
+    out = []
+    for d, rs in sorted(by_dim.items()):
+        rng = _random.Random(f"eval:{d}")
+        rng.shuffle(rs)
+        out.extend(rs[:per_dim])
+    return out[:limit]
 
 
 def main():
