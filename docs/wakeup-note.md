@@ -77,7 +77,7 @@ failure and nothing else.** Further craft improvements need way more SFT data
 
 ## 2026-04-14 afternoon follow-up
 
-Story-gen iteration session shipped 6 focused fixes on top of the Phase-1 close:
+Story-gen iteration session shipped 8 focused fixes on top of the Phase-1 close:
 
 - `bcc571e` fix(write): plumbed `player_action` + dialogue directive to writer.
   Was: every committed chapter had `dialogue_ratio=0` because writer never saw
@@ -101,6 +101,17 @@ Story-gen iteration session shipped 6 focused fixes on top of the Phase-1 close:
   looked fine while quest_callbacks + voice_continuity retrievers silently
   returned 0 hits. Override via `QUEST_EMBEDDER_DEVICE=cuda` when GPU is free.
   MiniLM is 22MB; CPU encode on short prose is ~10ms.
+- `2befb01` fix(pov): force player-character POV across all scenes. Every
+  narrative row was being stamped `pov_character_id='innkeeper'` because the
+  dramatic LLM picks NPC POVs for scenes that should follow the protagonist.
+  Added narrator config override (`pov_character_id`) + `id='player'`
+  convention in `_default_pov_character_id`. Now voice_continuity keys on the
+  player's past dialogue, not an NPC's.
+- `8d40757` fix(write): voice_samples now appear AFTER voice_continuity in the
+  prompt. When POV was fixed, voice_continuity (the writer's own past dialogue)
+  started dominating voice_samples (narrator config rhythm anchors) due to LLM
+  recency bias. Flipping order restored most of the dialogue + sentence-variance
+  that voice_samples alone produced while keeping quest memory available.
 - Merged and pushed the v2 LoRA work (`e299851`) that was mid-conflict at
   session start.
 
