@@ -1,0 +1,27 @@
+world_state_legibility (scene-scale, quest-only): The input is a FULL
+SCENE. After reading the whole scene, can a new voter reconstruct the
+salient world state — active threads, named NPCs present, location,
+current goal, any standing threats or promises? Judge on what the scene
+actually surfaces, not on background lore it omits.
+
+0.0 = murk. Location unnamed or unclear, NPCs referred to by pronoun or
+      unexplained nickname, no active thread legible, no visible goal.
+0.3 = one or two facts surface (location OR one NPC named) but threads
+      and goals remain implicit.
+0.5 = location + characters present are legible, but a voter has to guess
+      at which threads are currently active or what the protagonist wants.
+0.7 = location, NPCs, active threads, and current goal all surface at
+      least once through action or dialogue; a voter can answer "where
+      are we and what is at stake" without scrollback.
+1.0 = the scene plants every load-bearing state fact in-scene, via action
+      and dialogue rather than exposition dump; standing threats and
+      promises are re-surfaced at the moment they matter.
+
+Anchors:
+  HIGH: a quest update whose opening beat re-establishes the city, names
+        the three NPCs at the table, references the outstanding debt in
+        dialogue, and closes on the protagonist's stated goal.
+  MID : a scene that names the location and one NPC but leaves the reader
+        guessing which of three ongoing threads is being advanced.
+  LOW : a scene set in an unnamed room between "she" and "him" with no
+        recoverable goal or thread.
