@@ -4,6 +4,7 @@ from app.craft.library import CraftLibrary
 from app.craft.schemas import Arc, Structure
 from app.engine.prompt_renderer import PromptRenderer
 from app.planning.schemas import ArcDirective, DramaticPlan
+from app.retrieval import Query, QueryFilters, SceneShapeRetriever
 from app.runtime.client import ChatMessage, InferenceClient
 from app.world.output_parser import OutputParser
 from app.world.state_manager import WorldStateManager
@@ -38,6 +39,7 @@ class DramaticPlanner:
         structure: Structure,
         recent_tool_ids: list[str] | None = None,
         quest_id: str | None = None,
+        scene_retriever: SceneShapeRetriever | None = None,
     ) -> DramaticPlan:
         """Generate a ``DramaticPlan`` for the current update.
 
@@ -105,6 +107,17 @@ class DramaticPlanner:
             examples = self._craft_library.examples_for_tool(tool.id)[:2]
             tools_with_examples.append({"tool": tool, "examples": examples})
 
+        # Wave 3c: optional scene-shape exemplar retrieval. When a
+        # ``scene_retriever`` is wired in, pull k=2 arc-scale scenes
+        # whose tension matches the directive's envelope and whose
+        # scene_coherence is strong, so the LLM has concrete references
+        # for the kind of scene-shape the arc layer is asking for.
+        scene_exemplars: list[dict] = []
+        if scene_retriever is not None:
+            scene_exemplars = await self._retrieve_scene_exemplars(
+                scene_retriever, directive
+            )
+
         schema = DramaticPlan.model_json_schema()
 
         system_prompt = self._renderer.render(
@@ -123,6 +136,7 @@ class DramaticPlanner:
                 "themes": themes,
                 "reader_state": reader_state,
                 "information_asymmetries": asymmetries,
+                "scene_exemplars": scene_exemplars,
             },
         )
 
@@ -139,3 +153,63 @@ class DramaticPlanner:
 
         # ParseError propagates to caller as-is
         return OutputParser.parse_json(raw, schema=DramaticPlan)
+
+    # -- Helpers --------------------------------------------------------
+
+    async def _retrieve_scene_exemplars(
+        self,
+        scene_retriever: SceneShapeRetriever,
+        directive: ArcDirective,
+    ) -> list[dict]:
+        """Pull arc-scale scene exemplars matching the directive envelope.
+
+        Uses the directive's ``tension_range`` as the primary metadata
+        filter and a light ``scene_coherence`` floor so we bias toward
+        well-executed scenes. Failures are swallowed — retrieval is
+        advisory, never load-bearing for planning.
+        """
+        lo, hi = directive.tension_range
+        score_ranges = {
+            "tension_execution": (float(lo), float(hi)),
+            "scene_coherence": (0.65, 1.0),
+        }
+        seed_bits = [directive.current_phase, directive.phase_assessment]
+        if directive.plot_objectives:
+            seed_bits.extend(obj.description for obj in directive.plot_objectives)
+        if directive.hooks_to_plant:
+            seed_bits.extend(directive.hooks_to_plant)
+        seed_text = "\n".join(b for b in seed_bits if b) or None
+
+        query = Query(
+            seed_text=seed_text,
+            filters=QueryFilters(score_ranges=score_ranges).to_dict(),
+        )
+        try:
+            results = await scene_retriever.retrieve(query, k=2)
+        except Exception:
+            return []
+
+        exemplars: list[dict] = []
+        for r in results:
+            # Template shows first ~200 words. Truncation happens here
+            # so the template stays presentation-only.
+            words = r.text.split()
+            preview = " ".join(words[:200])
+            if len(words) > 200:
+                preview += " ..."
+            exemplars.append(
+                {
+                    "source_id": r.source_id,
+                    "work_id": r.metadata.get("work_id"),
+                    "scene_id": r.metadata.get("scene_id"),
+                    "dramatic_function": r.metadata.get("dramatic_function"),
+                    "tension_execution": r.metadata.get("actual_scores", {}).get(
+                        "tension_execution"
+                    ),
+                    "scene_coherence": r.metadata.get("actual_scores", {}).get(
+                        "scene_coherence"
+                    ),
+                    "preview": preview,
+                }
+            )
+        return exemplars
