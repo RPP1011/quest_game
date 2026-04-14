@@ -123,19 +123,27 @@ class Harness:
         return self._build_report(passage_scores)
 
     def _build_report(self, passage_scores: list[PassageScore]) -> Report:
-        # Per-dim pairs for correlation.
-        per_dim_pairs: dict[str, list[tuple[float, float]]] = {}
-        all_pairs: list[tuple[float, float]] = []
+        # Aggregate passage-level scores to work-level before correlation.
+        # The manifest's expected scores are per-work, so per-passage comparisons
+        # introduce within-work noise. Mean the passages for each (work, dim).
+        work_dim_scores: dict[tuple[str, str], list[float]] = {}
+        work_dim_expected: dict[tuple[str, str], float] = {}
         for ps in passage_scores:
             if ps.skipped:
                 continue
             for dim, model_score in ps.dimensions.items():
                 if dim not in ps.expected:
-                    # Quest-only dim expected at work level; if not present skip.
                     continue
-                pair = (model_score, ps.expected[dim])
-                per_dim_pairs.setdefault(dim, []).append(pair)
-                all_pairs.append(pair)
+                work_dim_scores.setdefault((ps.work_id, dim), []).append(model_score)
+                work_dim_expected[(ps.work_id, dim)] = ps.expected[dim]
+
+        per_dim_pairs: dict[str, list[tuple[float, float]]] = {}
+        all_pairs: list[tuple[float, float]] = []
+        for (work_id, dim), scores in work_dim_scores.items():
+            mean_score = sum(scores) / len(scores)
+            pair = (mean_score, work_dim_expected[(work_id, dim)])
+            per_dim_pairs.setdefault(dim, []).append(pair)
+            all_pairs.append(pair)
 
         per_dim = [
             DimensionStats(

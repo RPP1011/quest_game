@@ -58,16 +58,17 @@ def _tokens(text: str) -> list[str]:
 def sentence_variance(text: str) -> float:
     """Std-dev of sentence lengths (words) normalized to [0, 1].
 
-    Rationale: std_dev of 0 (all sentences same length) ~> 0.0; std_dev >= 15
-    ~> 1.0. Linear in-between. 15 chosen empirically: Woolf/Joyce passages
-    cluster ~15-25, Hemingway ~3-6, Sanderson ~6-10.
+    Initial cap of std=15 saturated nearly every literary passage. Empirically,
+    typical mid-chapter passages span: Hemingway ~4 std, Austen/Leonard ~8-12,
+    McCarthy/Dostoevsky ~15-22, Joyce stream-of-consciousness ~30+. Capping at
+    std=30 preserves separation between the clusters.
     """
     sentences = _split_sentences(text)
     if len(sentences) < 2:
         return 0.0
     lengths = [len(_tokens(s)) for s in sentences]
     sd = statistics.pstdev(lengths)
-    return clip01(sd / 15.0)
+    return clip01(sd / 30.0)
 
 
 def dialogue_ratio(text: str) -> float:
@@ -141,12 +142,15 @@ def sensory_density(text: str) -> float:
     counts = _count_sensory_channels(text)
     total_hits = sum(counts.values())
     per_100 = total_hits * 100.0 / len(words)
-    lo, hi = 2.0, 10.0
+    # Empirical on calibration passages: Austen ≈ 0.8/100w, Karamazov/PGTE
+    # ~2-3/100w, Flaubert/Hemingway ~3-4/100w, Joyce/McCarthy ~5-6/100w. The
+    # old 10/100w ceiling was unreachable — no passage approached it.
+    lo, hi = 0.5, 6.0
     if per_100 <= lo:
-        return clip01(per_100 * 0.15)
+        return clip01(per_100 * 0.2)
     if per_100 >= hi:
         return 0.95
-    return clip01(0.3 + (per_100 - lo) / (hi - lo) * 0.65)
+    return clip01(0.2 + (per_100 - lo) / (hi - lo) * 0.75)
 
 
 def run_heuristics(
