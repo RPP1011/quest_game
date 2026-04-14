@@ -58,7 +58,11 @@ def _iter_picked(root: Path, quest_id: str | None = None) -> Iterable[Path]:
     else:
         dirs = sorted(p for p in root.iterdir() if p.is_dir())
     for d in dirs:
-        for f in sorted(d.glob("*.picked.json")):
+        # Phase-2: the SFT collector now writes under
+        # ``<sft_root>/<quest_id>/<quest_id>/`` because ``sft_collection.dir``
+        # already includes the quest_id. Walk one level deeper to pick up
+        # the nested layout while still supporting the legacy flat layout.
+        for f in sorted(d.rglob("*.picked.json")):
             yield f
 
 
