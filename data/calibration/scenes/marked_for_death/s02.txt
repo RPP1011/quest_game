@@ -1,0 +1,111 @@
+---
+work: Marked for Death
+author: eaglejarl & Velorien
+passage_id: s02
+kind: scene
+word_count: 2960
+source_chapters:
+- 9
+notes: scene-aligned chunk; see tools/sample_scenes.py. start_chapter_idx=8.
+---
+
+Chapter 5: First Contact with Town​
+"Taller," Shikigami-sensei said, eyeing Hazō's Transformation Technique disguise critically. "The nose is too wide—it would be memorable. Yes, better." He turned to Mori. "Shrink the boobs, widen the hips, more lines around the mouth; you're trying to look like a woman who lives in the woods. Not that much! Good. Lighten the hair a bit; you want a muddy brown, very forgettable. Yes, like that."
+He examined the group one more time, then nodded in satisfaction. "A more forgettable group of disreputable woodsmen you couldn't hope to see," he said. "Off you go, then."
+Team Kurosawa quickly swapped appearances so that each of them could memorize exactly what their specified form looked like; it was a standard Academy technique for when mirrors weren't available. Each of them studied their opposite until they were confident in their ability to reproduce the form in the future, and then they swapped back into their assigned roles and turned for the exit.
+Traversing the swamp was just as miserable as expected. In the two-plus hours that it took to reach dry land they needed to explain to twenty-seven chakra leeches, four venomous water snakes, one spear-lily, and a very confused predatory bird that no, genin were not in fact below them on the food chain. The only good thing about the trip was that now they could all waterwalk, so travel was a lot faster and there was a lot less mud involved. Once they reached dry land they took a few minutes to rest before setting off for the town.
+They'd left just after the sun came over the horizon, so it wasn't even mid-morning when they arrived.
+The town was impressive; the palisade was fully twelve feet high, and made of logs as thick as a man's wrist, tied together in two layers and then sealed with mud so that there wasn't the slightest crack. The gate slid on well-greased wooden rollers; there was a gap of a few inches between the bottom of the gate and the ground, but a secondary wall on the inside of the gate could be dropped down to seal even that space. There was a guard tower on either side of the gate, one at each corner of the town, and one in the middle of each wall. All guard towers held two women armed with bows, spears, and a large gong.
+It wouldn't even slow down a ninja, of course, but against anything else it was about as tight a defense as one could ask for.
+The houses were built on the same lines; small, boxy, with thick walls. Few of them were freestanding; most shared a wall with their neighbors. The windows were large, but on the inside of every window were mounted ridiculously thick shutters that could be closed quickly in event of need.
+The genin stuck together, Hazō in the center in the role of father, Mori to his left as his wife, and Wakahisa to his right pretending to be his young-teens son. None of them felt terribly sanguine about this expedition; they were a heavy-combat team and a poor fit for an infiltration mission. Nonetheless, those were the orders.
+Most of the village men were out in the fields as the team walked up. One of every eight stood guard, weapons in hand; the rest bent over the rice paddies with weapons on their backs—mostly jo staves or short spears, although there were occasional swords here and there.
+"Hullo the town!" Hazō called, pitching his voice deep and gruff as he called up to the women in the guard towers. "We're hunters, come to trade. We need to buy medicine!"
+"Come through!" one woman called back, waving them through the open gate. "Just keep your hands in sight!"
+Inside, the genin found themselves facing the business end of three long spears wielded by a group of tough-looking women.
+"Show us your packs, please," their leader said.
+The team lowered their packs to the ground carefully and unfolded them, revealing them to contain nothing other than grass-wrapped meat and minimal camping gear.
+"Traveling light, aintcha?" the leader of the guards asked.
+"Like I said, we're just here to trade," Hazō said. "We're part of a group homesteading about half a day's hike that way"—he gestured to the east, well away from the southern route that would lead to the swamp—"and we need some things. We lost one of the wagons fording a river, and we need to replace the cargo. Medicine most of all, but also nails, rope, some tools. Some clothes and bags wouldn't go amiss, either. We're not looking for trouble; we just want to shop, grab a bite and maybe some news, then we're gone."
+The woman nodded and the spears stopped pointing at them. "Sorry for the caution," she said. "We've had some bandit troubles lately. I'm Suzuki Yumiko, I'll get you to the herbalist." She gestured to her companions and they returned to their posts at the foot of the gate.
+"I'll buy some of that meat off you myself," she said as they walked. "We're short of meat here; not a lot of room for animals. Thirty ryō to the pound sound about right?"
+"Fifty sounds better," Hazō said. Shikigami had briefed him carefully; haggling at least a little was expected, and roughly half again the opening bid was the right first counteroffer.
+Yumiko snorted. "I'm sure it does, but I'm not the Fire Daimyo. Thirty-five."
+"Forty," Hazō said. He honestly didn't care that much; they had plenty and didn't need very much in exchange. Still, not haggling would draw more attention than haggling.
+"Thirty-seven, and I pick the cuts," Yumiko said.
+"Sold," Hazō said.
+Yumiko smiled and turned, leading them off to a house on the street to the right. She let them in, leading them to the kitchen; the team unwrapped their packs on the counter and let Yumiko select several cuts. She wrapped them up and put them away in a cabinet, then pulled out a small string of ryō coins and passed them over.
+"Thanks," she said. "C'mon, I'll take you over to the herbalist."
+The team followed her through the streets to the small shop. On the way, Hazō twice had to subtly wave the other two away; they were all nervous and there was a tendency to turn back-to-back and watch their threat sectors in a most uncivilian way.
+The apothecary was a small building, one room in the front with a counter against the back wall and a table and two chairs to the left of the door. Behind the counter was a curtain that probably led to living quarters. The walls were lined with shelves full of powders, herbs, and small clay-red pots that might have contained anything, but were probably medicines of some kind. A table on the wall had two chairs, one of which was occupied by a just-past-middle-aged woman who was busy grinding something up in a mortar.
+"Hey Koizumi, we've got some out-of-towners for you," Yumiko said.
+The shop owner looked up, absently brushing an errant lock of hair out of her eyes. "Huh. Don't recognize you three," she said.
+				rolz.org said:
+			Hazō:
+sum 3 1D100 => 38 ; 49 ; 51 ; total=138
+Mori:
+sum 3 1D100 => 78 ; 94 ; 77 ; total=249
+Wakahisa:
+sum 4 1D100 => 26 ; 79 ; 92 ; 95 ; total=292
+Opposed roll:
+sum 5 1D100 => 59 ; 78 ; 42 ; 67 ; 77 ; total=323
+N dice + 0 to (5-N) challenge dice
+Click to expand...
+Click to shrink...
+"We're hunters," Hazō replied. "Part of a group homesteading about half a day's hike east. We lost a bunch of stuff when one of our wagons was washed away fording a river, and we need to replace the cargo. Medicine most of all. We've got meat for trade."
+Koizumi raised an eyebrow and studied them closely, lips pursed in thought.
+"Is that so?" she murmured. Glancing as the team's guide she said, "Thanks, Suzuki, I've got it. You should get back."
+The guard leader nodded, took her leave politely, and headed back to her post at the gate.
+"I've got plenty of medicine," Koizumi said. "Also cooking spices—salt, pepper, thyme, if you're interested."
+"Ahh...maybe after the medicine?" Hazō said weakly.
+Koizumi nodded and pushed herself to her feet, heading back to the counter. "Anything in particular?" she asked.
+Hazō fumbled the list out of a pocket. "These," he said, passing it over.
+Koizumi eyed the list. "Yep, I've got all this," she said. "You said meat for barter?"
+"Yes," Hazō said. Without a word the other two laid their packs on the corner and opened them to show the grass-wrapped steaks.
+"Hmmm," Koizumi said. She looked from the meat to the list and back. "Sounds about right," she said. "The list for your catch."
+"Half," Hazō said, blindly working off Shikigami-sensei's advice. He honestly had no idea what a fair offer would be, and just hoped this wasn't ridiculous.
+Koizumi snorted. "When pigs fly," she said. "Three quarters."
+Hazō looked at the supplies. They were supposed to come back with maps and tools as well, although that was a secondary objective. He had no idea how much those things would cost; if he gave up a full three quarters for the medicine, would he have enough left? He looked at the other two for advice.
+"Half," Mori said. "And we will spend two hours gathering supplies for you in the forest."
+Koizumi' eyebrows went up. "Hm," she said. "Interesting offer, but you could just come back and say you didn't find anything. Let's say you bring me a pound of hens-beak mushrooms instead."
+"Done," Hazō said. "You'll have to show us what the mushrooms look like, though."
+She nodded and rummaged around on one of the shelves, coming back with a dried brown scrap of fungus.
+"This one is dried," she said. "You can still see the basic details though. Note the elliptical shape, this fluting under the cap, and the brown-and-white speckle pattern on the top. You'll find them in wet, dark places—try under rootballs, embankments, fallen logs, that sort of thing. Look for moss; hens-beak often grows in the same sort of environments."
+The three genin leaned in close, studying the fungus. When he was sure he had it, Hazō glanced at the others to confirm they were ready. Two nods and he straightened up.
+"We need some other things, too," Hazō said. "Tools, rope, maps...where could we find that sort of stuff?"
+Koizumi scratched her neck in thought. "Tools you can find at Yukimura's—he's our blacksmith. Next street over, two houses down. Our weaver does rope as well as cloth; she's four houses down on your left. Not sure about maps, though. Not a lot of call for them."
+"Thank you," Hazō said with a bow. "Please keep our order aside; we'll be back later with the mushrooms."
+The trip to the weaver was simpler; her eyes lit up when she saw the fresh steaks, and she hardly bargained at all. Soon enough they had six cloth sacks and a hundred feet of rope. It took fully half their catch, but Hazō figured it would be easy enough to replace the meat with a bit more hunting since they were going into the forest anyway.
+The tools were harder.
+"Excuse me?" Hazō said, stepping through the door into the forge. It was hotter than hell, and the blacksmith, a short man with dense ropes of corded muscle all over his body, was banging on a red-hot chunk of metal shaped vaguely like a hoe.
+"Minute!" the blacksmith called, not turning.
+Hazō and the others waited patiently while the man banged the metal a bit more, then slid it back into the fire and turned around.
+"Can't just stop anywhere," the smith said gruffly. He looked them over. "Out of towners, huh? You from Shuseikan? That iron is two weeks late. Much longer and I'm going to be reduced to pulling the nails out of the walls."
+"Ah...no," Hazō said. "We're hunters, part of a group homesteading about half a day's hike east. We lost a bunch of stuff when one of our wagons was washed away fording a river, and we need to replace the cargo. We talked to Koizumi and got some medicine, now we need tools. We've got meat for trade."
+"Meat, huh?" the man said, feigning casualness. "Well, I suppose I could take a look. What all are you looking for?"
+Mori silently passed over a list.
+"Hammers, nails, saws, anvil, tongs, forge hammer...," Yukimura mumbled, skimming down the list. "This is a full load. The hell did you lot think you were doing, going out homesteading with all the tools in one wagon? What kind of idiots are you?"
+Hazō blanched. "Ah...well, I couldn't really say," he said, fumbling a bit. "We're just the hunters, we didn't have any part of the selecting or packing."
+Yukimura sniffed disapprovingly. "Damn stupid bunch. You three can't be that bright if you went with a group and just trusted them to get it right." He eyed the list again. "Ordinarily I could do this for you no problem, but with the iron shortage I can't afford to let this much stuff go. The field guards usually burn through six or seven dozen arrows a week around here, and most of the tips can't be recovered because the critter runs back into the woods. If I don't get more iron soon we're going to be down to fire-hardened tips, and those don't fly as straight or hurt as much going in. It's going to cost lives. And I sure as hell couldn't let go of an anvil. For one thing, if your half-wit of a smith wants to do more than make nails he's going to need three or four of various sizes. For another, they're a complete pain in the ass to cast, and they take way more iron than I can spare."
+"Oh," Hazō said, looking at the others for ideas. Wakahisa shrugged; Mori just stared at him blankly.
+"I can spare a couple hammers and a half-pound of short nails," Yukimura said. "Don't bother haggling, it's all you'll get. It'll cost you a thousand ryō."
+"We...don't have cash," Hazō said carefully. "We were looking to barter for meat, or anything we can hunt or gather in the area."
+"Hmm," Yukimura said, frowning. "Well...I'm pretty well set for meat, but do you think you could catch some steelbacks?"
+"Some what?" Hazō asked blankly.
+"Steelbacks," Yukimura said. "Sort of a cross between wild pigs and hedgehogs, but they have an Earth Element ability that hardens their bristles into something almost as strong as good steel. Soaking the bristles in molten iron for a week leaches the chakra out, makes the resulting steel much stronger. It's one of the ways they make those super-strong swords and kunai for the ninja." He looked at them, frowning. "Where are you guys coming from, anyway? Steelbacks are all over the area, and they drop shoats as often as a baby craps." He raised a finger in warning. "I'd need yearlings or older. The shoats haven't absorbed enough chakra to make their bristles worth anything."
+"Could we talk about that and get back to you?" Hazō asked.
+Yukimura shrugged. "Sure," he said. "I don't have much need for them until the shipment comes in anyway." He turned back to the forge, dismissing them from his thoughts without a word.
+"Thank you," Hazō said, bowing to the man's back before turning for the door.
+"Are we doing that?" Wakahisa asked once they were outside.
+"Dunno," Hazō said. "For now, let's get the mushrooms so we can get the medicine."
+None of them were terribly sanguine about the task, but in the event it wasn't that hard. The mushrooms weren't common, but ninja can cover a lot of ground quickly, and all three of them were observant enough to spot the mushrooms easily. There was also quite a bit of game which they hunted on the way back. The only excitement came when a wrist-thick worm exploded out of the branches above them to sink its fangs into the deer they'd been about to harvest. The deer squealed in agony before collapsing and...melting. The worm remained anchored to it for a few seconds, slurping up the meat-slurry, then retracted back into the trees.
+The three genin looked at each other, then circled wide around that tree and kept a close eye on the branches above them.
+Once the mushrooms were gathered, they purchased the medicines from the apothecary and headed out, taking care to leave going east at a civilian's fast jog. As soon as they were out of sight they shifted into a ninja run and bent their course south. The mushroom gathering had taken longer than expected, and they were racing the descending sun all the way home, reaching the camp just before sundown.
+"Report," Shikigami said when they presented themselves.
+Voting time!
+- What do you tell Shikigami-sensei?
+- You'll be on watch for four hours after this, then asleep. In the morning, Shikigami will have an assignment for you if you don't request one. Do you? If so, what?
+- How do you want to spend your XP?  Whatever you decide will be instantiated as soon as there is an appropriate amount of training time.
+Voting closes Wednesday, December 30, 2015, at 12pm UTC.  Velorien is writing the next post.
+Author's Note: I've arbitrarily pegged the exchange rate as ten ryō to an American dollar.
+EDIT:  Everyone gets 3 XP each for accomplishing the mission.
