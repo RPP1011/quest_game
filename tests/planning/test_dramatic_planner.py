@@ -227,3 +227,53 @@ async def test_dramatic_planner_surfaces_parse_error(tmp_path):
             arc=arc,
             structure=structure,
         )
+
+
+@pytest.mark.asyncio
+async def test_dramatic_planner_defaults_pov_to_first_character(tmp_path):
+    """When the LLM emits ``pov_character_id=None``, the post-parse step
+    fills it with the first CHARACTER entity id so the VoiceRetriever can
+    actually fire on the write stage."""
+    plan_with_none_pov = DramaticPlan(
+        action_resolution=ActionResolution(kind="success", narrative="n"),
+        scenes=[
+            DramaticScene(
+                scene_id=1,
+                pov_character_id=None,
+                dramatic_question="q1?",
+                outcome="o1",
+                beats=["b1"],
+                dramatic_function="inciting",
+            ),
+            DramaticScene(
+                scene_id=2,
+                pov_character_id="villain",  # explicit POV stays put
+                dramatic_question="q2?",
+                outcome="o2",
+                beats=["b2"],
+                dramatic_function="escalation",
+            ),
+        ],
+        ending_hook="h",
+        suggested_choices=[{"title": "t", "description": "d", "tags": []}],
+    )
+    client = FakeClient(plan_with_none_pov.model_dump_json())
+    renderer = PromptRenderer(PROMPTS)
+    craft_library = _make_craft_library()
+    arc, structure = _make_arc_and_structure(craft_library)
+    world = _make_world(tmp_path)  # seeds hero, villain — in that id order
+    directive = _make_directive()
+
+    planner = DramaticPlanner(client, renderer, craft_library)
+    result = await planner.plan(
+        directive=directive,
+        player_action="do a thing",
+        world=world,
+        arc=arc,
+        structure=structure,
+    )
+
+    # Scene 1 had no POV → default picker used the first character entity.
+    assert result.scenes[0].pov_character_id == "hero"
+    # Scene 2's explicit POV is preserved.
+    assert result.scenes[1].pov_character_id == "villain"
