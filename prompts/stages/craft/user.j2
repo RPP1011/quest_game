@@ -280,4 +280,17 @@ When a motif appears in a scene, emit a ``motif_instruction`` on that scene with
 ---
 {% endif %}
 
+{% if due_motifs %}
+
+## Due/overdue motifs (consider weaving in)
+
+The following motifs are due or overdue for recurrence at this update. Prefer weaving one or more of them into the prose — a returning motif usually lands harder when it arrives naturally inside an existing beat rather than as a standalone beat of its own.
+
+{% for m in due_motifs %}
+- **{{ m.name }}**: {{ m.description }} (last seen update {{ m.last_update_number if m.last_update_number is not none else "never" }}, semantic value: "{{ m.last_semantic_value if m.last_semantic_value is not none else "" }}", status: {{ m.status }})
+{% endfor %}
+
+---
+{% endif %}
+
 Produce the craft plan now. For each dramatic scene, emit one CraftScenePlan entry in `scenes` and one CraftBrief entry in `briefs`. The brief must be 100-300 words of prose that reads like a director's note — weave register, voice, emotional arc, and motif into a unified vision. Do not list parameters in the brief.
