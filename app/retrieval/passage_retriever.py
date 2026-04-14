@@ -1,11 +1,22 @@
-"""Literary-corpus passage retriever (Wave 1b, metadata-only).
+"""Literary-corpus passage retriever.
 
 Loads the manifest + merged Claude labels, builds an in-memory index of
 labeled passages, and serves filter-based retrieval queries.
 
-Semantic (embedding) rerank is Wave 2; constructing with
-``enable_semantic=True`` raises :class:`NotImplementedError` until that
-wave wires it.
+Two modes:
+
+* ``enable_semantic=False`` (Wave 1b): metadata-only — filter by POV,
+  ``is_quest``, ``exclude_works`` and score ranges, then rank by
+  midpoint proximity.
+* ``enable_semantic=True`` (Wave 2a): hybrid — apply the same metadata
+  filter first, then, if ``Query.seed_text`` is provided, embed it with
+  MiniLM and rerank surviving candidates by a 50/50 blend of the
+  metadata score and cosine similarity. Without ``seed_text`` the
+  hybrid mode degrades gracefully to metadata-only ranking.
+
+The semantic embedder and the on-disk :class:`~app.retrieval.embeddings.EmbeddingCache`
+are constructed lazily: they are not touched until the first call to
+:meth:`PassageRetriever.retrieve` when ``enable_semantic=True``.
 """
 from __future__ import annotations
 
@@ -15,13 +26,17 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+
 from app.calibration.loader import load_manifest
 
+from .embeddings import Embedder, EmbeddingCache
 from .interface import Query, Result
 
 
 DEFAULT_LABEL_GLOB = "/tmp/labels_claude_part_*.json"
 DEFAULT_LABEL_ALL = "/tmp/labels_claude_all.json"
+DEFAULT_EMBEDDING_CACHE_PATH = Path("data/calibration/passage_embeddings.npy")
 
 
 @dataclass
@@ -44,7 +59,7 @@ class _IndexedPassage:
 
 
 class PassageRetriever:
-    """Serve metadata-filtered literary passages.
+    """Serve metadata-filtered literary passages with optional semantic rerank.
 
     Parameters
     ----------
@@ -57,7 +72,20 @@ class PassageRetriever:
     passages_dir:
         Directory with ``<work_id>/<passage_id>.txt`` passage bodies.
     enable_semantic:
-        Reserved for Wave 2; raises :class:`NotImplementedError` in Wave 1.
+        If ``True``, hybrid mode is active: the retriever computes
+        MiniLM embeddings for every indexed passage (lazily, on first
+        ``retrieve`` call) and blends cosine similarity with the
+        metadata score when ``Query.seed_text`` is set. The embedder
+        and cache are constructed on demand, not during ``__init__``.
+    embedding_cache_path:
+        ``.npy`` file persisting the embedding matrix. A sibling
+        ``.json`` file (same stem) holds the parallel id array. Only
+        consulted when ``enable_semantic=True``. Defaults to
+        ``data/calibration/passage_embeddings.npy``.
+    embedder:
+        Optional injected :class:`Embedder` — primarily a test seam.
+        When ``None`` a default :class:`Embedder` is built lazily on
+        first retrieve.
     """
 
     def __init__(
@@ -66,16 +94,22 @@ class PassageRetriever:
         labels_dir: str | Path,
         passages_dir: str | Path,
         enable_semantic: bool = False,
+        embedding_cache_path: str | Path | None = None,
+        embedder: Embedder | None = None,
     ) -> None:
-        if enable_semantic:
-            raise NotImplementedError(
-                "Semantic retrieval is Wave 2; pass enable_semantic=False."
-            )
-
         self._manifest_path = Path(manifest_path)
         self._labels_dir = Path(labels_dir)
         self._passages_dir = Path(passages_dir)
         self._enable_semantic = enable_semantic
+        self._embedding_cache_path = Path(
+            embedding_cache_path
+            if embedding_cache_path is not None
+            else DEFAULT_EMBEDDING_CACHE_PATH
+        )
+
+        # Lazily constructed on first semantic retrieve. None until then.
+        self._embedder: Embedder | None = embedder
+        self._passage_vectors: dict[str, np.ndarray] | None = None
 
         self._index: list[_IndexedPassage] = self._build_index()
 
@@ -211,7 +245,86 @@ class PassageRetriever:
                 score -= 0.2
         return max(score, 0.0)
 
+    # -- Semantic lazy init --------------------------------------------
+
+    def _ensure_embedder(self) -> Embedder:
+        if self._embedder is None:
+            self._embedder = Embedder()
+        return self._embedder
+
+    def _ensure_passage_vectors(self) -> dict[str, np.ndarray]:
+        """Load or build the passage embedding cache on first use.
+
+        Passages with empty text are excluded from the cache (and
+        therefore from semantic rerank). They still participate in
+        metadata-only flow because the index keeps them.
+        """
+        if self._passage_vectors is not None:
+            return self._passage_vectors
+
+        embedder = self._ensure_embedder()
+        cache = EmbeddingCache(embedder)
+        pairs: list[tuple[str, str]] = []
+        for entry in self._index:
+            if not entry.passage_text:
+                continue
+            key = f"{entry.work_id}/{entry.passage_id}"
+            pairs.append((key, entry.passage_text))
+        if not pairs:
+            self._passage_vectors = {}
+            return self._passage_vectors
+
+        self._passage_vectors = cache.load_or_build(
+            pairs, self._embedding_cache_path
+        )
+        return self._passage_vectors
+
     async def retrieve(self, query: Query, *, k: int = 3) -> list[Result]:
+        # Metadata-only fast path preserves the Wave 1b ranking byte-for-byte.
+        if not self._enable_semantic:
+            return self._retrieve_metadata_only(query, k=k)
+
+        # Hybrid mode. Metadata filter first, same as before.
+        filtered: list[tuple[float, _IndexedPassage]] = []
+        for entry in self._index:
+            if not self._passes_filters(entry, query):
+                continue
+            filtered.append((self._score(entry, query), entry))
+
+        # Without a seed_text, or if the metadata filter dropped
+        # everything, the hybrid mode degrades to metadata-only ranking
+        # and does not spin up the embedder.
+        if not query.seed_text or not filtered:
+            filtered.sort(key=lambda t: (-t[0], t[1].work_id, t[1].passage_id))
+            return self._build_results(filtered[:k])
+
+        vectors = self._ensure_passage_vectors()
+        embedder = self._ensure_embedder()
+        seed_vec = embedder.embed_one(query.seed_text)
+
+        ranked: list[tuple[float, _IndexedPassage]] = []
+        for meta_score, entry in filtered:
+            key = f"{entry.work_id}/{entry.passage_id}"
+            passage_vec = vectors.get(key)
+            if passage_vec is None:
+                # Passage text was empty at build time — skip from semantic
+                # rerank but keep a metadata-only contribution so we still
+                # have a candidate (half-weighted).
+                final = 0.5 * meta_score
+            else:
+                cosine = float(Embedder.cosine(passage_vec, seed_vec))
+                # MiniLM cosine lives in [-1, 1]; clamp negatives to 0 so the
+                # composite stays in [0, 1].
+                cosine = max(cosine, 0.0)
+                final = 0.5 * meta_score + 0.5 * cosine
+            ranked.append((final, entry))
+
+        ranked.sort(key=lambda t: (-t[0], t[1].work_id, t[1].passage_id))
+        return self._build_results(ranked[:k])
+
+    # -- Helpers --------------------------------------------------------
+
+    def _retrieve_metadata_only(self, query: Query, *, k: int) -> list[Result]:
         candidates: list[tuple[float, _IndexedPassage]] = []
         for entry in self._index:
             if not self._passes_filters(entry, query):
@@ -220,9 +333,13 @@ class PassageRetriever:
 
         # Sort by score desc, then stable by (work_id, passage_id) asc.
         candidates.sort(key=lambda t: (-t[0], t[1].work_id, t[1].passage_id))
+        return self._build_results(candidates[:k])
 
+    def _build_results(
+        self, scored: list[tuple[float, _IndexedPassage]]
+    ) -> list[Result]:
         results: list[Result] = []
-        for score, entry in candidates[:k]:
+        for score, entry in scored:
             results.append(
                 Result(
                     source_id=f"{entry.work_id}/{entry.passage_id}",
