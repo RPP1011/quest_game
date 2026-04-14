@@ -19,7 +19,6 @@ COMMON_LLM_DIMS: tuple[str, ...] = (
     "free_indirect_quality",
     "interiority_depth",
     "detail_characterization",
-    "sensory_density",
     "voice_distinctiveness",
     "tension_execution",
     "thematic_presence",

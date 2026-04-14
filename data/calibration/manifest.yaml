@@ -445,6 +445,9 @@ works:
       subtext_presence: 0.5
       clarity: 0.85
       pacing: 0.7
+      choice_hook_quality: 0.75
+      action_fidelity: 0.8
+      update_self_containment: 0.75
     passages:
       - id: p01
         sha256: PENDING
@@ -473,6 +476,9 @@ works:
       subtext_presence: 0.6
       clarity: 0.75
       pacing: 0.6
+      choice_hook_quality: 0.6
+      action_fidelity: 0.75
+      update_self_containment: 0.7
     passages:
       - id: p01
         sha256: PENDING

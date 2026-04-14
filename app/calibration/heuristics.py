@@ -121,6 +121,34 @@ HEURISTIC_DIMS: tuple[str, ...] = (
 )
 
 
+def sensory_density(text: str) -> float:
+    """Sensory keyword hits per 100 words, normalized to [0, 1].
+
+    Reuses the sensory lexicon that backs
+    ``validate_narrator_sensory_distribution`` (see ``app.planning.critics``).
+    Critic reuse is intentional here — that lexicon is the one we trust for
+    channel detection; counting its hits per length gives a density score
+    without depending on a narrator target distribution.
+
+    Tuning: 2 hits / 100 words → 0.3, 10 hits / 100 words → 0.95. Based on
+    corpus sampling: Woolf ≥ 7/100w, Austen ≈ 2/100w, McCarthy ≥ 10/100w.
+    """
+    from app.planning.critics import _count_sensory_channels
+
+    words = _tokens(text)
+    if not words:
+        return 0.0
+    counts = _count_sensory_channels(text)
+    total_hits = sum(counts.values())
+    per_100 = total_hits * 100.0 / len(words)
+    lo, hi = 2.0, 10.0
+    if per_100 <= lo:
+        return clip01(per_100 * 0.15)
+    if per_100 >= hi:
+        return 0.95
+    return clip01(0.3 + (per_100 - lo) / (hi - lo) * 0.65)
+
+
 def run_heuristics(
     text: str,
     *,
@@ -131,6 +159,7 @@ def run_heuristics(
         "sentence_variance": sentence_variance(text),
         "dialogue_ratio": dialogue_ratio(text),
         "pacing": pacing(text),
+        "sensory_density": sensory_density(text),
     }
     if is_quest and player_action:
         out["action_fidelity"] = action_fidelity(text, player_action)

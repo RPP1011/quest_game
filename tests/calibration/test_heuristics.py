@@ -72,7 +72,7 @@ def test_action_fidelity_empty_action():
 def test_run_heuristics_novel_skips_action_fidelity():
     out = run_heuristics("A sentence. Another sentence.", is_quest=False)
     assert "action_fidelity" not in out
-    assert set(out) == {"sentence_variance", "dialogue_ratio", "pacing"}
+    assert set(out) == {"sentence_variance", "dialogue_ratio", "pacing", "sensory_density"}
 
 
 def test_run_heuristics_quest_includes_action_fidelity():
