@@ -48,23 +48,50 @@ def _threadmarks_url(thread_url: str) -> str:
 
 
 def _extract_post_links(html: str, base_url: str) -> list[str]:
-    """Return ordered, deduped URLs of threadmarked posts."""
+    """Return ordered, deduped (page_url, post_anchor) pairs of threadmarked posts.
+
+    SV threadmark entries are anchors inside `.structItem-title` with hrefs
+    like ``/threads/slug.id/page-N#post-M``. We return full URLs including
+    the ``#post-M`` fragment so the body extractor can find the specific
+    post on a multi-post page.
+    """
     soup = BeautifulSoup(html, "html.parser")
     seen: dict[str, None] = {}
-    for a in soup.find_all("a", href=True):
-        href = a["href"]
-        if "/threadmarks" in href:
+    # Prefer threadmark entries in the structured list.
+    anchors = soup.select(".structItem-title a")
+    if not anchors:
+        anchors = [a for a in soup.find_all("a", href=True)
+                   if "/threads/" in a["href"] and "#post-" in a["href"]]
+    for a in anchors:
+        href = a.get("href", "")
+        if "#post-" not in href or "/threads/" not in href:
             continue
-        if "/post-" not in href or "/threads/" not in href:
-            continue
-        url = urljoin(base_url, href.split("#")[0])
+        url = urljoin(base_url, href)
         seen.setdefault(url, None)
     return list(seen.keys())
 
 
-def _extract_post_body(page_html: str) -> str:
-    """Extract the first message-body article from an SV post page."""
+def _extract_post_body(page_html: str, post_anchor: str | None = None) -> str:
+    """Extract a specific post body from an SV post page.
+
+    ``post_anchor`` is the fragment id without '#', e.g. "post-4925222".
+    If given, scope to the <article> that houses that post; otherwise
+    return the first message-body article on the page.
+    """
     soup = BeautifulSoup(page_html, "html.parser")
+    target = None
+    if post_anchor:
+        # XF posts are wrapped in <article class="message" data-content="post-M">
+        # or <article id="post-M"> depending on version.
+        target = soup.find("article", attrs={"data-content": post_anchor})
+        if target is None:
+            target = soup.find(id=post_anchor)
+        if target is not None:
+            body = target.find(class_=lambda c: c and "message-body" in c)
+            if body is None:
+                body = target.find(class_=lambda c: c and "bbWrapper" in c)
+            if body is not None:
+                return str(body)
     article = soup.find("article", class_=lambda c: c and "message-body" in c)
     if article is None:
         article = soup.find("div", class_=lambda c: c and "bbWrapper" in c)
@@ -111,10 +138,12 @@ def fetch(
 
     chapters = []
     for i, url in enumerate(links, start=1):
-        page = http_get(url)
+        anchor = url.split("#", 1)[1] if "#" in url else None
+        page_url = url.split("#", 1)[0]
+        page = http_get(page_url)
         if not page:
             continue
-        text = _strip_html(_extract_post_body(page))
+        text = _strip_html(_extract_post_body(page, post_anchor=anchor))
         fname = f"chap_{i:04d}.txt"
         (out_dir / fname).write_text(text, encoding="utf-8")
         chapters.append({"index": i, "source_url": url, "file": fname})
