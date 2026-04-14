@@ -85,14 +85,28 @@ async def test_harness_scores_and_rolls_up(tmp_path):
 
 
 async def test_harness_skips_missing_passage(tmp_path):
+    """Work dir exists but the individual passage file is absent."""
+    expected = {d: 0.5 for d in COMMON_LLM_DIMS}
+    mpath = _mini_manifest(tmp_path, expected)
+    # The mini manifest fixture's work id is `woolf`; create its dir empty.
+    import yaml as _yaml
+    work_id = _yaml.safe_load(mpath.read_text())["works"][0]["id"]
+    (tmp_path / "passages" / work_id).mkdir(parents=True)
+    h = Harness(load_manifest(mpath), tmp_path / "passages", client=None,
+                judge=BatchJudge(PROMPTS))
+    report = await h.run()
+    assert report.passages[0].skipped
+    assert "missing" in report.passages[0].skip_reason
+
+
+async def test_harness_silently_skips_works_without_dir(tmp_path):
     expected = {d: 0.5 for d in COMMON_LLM_DIMS}
     mpath = _mini_manifest(tmp_path, expected)
     (tmp_path / "passages").mkdir()
     h = Harness(load_manifest(mpath), tmp_path / "passages", client=None,
                 judge=BatchJudge(PROMPTS))
     report = await h.run()
-    assert report.passages[0].skipped
-    assert "missing" in report.passages[0].skip_reason
+    assert report.passages == []
 
 
 async def test_harness_sha_mismatch_raises(tmp_path):
