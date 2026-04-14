@@ -33,6 +33,7 @@ from app.planning.voice import (
     character_voice_for,
     default_permeability,
 )
+from app.retrieval import MotifRetriever, Query
 from app.runtime.client import ChatMessage, InferenceClient
 from app.world.output_parser import OutputParser
 from app.world.schema import Entity, Parallel
@@ -82,6 +83,8 @@ class CraftPlanner:
         characters: dict[str, Entity] | None = None,
         active_motifs: list[dict] | None = None,
         world: WorldStateManager | None = None,
+        motif_retriever: MotifRetriever | None = None,
+        update_number: int | None = None,
     ) -> CraftPlan:
         """Generate a ``CraftPlan`` translating drama + emotion into a prose blueprint.
 
@@ -199,6 +202,17 @@ class CraftPlanner:
                 if ms:
                     motives_by_scene[scene.scene_id] = ms
 
+        # Wave 4a: optional due/overdue motif retrieval. When a
+        # ``motif_retriever`` is wired in AND the caller supplies the
+        # current ``update_number``, surface motifs whose recurrence
+        # window has lapsed so the craft brief can consider weaving
+        # them in. Failures are swallowed — retrieval is advisory.
+        due_motifs: list[dict] = []
+        if motif_retriever is not None and update_number is not None:
+            due_motifs = await self._retrieve_due_motifs(
+                motif_retriever, update_number
+            )
+
         schema = CraftPlan.model_json_schema()
 
         system_prompt = self._renderer.render(
@@ -219,6 +233,7 @@ class CraftPlanner:
                 "blended_samples": blended_samples,
                 "scene_permeability_defaults": scene_permeability_defaults,
                 "active_motifs": active_motifs or [],
+                "due_motifs": due_motifs,
                 "perceptual_profiles": perceptual_profiles,
                 "metaphor_profiles_persistent": metaphor_profiles_persistent,
                 "scene_detail_defaults": scene_detail_defaults,
@@ -310,6 +325,45 @@ class CraftPlanner:
                 _backfill_indirection(scene, pov, primary)
 
         return plan
+
+    # -- Helpers --------------------------------------------------------
+
+    async def _retrieve_due_motifs(
+        self,
+        motif_retriever: MotifRetriever,
+        update_number: int,
+    ) -> list[dict]:
+        """Query ``motif_retriever`` for motifs due/overdue at this update.
+
+        Converts each :class:`~app.retrieval.Result` into a plain dict the
+        user template renders. Retrieval failures are swallowed so a
+        broken retriever never blocks craft planning.
+        """
+        query = Query(filters={"current_update": int(update_number)})
+        try:
+            results = await motif_retriever.retrieve(query, k=3)
+        except Exception:
+            return []
+
+        due_motifs: list[dict] = []
+        for r in results:
+            meta = r.metadata or {}
+            due_motifs.append(
+                {
+                    "source_id": r.source_id,
+                    "motif_id": meta.get("motif_id"),
+                    "name": meta.get("name"),
+                    "description": r.text,
+                    "last_update_number": meta.get("last_update_number"),
+                    "last_semantic_value": meta.get("last_semantic_value"),
+                    "intervals_since_last": meta.get("intervals_since_last"),
+                    "target_interval_min": meta.get("target_interval_min"),
+                    "target_interval_max": meta.get("target_interval_max"),
+                    "status": meta.get("status"),
+                    "recent_contexts": meta.get("recent_contexts") or [],
+                }
+            )
+        return due_motifs
 
 
 def _is_empty_or_generic(instr: IndirectionInstruction) -> bool:
