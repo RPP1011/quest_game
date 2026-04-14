@@ -82,6 +82,9 @@ class NarrativeRecord(BaseModel):
     state_diff: dict[str, Any] = Field(default_factory=dict)
     player_action: str | None = None
     pipeline_trace_id: str | None = None
+    # Wave 4c: POV character for this update (best-effort; may be ``None``
+    # for legacy rows, flat-flow writes, or scenes without a POV).
+    pov_character_id: str | None = None
 
 
 class ForeshadowingHook(BaseModel):

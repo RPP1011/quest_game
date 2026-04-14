@@ -292,6 +292,7 @@ class Pipeline:
         retrieval_embedder: "Any | None" = None,
         passage_retriever: "Any | None" = None,
         quest_retriever: "Any | None" = None,
+        voice_retriever: "Any | None" = None,
     ) -> None:
         self._world = world
         self._cb = context_builder
@@ -359,6 +360,12 @@ class Pipeline:
         # ``quest_config["retrieval"]["enabled"]`` further gates it.
         self._quest_retriever: Any | None = quest_retriever
 
+        # Wave 4c: VoiceRetriever — per-POV-character voice continuity.
+        # Same default-off semantics: ``None`` disables entirely, and the
+        # ``retrieval.enabled`` flag further gates the call. No POV on the
+        # scene ⇒ no retrieval, matching the spec (see §3.6).
+        self._voice_retriever: Any | None = voice_retriever
+
     @property
     def is_hierarchical(self) -> bool:
         """True iff all four hierarchical planning layers are wired in."""
@@ -424,6 +431,7 @@ class Pipeline:
                 raw_text=prose,
                 player_action=player_action,
                 pipeline_trace_id=trace.trace_id,
+                pov_character_id=self._primary_pov_character_id(),
             ))
             trace.outcome = outcome
 
@@ -480,6 +488,7 @@ class Pipeline:
             raw_text=prose,
             player_action=player_action,
             pipeline_trace_id=trace.trace_id,
+            pov_character_id=self._primary_pov_character_id(),
         ))
         trace.outcome = outcome
 
@@ -1026,6 +1035,84 @@ class Pipeline:
             })
         return callbacks
 
+    def _primary_pov_character_id(self) -> str | None:
+        """Choose a representative POV character id for the whole update.
+
+        The ``narrative`` table stores one row per update; a multi-scene
+        update may span several POVs. We pick the first scene's POV as
+        the "primary" — it matches the beat of what a reader would
+        perceive as the chapter's anchor. Falls back to ``None`` when no
+        dramatic plan is stashed (flat flow) or no scene carries a POV.
+        """
+        dramatic = getattr(self, "_last_dramatic", None)
+        if dramatic is None:
+            return None
+        for ds in getattr(dramatic, "scenes", None) or []:
+            pov = getattr(ds, "pov_character_id", None)
+            if isinstance(pov, str) and pov:
+                return pov
+        return None
+
+    def _scene_pov_character_id(self, scene: "Any") -> str | None:
+        """Resolve the POV character id for ``scene`` from the stashed dramatic plan.
+
+        ``CraftScenePlan`` itself does not carry ``pov_character_id``; the
+        dramatic plan does, keyed by the same ``scene_id``. Returns
+        ``None`` when no match exists (flat flow, missing plan, or
+        unresolved POV).
+        """
+        dramatic = getattr(self, "_last_dramatic", None)
+        scene_id = getattr(scene, "scene_id", None)
+        if dramatic is None or scene_id is None:
+            return None
+        for ds in getattr(dramatic, "scenes", None) or []:
+            if getattr(ds, "scene_id", None) == scene_id:
+                pov = getattr(ds, "pov_character_id", None)
+                if isinstance(pov, str) and pov:
+                    return pov
+                return None
+        return None
+
+    async def _retrieve_voice_continuity(
+        self,
+        *,
+        scene: "Any",
+    ) -> list[dict]:
+        """Wave 4c: retrieve per-character past utterances for this scene.
+
+        Returns ``[]`` when retrieval is disabled, no retriever is wired,
+        no POV can be resolved, or the retriever yields no hits. In all
+        those cases the write-prompt template skips the voice-continuity
+        block — strict default-off behavior.
+        """
+        if self._voice_retriever is None or not self._retrieval_enabled:
+            return []
+
+        pov_id = self._scene_pov_character_id(scene)
+        if not pov_id:
+            return []
+
+        from app.retrieval.interface import Query
+
+        query = Query(filters={"character_id": pov_id, "last_n_records": 30})
+        try:
+            results = await self._voice_retriever.retrieve(query, k=3)
+        except Exception:
+            # Best-effort: retrieval failure must not break the write stage.
+            return []
+
+        out: list[dict] = []
+        for r in results:
+            meta = getattr(r, "metadata", None) or {}
+            out.append({
+                "source_id": getattr(r, "source_id", ""),
+                "text": getattr(r, "text", ""),
+                "character_id": meta.get("character_id", pov_id),
+                "source_update_number": meta.get("source_update_number"),
+                "seed": bool(meta.get("seed", False)),
+            })
+        return out
+
     def _persist_motif_occurrences(self, craft_plan: "Any", update_number: int) -> None:
         """Post-COMMIT: record each ``MotifInstruction`` on the craft plan as an
         observed ``MotifOccurrence`` row so recurrence tracking (Gap G5) has
@@ -1558,6 +1645,7 @@ class Pipeline:
                     "voice_samples": voice_samples or [],
                     "voice_anchors": [],
                     "quest_callbacks": [],
+                    "voice_continuity": [],
                     "recent_prose_tail": "",
                 },
             )
@@ -1636,6 +1724,10 @@ class Pipeline:
                 craft_plan=plan,
             )
 
+            # Wave 4c: retrieve per-POV-character past utterances for
+            # voice continuity. Same default-off semantics as above.
+            voice_continuity = await self._retrieve_voice_continuity(scene=scene)
+
             write_ctx = self._cb.build(
                 spec=WRITE_SPEC,
                 stage_name="write",
@@ -1646,6 +1738,7 @@ class Pipeline:
                     "voice_samples": effective_voice_samples,
                     "voice_anchors": voice_anchors,
                     "quest_callbacks": quest_callbacks,
+                    "voice_continuity": voice_continuity,
                     "recent_prose_tail": recent_prose_tail,
                     "anti_patterns": anti_patterns or [],
                     "plan": None,

@@ -12,6 +12,7 @@ from app.retrieval.interface import Query, QueryFilters, Result, Retriever
 from app.retrieval.passage_retriever import PassageRetriever
 from app.retrieval.quest_retriever import QuestRetriever
 from app.retrieval.scene_retriever import SceneShapeRetriever
+from app.retrieval.voice_retriever import VoiceRetriever
 
 __all__ = [
     "Query",
@@ -24,4 +25,5 @@ __all__ = [
     "CraftRetriever",
     "QuestRetriever",
     "SceneShapeRetriever",
+    "VoiceRetriever",
 ]

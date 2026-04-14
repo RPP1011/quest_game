@@ -27,6 +27,10 @@ Scene {{ scene.scene_id }}
 {% for vs in voice_samples %}> {{ vs | trim }}
 
 {% endfor %}
+{% endif %}{% if voice_continuity is defined and voice_continuity %}## CHARACTER VOICE — past utterances by this POV character
+{% for vc in voice_continuity %}- "{{ vc.text | trim }}"{% if vc.source_update_number is defined and vc.source_update_number is not none %} (update {{ vc.source_update_number }}){% elif vc.seed %} (seed){% endif %}
+{% endfor %}
+
 {% endif %}{% if recent_prose_tail is defined and recent_prose_tail %}## Rhythm Continuity (last ~300 chars of prior prose)
 {{ recent_prose_tail }}
 
