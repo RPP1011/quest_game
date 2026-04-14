@@ -51,6 +51,9 @@ SEED = {
         "attention_bias": ["hands", "doorways", "what people don't say"],
         "voice_samples": [
             "She set the cup down the way she did everything else — like the cup owed her rent.",
+            "He didn't speak. Didn't have to. The silence did the asking, and it was patient.",
+            "The room had four people in it when you walked in — the innkeeper behind the bar, two dock-hands at the corner table sharing a bowl of something that had stopped steaming an hour ago, and a woman in a grey coat who was trying not to be a fifth.",
+            "Rain. Just rain. The kind that soaks through before you notice it, and by the time you do, there's no point running.",
         ],
     },
 }
