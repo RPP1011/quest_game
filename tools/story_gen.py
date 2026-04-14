@@ -110,6 +110,34 @@ async def main():
     craft = CraftPlanner(client, renderer, craft_library)
     arc = ArcPlanner(client, renderer)
 
+    # Retrieval layer (Waves 1-4): wire up all retrievers + flip the flag.
+    import os
+    retrieval_on = os.environ.get("RETRIEVAL", "1") != "0"
+    passage_retriever = quest_retriever = scene_retriever = None
+    motif_retriever = foreshadow_retriever = voice_retriever = None
+    embedder = None
+    if retrieval_on:
+        from app.retrieval import (
+            Embedder, PassageRetriever, QuestRetriever, SceneShapeRetriever,
+            MotifRetriever, ForeshadowingRetriever, VoiceRetriever,
+        )
+        manifest = Path(__file__).parent.parent / "data" / "calibration" / "manifest.yaml"
+        passages = Path(__file__).parent.parent / "data" / "calibration" / "passages"
+        scenes_manifest = Path(__file__).parent.parent / "data" / "calibration" / "scenes_manifest.yaml"
+        scenes = Path(__file__).parent.parent / "data" / "calibration" / "scenes"
+        if manifest.is_file():
+            passage_retriever = PassageRetriever(manifest, Path("/tmp"), passages, enable_semantic=False)
+        if scenes_manifest.is_file():
+            try:
+                scene_retriever = SceneShapeRetriever(scenes_manifest, "/tmp/labels_claude_arc_*.json", scenes)
+            except Exception as e:
+                print(f"[scene retriever skipped: {e}]")
+        embedder = Embedder()
+        quest_retriever = QuestRetriever(sm, "demo", embedder=embedder)
+        motif_retriever = MotifRetriever(sm, "demo")
+        foreshadow_retriever = ForeshadowingRetriever(sm, "demo")
+        voice_retriever = VoiceRetriever(sm, "demo")
+
     pipeline = Pipeline(
         sm, cb, client,
         arc_planner=arc,
@@ -118,9 +146,17 @@ async def main():
         craft_planner=craft,
         craft_library=craft_library,
         structure=structure,
-        quest_config={"narrator": SEED["narrator"], "genre": "low-fantasy noir"},
+        quest_config={
+            "narrator": SEED["narrator"],
+            "genre": "low-fantasy noir",
+            "retrieval": {"enabled": retrieval_on},
+        },
         quest_id="demo",
         arc_id="main",
+        passage_retriever=passage_retriever,
+        quest_retriever=quest_retriever,
+        voice_retriever=voice_retriever,
+        retrieval_embedder=embedder,
     )
 
     update_number = 1
