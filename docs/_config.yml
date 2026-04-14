@@ -1,0 +1,36 @@
+title: Quest Engine
+description: >-
+  A hierarchical narrative-generation engine for text-based quest games,
+  running locally on a 1.2B open model. Engineering notes and honest numbers.
+url: "https://rpp1011.github.io"
+baseurl: "/quest_game"
+
+# Use the built-in Cayman theme — supported by GitHub's Pages builder and
+# gives us a clean single-column engineering-docs look without extra config.
+theme: jekyll-theme-cayman
+
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+# Keep stray files out of the build. Expose the retrieval spec (it's linked
+# from the report) but hide the plans folder — those are in-flight WIP notes.
+exclude:
+  - superpowers/plans/
+  - README.md
+  - Gemfile
+  - Gemfile.lock
+
+# Make the report the landing page. `docs/report/index.md` is the canonical
+# entry; `docs/index.md` is a small hub with links to secondary reading.
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "default"
+
+# Enable mermaid via a lightweight include on pages that need it. Jekyll's
+# default Cayman doesn't ship mermaid; we inject it in the report page itself
+# by checking a front-matter flag.
