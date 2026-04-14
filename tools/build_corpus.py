@@ -49,6 +49,33 @@ COPYRIGHTED_MANUAL = {
 log = logging.getLogger("build_corpus")
 
 
+def _write_manual_stub(work_id: str, work_meta: dict, raw_root: Path) -> None:
+    """Write a README stub into raw/<work_id>/ for copyrighted works."""
+    out_dir = raw_root / work_id
+    out_dir.mkdir(parents=True, exist_ok=True)
+    readme = out_dir / "README.txt"
+    if readme.exists():
+        return
+    title = work_meta.get("title", work_id)
+    author = work_meta.get("author", "")
+    readme.write_text(
+        f"{title}"
+        + (f" — {author}\n" if author else "\n")
+        + "\n"
+        "This work is copyrighted and cannot be fetched automatically.\n"
+        "\n"
+        f"To include it in the calibration corpus, place a plain-text copy\n"
+        f"of the full work at:\n"
+        f"    {out_dir / 'full.txt'}\n"
+        "\n"
+        "Then run:\n"
+        f"    uv run python -m tools.sample_passages {work_id}\n"
+        f"    uv run python -m app.calibration init \\\n"
+        f"        --passages-dir data/calibration/passages\n",
+        encoding="utf-8",
+    )
+
+
 FETCHERS = {
     "gutenberg": gutenberg.fetch,
     "sv_forum": sv_forum.fetch,
@@ -102,12 +129,10 @@ def run(
     errors = 0
     for wid in work_ids:
         if wid in COPYRIGHTED_MANUAL:
+            _write_manual_stub(wid, manifest_by_id.get(wid, {}), raw_root)
             log.warning(
-                "%s is copyrighted and cannot be fetched automatically; "
-                "place a plain-text copy at %s/%s/full.txt manually",
-                wid,
-                raw_root,
-                wid,
+                "%s is copyrighted; wrote README stub to %s/%s/ — supply full.txt manually",
+                wid, raw_root, wid,
             )
             continue
         if wid not in AUTOMATABLE:

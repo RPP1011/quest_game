@@ -11,6 +11,7 @@ dependencies = [
     "jinja2>=3.1",
     "typer>=0.12",
     "pyyaml>=6",
+    "beautifulsoup4>=4.12",
 ]
 
 [dependency-groups]

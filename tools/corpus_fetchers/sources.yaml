@@ -43,15 +43,9 @@ works:
     license: public_domain_us
 
   sun_also_rises:
-    # The Sun Also Rises (1926) entered US PD in 2022 but as of writing has
-    # no confirmed Gutenberg entry. Users should verify or supply manually.
     type: gutenberg
-    gutenberg_id: null  # UNVERIFIED
-    fallback:
-      type: standard_ebooks
-      slug: ernest-hemingway/the-sun-also-rises  # UNVERIFIED
+    gutenberg_id: 67138
     license: public_domain_us
-    skip_if_unavailable: true
 
   marked_for_death:
     type: sv_forum

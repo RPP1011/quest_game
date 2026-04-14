@@ -14,13 +14,13 @@ import argparse
 import datetime
 import json
 import logging
-import re
 import sys
 from pathlib import Path
 from typing import Optional
 from urllib.parse import urljoin
 
 import yaml
+from bs4 import BeautifulSoup
 
 from ._http import FetchError, get_text
 
@@ -30,31 +30,14 @@ SOURCES = Path(__file__).parent / "sources.yaml"
 
 log = logging.getLogger("corpus_fetchers.sv_forum")
 
-# Very lax: match href tokens that look like threadmark post links.
-POST_HREF_RE = re.compile(
-    r'href="(/threads/[^"#]+/threadmarks[^"]*)"|'
-    r'href="(/threads/[^"]+/post-\d+)"',
-    re.IGNORECASE,
-)
-POST_BODY_RE = re.compile(
-    r'<article[^>]*class="[^"]*message-body[^"]*"[^>]*>(.*?)</article>',
-    re.IGNORECASE | re.DOTALL,
-)
-TAG_RE = re.compile(r"<[^>]+>")
-
-
-def _strip_html(html: str) -> str:
-    # Decode a few common entities and strip tags.
-    html = html.replace("<br />", "\n").replace("<br>", "\n").replace("</p>", "\n\n")
-    text = TAG_RE.sub("", html)
-    text = (
-        text.replace("&nbsp;", " ")
-        .replace("&amp;", "&")
-        .replace("&quot;", '"')
-        .replace("&#39;", "'")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-    )
+def _strip_html(html_fragment: str) -> str:
+    """Extract text from an HTML fragment, preserving paragraph breaks."""
+    soup = BeautifulSoup(html_fragment, "html.parser")
+    for br in soup.find_all("br"):
+        br.replace_with("\n")
+    for p in soup.find_all(["p", "div"]):
+        p.append("\n\n")
+    text = soup.get_text()
     lines = [ln.rstrip() for ln in text.splitlines()]
     return "\n".join(ln for ln in lines if ln.strip()) + "\n"
 
@@ -65,14 +48,27 @@ def _threadmarks_url(thread_url: str) -> str:
 
 
 def _extract_post_links(html: str, base_url: str) -> list[str]:
+    """Return ordered, deduped URLs of threadmarked posts."""
+    soup = BeautifulSoup(html, "html.parser")
     seen: dict[str, None] = {}
-    for m in POST_HREF_RE.finditer(html):
-        path = m.group(1) or m.group(2)
-        if not path or "/threadmarks" in path:
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+        if "/threadmarks" in href:
             continue
-        url = urljoin(base_url, path)
+        if "/post-" not in href or "/threads/" not in href:
+            continue
+        url = urljoin(base_url, href.split("#")[0])
         seen.setdefault(url, None)
     return list(seen.keys())
+
+
+def _extract_post_body(page_html: str) -> str:
+    """Extract the first message-body article from an SV post page."""
+    soup = BeautifulSoup(page_html, "html.parser")
+    article = soup.find("article", class_=lambda c: c and "message-body" in c)
+    if article is None:
+        article = soup.find("div", class_=lambda c: c and "bbWrapper" in c)
+    return str(article) if article else page_html
 
 
 def fetch(
@@ -118,9 +114,7 @@ def fetch(
         page = http_get(url)
         if not page:
             continue
-        body_match = POST_BODY_RE.search(page)
-        body = body_match.group(1) if body_match else page
-        text = _strip_html(body)
+        text = _strip_html(_extract_post_body(page))
         fname = f"chap_{i:04d}.txt"
         (out_dir / fname).write_text(text, encoding="utf-8")
         chapters.append({"index": i, "source_url": url, "file": fname})
