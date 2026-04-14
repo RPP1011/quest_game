@@ -200,9 +200,14 @@ async def test_write_omits_voice_anchors_when_flag_off(tmp_path):
         conn.close()
 
 
-async def test_voice_anchor_query_carries_permeability_and_pov(tmp_path):
-    """Query filters include voice_distinctiveness + free_indirect_quality
-    (when permeability is set) and a POV filter."""
+async def test_voice_anchor_query_carries_permeability_and_score_ranges(tmp_path):
+    """Query filters include widened voice_distinctiveness + free_indirect_quality.
+
+    Day 12: POV is no longer a hard filter — the corpus manifest uses
+    richer POV tokens (``third_limited_fis`` etc.) than quest configs
+    ever supply, so exact-equality dropped every passage. We verify the
+    filter is absent and the score band is the widened ``(0.5, 1.0)``.
+    """
     world, conn = _make_world(tmp_path)
     try:
         retriever = FakePassageRetriever([
@@ -236,10 +241,11 @@ async def test_voice_anchor_query_carries_permeability_and_pov(tmp_path):
 
         assert len(retriever.queries) == 1
         q = retriever.queries[0]
-        assert q.filters.get("pov") is not None
+        # POV filter is intentionally absent post-Day-12.
+        assert q.filters.get("pov") is None
         ranges = q.filters.get("score_ranges") or {}
         assert "voice_distinctiveness" in ranges
-        assert ranges["voice_distinctiveness"] == (0.7, 1.0)
+        assert ranges["voice_distinctiveness"] == (0.5, 1.0)
         # Permeability target = 0.5 → free_indirect_quality = (0.3, 0.7).
         fiq = ranges.get("free_indirect_quality")
         assert fiq is not None

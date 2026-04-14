@@ -219,7 +219,35 @@ class DramaticPlanner:
                 scene.scene_id = i
             for sel in plan.tools_selected:
                 sel.scene_id = old_to_new.get(sel.scene_id, sel.scene_id)
+
+            # Day 12: the VoiceRetriever only fires when a scene has
+            # ``pov_character_id`` set, but the 1.2B model frequently
+            # leaves it ``None``. Post-parse, default any unset POV to
+            # the quest's primary character (first CHARACTER entity by
+            # id order; this is stable and deterministic). Prompt-based
+            # asks are less reliable than this deterministic fill.
+            default_pov = self._default_pov_character_id(characters)
+            if default_pov is not None:
+                for scene in plan.scenes:
+                    if not scene.pov_character_id:
+                        scene.pov_character_id = default_pov
         return plan
+
+    @staticmethod
+    def _default_pov_character_id(characters: list) -> str | None:
+        """Pick a deterministic fallback POV when the planner omits one.
+
+        Walks the entity list and returns the first entity whose
+        ``entity_type`` is a CHARACTER. Falls back to ``None`` when the
+        world has no character entities yet (earliest seed state).
+        """
+        from app.world.schema import EntityType
+        for entity in characters:
+            etype = getattr(entity, "entity_type", None)
+            # Tolerate enum or string values.
+            if etype == EntityType.CHARACTER or etype == "character":
+                return entity.id
+        return None
 
     # -- Helpers --------------------------------------------------------
 

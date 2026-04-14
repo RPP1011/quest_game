@@ -27,7 +27,9 @@
 {% endfor %}
 
 Return a JSON object with these fields:
-- entity_updates: list of {id, patch: {status?, last_referenced_update?, data?}}
+- entity_updates: list of {id, patch: {status?, last_referenced_update?, data?}}.
+  Valid `status` values for entity_updates: `active, dormant, deceased, destroyed`.
+  Any other value will be discarded.
 - new_relationships: list of {source_id, target_id, rel_type, data?}
 - removed_relationships: list of {source_id, target_id, rel_type}
 - timeline_events: list of {description, involved_entities: [string]}

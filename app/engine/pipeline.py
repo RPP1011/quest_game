@@ -939,44 +939,39 @@ class Pipeline:
         and ``source_id`` for provenance.
 
         The query is built from:
-          * ``filters["pov"]`` — derived from ``scene.pov`` if present, else
-            the configured ``narrator.pov_type``; defaults to ``"second"``
-            for quests and ``"third_limited"`` otherwise.
-          * ``filters["score_ranges"]`` — always includes a strong
-            ``voice_distinctiveness`` band and, when craft permeability
-            targets exist, a permeability-derived ``free_indirect_quality``
-            range.
+          * ``filters["score_ranges"]`` — a widened ``voice_distinctiveness``
+            band and, when craft permeability targets exist, a permeability-
+            derived ``free_indirect_quality`` range.
           * ``seed_text`` — the scene brief truncated to 600 chars, with
             the target emotion appended when available (harmless in
             metadata-only mode; useful for Wave 2a semantic rerank).
+
+        Day 12: the POV filter was exact-equality on the corpus ``pov``
+        field, but the manifest spells POV as ``third_limited_fis``,
+        ``third_limited_multi``, ``first_mixed`` etc. while quest configs
+        use the plain ``third_limited`` / ``second`` tokens, so the
+        filter dropped nearly every passage. Day 10/11 stress tests
+        reported 0 hits across 50 updates as a direct consequence. We
+        now omit the POV filter entirely and lean on seed-text semantic
+        relevance + ``voice_distinctiveness`` score proximity. POV is
+        still surfaced on each returned anchor via ``metadata.pov`` so
+        the WRITE stage can steer register if it wants to.
         """
         if self._passage_retriever is None or not self._retrieval_enabled:
             return []
 
         from app.retrieval.interface import Query
 
-        # ---- Resolve POV filter ----
-        scene_pov = getattr(scene, "pov", None)
-        if scene_pov:
-            pov_filter = scene_pov
-        elif self._narrator is not None and getattr(self._narrator, "pov_type", None):
-            pov_filter = self._narrator.pov_type
-        else:
-            # Quests default to second person; novels to third_limited.
-            is_quest_mode = False
-            cfg = self._quest_config or {}
-            # Treat any config that names a narrator with a non-default
-            # pov_type as "novel-ish"; everything else → quest default.
-            narrator_cfg = cfg.get("narrator") or {}
-            if narrator_cfg.get("pov_type"):
-                pov_filter = narrator_cfg["pov_type"]
-            else:
-                is_quest_mode = True
-                pov_filter = "second" if is_quest_mode else "third_limited"
-
         # ---- Build score range filters ----
+        # Day 12: widen ``voice_distinctiveness`` from (0.7, 1.0) to
+        # (0.5, 1.0). With the POV filter dropped, the score band is
+        # the dominant filter, and the prior range rejected 39/195
+        # corpus passages on a dim whose label distribution is long-
+        # tailed. (0.5, 1.0) keeps the strong-voice bias while leaving
+        # headroom for passages whose actual score dipped just below
+        # the work-level expected.
         score_ranges: dict[str, tuple[float, float]] = {
-            "voice_distinctiveness": (0.7, 1.0),
+            "voice_distinctiveness": (0.5, 1.0),
         }
         vp = getattr(scene, "voice_permeability", None)
         if vp is not None:
@@ -1001,10 +996,7 @@ class Pipeline:
 
         query = Query(
             seed_text=seed_text,
-            filters={
-                "pov": pov_filter,
-                "score_ranges": score_ranges,
-            },
+            filters={"score_ranges": score_ranges},
         )
 
         try:
