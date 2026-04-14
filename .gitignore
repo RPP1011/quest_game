@@ -23,3 +23,5 @@ data/calibration/lora_adapter/
 data/calibration/lora_pairwise/
 # SFT collection: per-scene craft-brief + candidates + scores, local only
 data/sft/
+# Day 10 50-chapter stress test: per-update metrics, local only
+data/stress/
