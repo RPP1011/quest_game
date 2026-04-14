@@ -48,7 +48,8 @@ CREATE TABLE IF NOT EXISTS narrative (
     chapter_id INTEGER,
     state_diff TEXT NOT NULL DEFAULT '{}',
     player_action TEXT,
-    pipeline_trace_id TEXT
+    pipeline_trace_id TEXT,
+    pov_character_id TEXT
 );
 
 CREATE TABLE IF NOT EXISTS foreshadowing (
@@ -188,5 +189,25 @@ def open_db(path: str | Path) -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     conn.executescript(SCHEMA_SQL)
+    _apply_additive_migrations(conn)
     conn.commit()
     return conn
+
+
+def _apply_additive_migrations(conn: sqlite3.Connection) -> None:
+    """Idempotent additive migrations for columns added after initial release.
+
+    SQLite's ``CREATE TABLE IF NOT EXISTS`` does not add new columns to an
+    existing table, so we probe via ``PRAGMA table_info`` and issue
+    ``ALTER TABLE ADD COLUMN`` for any missing optional columns. All
+    migrations are append-only and nullable — existing rows remain valid.
+    """
+    _ensure_column(conn, "narrative", "pov_character_id", "TEXT")
+
+
+def _ensure_column(
+    conn: sqlite3.Connection, table: str, column: str, coltype: str,
+) -> None:
+    cols = {row["name"] for row in conn.execute(f"PRAGMA table_info({table})")}
+    if column not in cols:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {coltype}")

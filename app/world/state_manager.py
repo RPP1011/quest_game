@@ -81,6 +81,12 @@ def _row_to_entity(row: sqlite3.Row) -> Entity:
 
 
 def _row_to_narrative(row: sqlite3.Row) -> NarrativeRecord:
+    # ``pov_character_id`` was added in Wave 4c. Legacy rows (and rows
+    # written before the additive migration ran) surface as ``None``.
+    try:
+        pov_character_id = row["pov_character_id"]
+    except (IndexError, KeyError):
+        pov_character_id = None
     return NarrativeRecord(
         update_number=row["update_number"],
         raw_text=row["raw_text"],
@@ -89,6 +95,7 @@ def _row_to_narrative(row: sqlite3.Row) -> NarrativeRecord:
         state_diff=json.loads(row["state_diff"]),
         player_action=row["player_action"],
         pipeline_trace_id=row["pipeline_trace_id"],
+        pov_character_id=pov_character_id,
     )
 
 
@@ -331,10 +338,11 @@ class WorldStateManager:
     def write_narrative(self, record: NarrativeRecord) -> None:
         self._conn.execute(
             "INSERT OR REPLACE INTO narrative"
-            "(update_number, raw_text, summary, chapter_id, state_diff, player_action, pipeline_trace_id) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "(update_number, raw_text, summary, chapter_id, state_diff, player_action, pipeline_trace_id, pov_character_id) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (record.update_number, record.raw_text, record.summary, record.chapter_id,
-             json.dumps(record.state_diff), record.player_action, record.pipeline_trace_id),
+             json.dumps(record.state_diff), record.player_action, record.pipeline_trace_id,
+             record.pov_character_id),
         )
         self._conn.commit()
 
