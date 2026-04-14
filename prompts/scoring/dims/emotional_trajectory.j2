@@ -1,0 +1,24 @@
+emotional_trajectory: Does the PASSAGE move through a legible emotional
+shape, or sit on one note? Judge change within the passage — entry,
+middle, exit — not the intensity of any single feeling.
+
+Anchored scale (use intermediate values between anchors as needed):
+
+0.0 = flat affect throughout. One uniform register (neutral, flat dread,
+      steady calm) from first line to last; no shift registered.
+0.3 = single emotional note held. A clear feeling is present but the
+      passage stays inside it; no pivot, no turn, no gradation.
+0.6 = scene moves between two emotional registers with a clear pivot.
+      Entry tone differs from exit tone, and there is a locatable beat
+      (a line, a gesture, a silence) where the shift happens.
+0.9 = emotional arc lands — entry/peak/exit emotions are distinct and
+      motivated. The middle is not just "in between"; it earns the turn.
+      A reader could name three different states and point to what
+      caused each transition.
+
+Do NOT reward mere intensity. A passage can be quietly melancholic and
+still land a 0.9 if it moves. A passage can be high-stakes panic and
+still score 0.3 if nothing changes about the panic.
+
+Return a single score in [0.0, 1.0] and one sentence of rationale naming
+entry state, pivot, and exit state (or noting which is missing).

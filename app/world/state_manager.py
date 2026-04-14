@@ -1321,6 +1321,47 @@ class WorldStateManager:
             )
         return scorecard_id
 
+    def append_dimension_scores(
+        self,
+        scorecard_id: int,
+        dims: "dict[str, float]",
+    ) -> int:
+        """Append extra ``dimension_scores`` rows onto an existing scorecard.
+
+        Day 6 uses this to land the three LLM-judge dim scores onto the
+        scorecard header row written at commit time. ``INSERT OR REPLACE``
+        semantics are used so a retry/rerun overwrites a prior value for
+        the same ``(scorecard_id, dimension)`` rather than raising on the
+        primary-key conflict. Returns the number of rows written.
+        """
+        rows = [
+            (int(scorecard_id), str(name), float(score))
+            for name, score in dims.items()
+        ]
+        if not rows:
+            return 0
+        with self._conn:
+            self._conn.executemany(
+                "INSERT OR REPLACE INTO dimension_scores"
+                "(scorecard_id, dimension, score) VALUES (?, ?, ?)",
+                rows,
+            )
+        return len(rows)
+
+    def list_dimension_scores(
+        self, scorecard_id: int,
+    ) -> "dict[str, float]":
+        """Return the full ``dimension -> score`` map for one scorecard.
+
+        Used by the dashboard and by Day 6 pipeline tests that need to
+        verify the async LLM-judge rows landed under the same header.
+        """
+        rows = self._conn.execute(
+            "SELECT dimension, score FROM dimension_scores WHERE scorecard_id=?",
+            (int(scorecard_id),),
+        ).fetchall()
+        return {r["dimension"]: float(r["score"]) for r in rows}
+
     def list_scorecards(
         self, quest_id: str, limit: int | None = None,
     ) -> "list[Any]":

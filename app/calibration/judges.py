@@ -15,12 +15,17 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 
 # Dimensions present for every passage (novel + quest).
+# NOTE: ``emotional_trajectory`` (Day 6) has no direct Claude label in the
+# manifest — it's a derived signal cross-checked against ``emotional_arc``
+# on scene-scale labels. It rides along in the batched call and gets used
+# by ``Scorer.score_with_llm_judges`` as one of the three Day 6 dims.
 COMMON_LLM_DIMS: tuple[str, ...] = (
     "free_indirect_quality",
     "interiority_depth",
     "detail_characterization",
     "voice_distinctiveness",
     "tension_execution",
+    "emotional_trajectory",
     "thematic_presence",
     "subtext_presence",
     "clarity",

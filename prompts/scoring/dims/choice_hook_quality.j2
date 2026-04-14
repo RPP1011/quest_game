@@ -1,4 +1,24 @@
-choice_hook_quality (quest-only): Does the passage end on a decision point
-that is specific, meaningful, and actionable for voting readers? 0 = no
-hook or trivial hook. 0.5 = hook present but vague. 1.0 = sharp, stakes-
-laden, readers know what they're choosing between.
+choice_hook_quality (quest-only): Does the PASSAGE end on decision
+tension? Judge the ending — roughly the final paragraph or gesture —
+against what a voting reader would actually face.
+
+Anchored scale (use intermediate values between anchors as needed):
+
+0.0 = scene resolves; no decision tension. The ending closes a loop
+      rather than opening one. Nothing is pending.
+0.3 = scene ends but next-step is obvious. There is an implicit "what
+      happens next" but only one reasonable answer — no real choice.
+0.6 = decision tension exists but choices are cosmetic. Two or more
+      options are visible but they differ only in flavor or phrasing;
+      the downstream state is roughly the same whichever is picked.
+0.9 = scene ends on a moment where any reasonable next-action carries
+      real cost. Options diverge in consequence, not just tone. A voter
+      can name what is being traded against what, and there is no
+      dominant safe choice.
+
+Ignore whether explicit "suggested choices" are listed; judge the hook
+the prose itself creates. A passage with no listed options can still
+score 0.9 if the final beat forces a decision.
+
+Return a single score in [0.0, 1.0] and one sentence of rationale naming
+the pending decision (or noting its absence) and what is at stake.
