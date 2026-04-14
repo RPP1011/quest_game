@@ -1215,6 +1215,63 @@ class WorldStateManager:
         ).fetchall()
         return [_row_to_info_state(r) for r in rows]
 
+    # ---- narrative embeddings (retrieval layer, Wave 1c) ----
+
+    def upsert_narrative_embedding(
+        self,
+        quest_id: str,
+        update_number: int,
+        scene_index: int,
+        embedding: "Any",
+        text_preview: str,
+    ) -> None:
+        """Persist (or replace) a narrative embedding row.
+
+        Embedding is stored as raw float32 bytes; reconstruct via
+        ``np.frombuffer(..., dtype=np.float32)``.
+        """
+        import numpy as np  # local import to keep import graph lean
+        arr = np.asarray(embedding, dtype=np.float32)
+        blob = arr.tobytes()
+        self._conn.execute(
+            "INSERT INTO narrative_embeddings"
+            "(quest_id, update_number, scene_index, embedding, text_preview) "
+            "VALUES (?, ?, ?, ?, ?) "
+            "ON CONFLICT(quest_id, update_number, scene_index) DO UPDATE SET "
+            "embedding=excluded.embedding, text_preview=excluded.text_preview",
+            (quest_id, update_number, scene_index, blob, text_preview),
+        )
+        self._conn.commit()
+
+    def list_narrative_embeddings(
+        self, quest_id: str, limit: int | None = None,
+    ) -> list[dict]:
+        """Return embedding rows for ``quest_id`` newest-first.
+
+        Each dict has ``update_number``, ``scene_index``,
+        ``embedding`` (``np.ndarray`` of float32), and ``text_preview``.
+        """
+        import numpy as np
+        sql = (
+            "SELECT update_number, scene_index, embedding, text_preview "
+            "FROM narrative_embeddings WHERE quest_id=? "
+            "ORDER BY update_number DESC, scene_index DESC"
+        )
+        params: tuple[Any, ...] = (quest_id,)
+        if limit is not None:
+            sql += " LIMIT ?"
+            params = (quest_id, int(limit))
+        rows = self._conn.execute(sql, params).fetchall()
+        return [
+            {
+                "update_number": r["update_number"],
+                "scene_index": r["scene_index"],
+                "embedding": np.frombuffer(r["embedding"], dtype=np.float32),
+                "text_preview": r["text_preview"],
+            }
+            for r in rows
+        ]
+
     def snapshot(self) -> WorldSnapshot:
         return WorldSnapshot(
             entities=self.list_entities(),
