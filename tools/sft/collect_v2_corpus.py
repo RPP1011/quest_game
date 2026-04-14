@@ -68,6 +68,7 @@ NOIR_SEED: dict = {
          "stance": "exploring"},
     ],
     "narrator": {
+        "pov_character_id": "player",
         "pov_type": "third_limited",
         "worldview": "a weathered observer; notices hands and silences",
         "editorial_stance": "sympathetic but unsentimental",
@@ -77,6 +78,9 @@ NOIR_SEED: dict = {
         "attention_bias": ["hands", "doorways", "what people don't say"],
         "voice_samples": [
             "She set the cup down the way she did everything else — like the cup owed her rent.",
+            "He didn't speak. Didn't have to. The silence did the asking, and it was patient.",
+            "The room had four people in it when you walked in — the innkeeper behind the bar, two dock-hands at the corner table sharing a bowl of something that had stopped steaming an hour ago, and a woman in a grey coat who was trying not to be a fifth.",
+            "Rain. Just rain. The kind that soaks through before you notice it, and by the time you do, there's no point running.",
         ],
     },
 }
@@ -131,6 +135,7 @@ INTRIGUE_SEED: dict = {
          "stance": "exploring"},
     ],
     "narrator": {
+        "pov_character_id": "player",
         "pov_type": "third_limited",
         "worldview": "an eye for power currents and unsaid promises",
         "editorial_stance": "sardonic, politically literate, amused by rituals",
@@ -142,6 +147,8 @@ INTRIGUE_SEED: dict = {
         "voice_samples": [
             "The regent spoke of tradition the way a gambler speaks of luck — constantly, and only after winning.",
             "Ceriel's silences were the kind you had to pay for; his words were cheaper.",
+            "Oren bowed. He didn't mean it. Everyone in the room knew he didn't mean it, and that was the point.",
+            "The antechamber was built for three conversations to happen in it at once — one out loud for the regent, one at the window between two dukes, and a third in the corner of the room where the envoy and the spymaster would not appear to have met, though of course they had.",
         ],
     },
 }
@@ -200,6 +207,7 @@ HEIST_SEED: dict = {
          "stance": "exploring"},
     ],
     "narrator": {
+        "pov_character_id": "player",
         "pov_type": "third_limited",
         "worldview": "dry, amused, notices technical details and interpersonal currents",
         "editorial_stance": "fond of the crew, skeptical of the plan",
@@ -211,6 +219,8 @@ HEIST_SEED: dict = {
         "voice_samples": [
             "Sata's toolbelt clicked when she walked — a six-note chord Quill had learned to read the way other people read a face.",
             "Nevis smiled the way a lock smiles: nothing in it, but a clear way in if you knew the combination.",
+            "Bren was late. Bren was always late. The only surprising thing was that the rest of them had stopped flinching about it.",
+            "The vault's interior was a cathedral of teeth — interlocking brass plates in four rings that turned against each other like the gears of an impossible clock, each ring carrying the signature of a different lockmaker, each one dead for over a century.",
         ],
     },
 }
