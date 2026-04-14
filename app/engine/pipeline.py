@@ -418,6 +418,16 @@ class Pipeline:
         scoring_cfg = (self._quest_config or {}).get("scoring") or {}
         self._scoring_enabled: bool = bool(scoring_cfg.get("enabled", False))
 
+        # Day 4: SFT collection. Default-off via
+        # ``quest_config["sft_collection"]["enabled"]``. When enabled AND
+        # ``n_candidates > 1`` AND we have a ``quest_id``, dump per-scene
+        # {craft brief, all candidates, scorer breakdowns, winner index} to
+        # ``data/sft/<quest_id>/u<update>_s<scene>_<trace_id>.json``.
+        # ``sft_collection["dir"]`` may override the output root (tests).
+        sft_cfg = (self._quest_config or {}).get("sft_collection") or {}
+        self._sft_enabled: bool = bool(sft_cfg.get("enabled", False))
+        self._sft_dir: str = str(sft_cfg.get("dir", "data/sft"))
+
     @property
     def is_hierarchical(self) -> bool:
         """True iff all four hierarchical planning layers are wired in."""
@@ -441,6 +451,7 @@ class Pipeline:
             prose = await self._run_write(
                 trace, craft_plan, voice_samples=narrator_voice,
                 player_action=player_action,
+                update_number=update_number,
             )
             # Wood-gap critics on combined prose
             await self._run_craft_critics(trace, craft_plan, prose)
@@ -455,7 +466,10 @@ class Pipeline:
             critical_feedback: list[CheckIssue] = []
 
             plan_parsed = await self._run_plan(trace, player_action, critical_feedback)
-            prose = await self._run_write(trace, plan_parsed, player_action=player_action)
+            prose = await self._run_write(
+                trace, plan_parsed, player_action=player_action,
+                update_number=update_number,
+            )
             check_out = await self._run_check(trace, plan_parsed, prose)
 
             # REPLAN branch: critical issues, replan once.
@@ -463,7 +477,10 @@ class Pipeline:
                 replan_attempts += 1
                 critical_feedback = list(check_out.issues)
                 plan_parsed = await self._run_plan(trace, player_action, critical_feedback)
-                prose = await self._run_write(trace, plan_parsed, player_action=player_action)
+                prose = await self._run_write(
+                    trace, plan_parsed, player_action=player_action,
+                    update_number=update_number,
+                )
                 check_out = await self._run_check(trace, plan_parsed, prose)
 
             # REVISE branch: fixable issues, revise + recheck once.
@@ -1718,6 +1735,8 @@ class Pipeline:
         scene_id: int | None,
         craft_plan: "Any | None",
         player_action: str | None,
+        update_number: int | None = None,
+        brief_text: str | None = None,
     ) -> "tuple[str, list[dict]]":
         """Generate N candidate prose blocks for one scene, score each,
         return (winner_prose, records). Each record is a dict suitable for
@@ -1847,7 +1866,107 @@ class Pipeline:
             parsed_output=winner["prose"],
             detail=rerank_detail,
         ))
+
+        # Day 4: SFT collection. Persist (craft brief, all N candidates, per-
+        # dim scorer breakdowns, winner index) so we can later mint SFT pairs
+        # for the writer LoRA. Gated on the flag AND a quest_id — this is a
+        # training-only artifact, separate from the existing trace JSON.
+        if (
+            self._sft_enabled
+            and self._quest_id is not None
+            and n > 1
+        ):
+            try:
+                self._persist_sft_record(
+                    trace=trace,
+                    records=records,
+                    winner_index=winner["index"],
+                    scene_id=scene_id,
+                    update_number=update_number,
+                    brief_text=brief_text,
+                    rerank_source=("scorer" if use_scorer else "legacy"),
+                )
+            except Exception as e:  # pragma: no cover - defensive
+                trace.add_stage(StageResult(
+                    stage_name="sft_collection",
+                    input_prompt="", raw_output="",
+                    errors=[StageError(
+                        kind="sft_collection_crash",
+                        message=str(e)[:300],
+                    )],
+                ))
+
         return winner["prose"], records
+
+    def _persist_sft_record(
+        self,
+        *,
+        trace: PipelineTrace,
+        records: list[dict],
+        winner_index: int,
+        scene_id: int | None,
+        update_number: int | None,
+        brief_text: str | None,
+        rerank_source: str,
+    ) -> None:
+        """Write the Day-4 SFT record for this scene to ``data/sft/<quest_id>/``.
+
+        Output path: ``<sft_dir>/<quest_id>/u<update>_s<scene>_<trace_id>.json``.
+        Each record contains ``craft_brief``, all N ``candidates`` (index, prose,
+        weighted_score, overall_score, dimension_scores), ``winner_index``, and
+        pointers (``quest_id``, ``update_number``, ``scene_index``,
+        ``pipeline_trace_id``) so downstream tools can link back to traces.
+        The record is intentionally focused — we do NOT re-embed the trace
+        JSON, which is too big / noisy for training.
+        """
+        import os as _os
+        from pathlib import Path as _Path
+
+        quest_id = self._quest_id or "__ephemeral__"
+        update_num = int(update_number) if update_number is not None else 0
+        scene_num = int(scene_id) if scene_id is not None else 0
+
+        out_dir = _Path(self._sft_dir) / quest_id
+        out_dir.mkdir(parents=True, exist_ok=True)
+        fname = f"u{update_num}_s{scene_num}_{trace.trace_id}.json"
+        out_path = out_dir / fname
+
+        payload: dict[str, Any] = {
+            "quest_id": quest_id,
+            "update_number": update_num,
+            "scene_index": scene_num,
+            "pipeline_trace_id": trace.trace_id,
+            "rerank_source": rerank_source,
+            "winner_index": winner_index,
+            "craft_brief": brief_text,
+            "candidates": [
+                {
+                    "index": r["index"],
+                    "prose": r["prose"],
+                    "weighted_score": r["score"],
+                    "overall_score": r["overall_score"],
+                    "dimension_scores": r["breakdown"],
+                    "rerank_source": r["rerank_source"],
+                }
+                for r in records
+            ],
+        }
+
+        tmp_path = out_path.with_suffix(".json.tmp")
+        tmp_path.write_text(json.dumps(payload, indent=2, default=str))
+        _os.replace(tmp_path, out_path)
+
+        trace.add_stage(StageResult(
+            stage_name="sft_collection",
+            input_prompt="", raw_output="",
+            detail={
+                "path": str(out_path),
+                "n_candidates": len(records),
+                "winner_index": winner_index,
+                "scene_index": scene_num,
+                "update_number": update_num,
+            },
+        ))
 
     async def _run_write(
         self,
@@ -1857,6 +1976,7 @@ class Pipeline:
         voice_samples: list[str] | None = None,
         anti_patterns: list[str] | None = None,
         player_action: str | None = None,
+        update_number: int | None = None,
     ) -> str:
         """Write prose.
 
@@ -1917,6 +2037,8 @@ class Pipeline:
                 scene_id=None,
                 craft_plan=None,
                 player_action=player_action,
+                update_number=update_number,
+                brief_text=None,
             )
             return prose
 
@@ -2017,6 +2139,8 @@ class Pipeline:
                     scene_id=scene.scene_id,
                     craft_plan=plan,
                     player_action=player_action,
+                    update_number=update_number,
+                    brief_text=brief_text,
                 )
             prose_parts.append(scene_prose)
 
