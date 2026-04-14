@@ -280,4 +280,19 @@ When a motif appears in a scene, emit a ``motif_instruction`` on that scene with
 ---
 {% endif %}
 
+{% if ripe_hooks %}
+
+## Foreshadowing eligible for payoff
+
+Planted hooks whose payoff window is now open. Weave the payoff into
+the prose for any scene whose dramatic beat honours one of these — the
+narration should surface the echo without naming the hook.
+
+{% for h in ripe_hooks %}
+- {{ h.description }} (planted update {{ h.planted_at_update }}, target {{ h.target_update_min }}-{{ h.target_update_max }}, status: {{ h.status }}, payoff: {{ h.payoff_description }})
+{% endfor %}
+
+---
+{% endif %}
+
 Produce the craft plan now. For each dramatic scene, emit one CraftScenePlan entry in `scenes` and one CraftBrief entry in `briefs`. The brief must be 100-300 words of prose that reads like a director's note — weave register, voice, emotional arc, and motif into a unified vision. Do not list parameters in the brief.

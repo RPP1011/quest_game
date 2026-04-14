@@ -33,6 +33,10 @@ from app.planning.voice import (
     character_voice_for,
     default_permeability,
 )
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.retrieval.foreshadowing_retriever import ForeshadowingRetriever
 from app.runtime.client import ChatMessage, InferenceClient
 from app.world.output_parser import OutputParser
 from app.world.schema import Entity, Parallel
@@ -82,6 +86,8 @@ class CraftPlanner:
         characters: dict[str, Entity] | None = None,
         active_motifs: list[dict] | None = None,
         world: WorldStateManager | None = None,
+        foreshadowing_retriever: "ForeshadowingRetriever | None" = None,
+        update_number: int | None = None,
     ) -> CraftPlan:
         """Generate a ``CraftPlan`` translating drama + emotion into a prose blueprint.
 
@@ -199,6 +205,15 @@ class CraftPlanner:
                 if ms:
                     motives_by_scene[scene.scene_id] = ms
 
+        # Wave 4b: optional ripe-foreshadowing retrieval for the craft
+        # layer. When a retriever + update_number are wired in, fetch
+        # up to k=3 hooks the prose could weave a payoff for.
+        ripe_hooks: list[dict] = []
+        if foreshadowing_retriever is not None and update_number is not None:
+            ripe_hooks = await self._retrieve_ripe_hooks(
+                foreshadowing_retriever, update_number
+            )
+
         schema = CraftPlan.model_json_schema()
 
         system_prompt = self._renderer.render(
@@ -224,6 +239,7 @@ class CraftPlanner:
                 "scene_detail_defaults": scene_detail_defaults,
                 "scene_metaphor_defaults": scene_metaphor_defaults,
                 "motives_by_scene": motives_by_scene,
+                "ripe_hooks": ripe_hooks,
             },
         )
 
@@ -310,6 +326,48 @@ class CraftPlanner:
                 _backfill_indirection(scene, pov, primary)
 
         return plan
+
+    # -- Helpers --------------------------------------------------------
+
+    async def _retrieve_ripe_hooks(
+        self,
+        foreshadowing_retriever: "ForeshadowingRetriever",
+        update_number: int,
+    ) -> list[dict]:
+        """Pull up to k=3 ripe foreshadowing hooks for the current update.
+
+        Retrieval failures are swallowed — the planner runs without
+        ``ripe_hooks`` rather than crashing on an advisory signal.
+        """
+        # Lazy import: ``app.retrieval.foreshadowing_retriever`` imports
+        # ``app.world.schema`` whose package ``__init__`` pulls seed.py,
+        # which re-enters ``app.planning``. Importing at call time
+        # breaks that cycle.
+        from app.retrieval.interface import Query
+
+        query = Query(filters={"current_update": int(update_number)})
+        try:
+            results = await foreshadowing_retriever.retrieve(query, k=3)
+        except Exception:
+            return []
+
+        hooks: list[dict] = []
+        for r in results:
+            meta = r.metadata or {}
+            hooks.append(
+                {
+                    "source_id": r.source_id,
+                    "description": r.text,
+                    "hook_id": meta.get("hook_id"),
+                    "status": meta.get("status"),
+                    "planted_at_update": meta.get("planted_at_update"),
+                    "target_update_min": meta.get("target_update_min"),
+                    "target_update_max": meta.get("target_update_max"),
+                    "payoff_description": meta.get("payoff_description"),
+                    "ripeness_status": meta.get("ripeness_status"),
+                }
+            )
+        return hooks
 
 
 def _is_empty_or_generic(instr: IndirectionInstruction) -> bool:
