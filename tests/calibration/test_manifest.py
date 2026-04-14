@@ -36,7 +36,9 @@ def test_every_work_has_passage_slots():
     for w in m.works:
         assert 2 <= len(w.passages) <= 3, f"{w.id} has {len(w.passages)} passages"
         for p in w.passages:
-            assert p.sha256 == "PENDING"
+            assert p.sha256 == "PENDING" or (
+                len(p.sha256) == 64 and all(c in "0123456789abcdef" for c in p.sha256)
+            ), f"{w.id}/{p.id} has invalid sha256: {p.sha256!r}"
             assert p.expected_high
             assert p.expected_low
 
