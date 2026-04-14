@@ -72,3 +72,15 @@ works:
     # Verified: palelights.com (custom domain, not wordpress.com subdomain).
     toc_url: https://palelights.com/table-of-contents/
     license: author_public_web
+
+  my_man_jeeves:
+    type: gutenberg
+    gutenberg_id: 8164
+    license: public_domain_us
+    note: P. G. Wodehouse, comic short-story collection
+
+  three_men_in_a_boat:
+    type: gutenberg
+    gutenberg_id: 308
+    license: public_domain_us
+    note: Jerome K. Jerome, mock-heroic comic travelogue

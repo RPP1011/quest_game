@@ -12,17 +12,22 @@ EXPECTED_WORK_IDS = {
     "blade_itself", "way_of_kings",
     "marked_for_death", "forge_of_destiny", "practical_guide_evil",
     "pale_lights",
+    "my_man_jeeves", "three_men_in_a_boat",
 }
 
 QUEST_WORKS = {"marked_for_death", "forge_of_destiny",
                "practical_guide_evil", "pale_lights"}
+
+# Works added with the expanded 10-slot passage layout. All earlier works
+# use the original 2-3 slot layout.
+LARGE_SLOT_WORKS = {"my_man_jeeves", "three_men_in_a_boat"}
 
 
 def test_manifest_loads_all_sixteen_works():
     m = load_manifest(MANIFEST)
     ids = {w.id for w in m.works}
     assert ids == EXPECTED_WORK_IDS
-    assert len(m.works) == 16
+    assert len(m.works) == len(EXPECTED_WORK_IDS)
 
 
 def test_quest_flag_set_correctly():
@@ -34,7 +39,10 @@ def test_quest_flag_set_correctly():
 def test_every_work_has_passage_slots():
     m = load_manifest(MANIFEST)
     for w in m.works:
-        assert 2 <= len(w.passages) <= 3, f"{w.id} has {len(w.passages)} passages"
+        if w.id in LARGE_SLOT_WORKS:
+            assert len(w.passages) == 10, f"{w.id} has {len(w.passages)} passages"
+        else:
+            assert 2 <= len(w.passages) <= 3, f"{w.id} has {len(w.passages)} passages"
         for p in w.passages:
             assert p.sha256 == "PENDING" or (
                 len(p.sha256) == 64 and all(c in "0123456789abcdef" for c in p.sha256)
