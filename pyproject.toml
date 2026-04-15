@@ -26,6 +26,7 @@ dev = [
 asyncio_mode = "auto"
 markers = [
     "integration: runs against a real llama-server + real model (slow, opt-in)",
+    "vllm: integration tests that require a running vllm server (opt-in via -m vllm)",
 ]
 addopts = "-m 'not integration'"
 
