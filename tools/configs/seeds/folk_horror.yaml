@@ -1,0 +1,73 @@
+quest_id: folk_horror_v3
+genre: folk horror / quiet dread
+entities:
+  - id: village
+    entity_type: location
+    name: Tre-Halwyn
+  - id: player
+    entity_type: character
+    name: Idris
+    data:
+      voice:
+        vocabulary_level: plain-precise
+        sentence_length_bias: varied
+        directness: 0.6
+        emotional_expression: quiet-unsettled
+  - id: warden
+    entity_type: character
+    name: Nesta
+    data:
+      voice:
+        vocabulary_level: village-vernacular
+        sentence_length_bias: clipped
+        directness: 0.4
+        emotional_expression: guarded
+  - id: boy
+    entity_type: character
+    name: Corran
+    data:
+      voice:
+        vocabulary_level: plain
+        sentence_length_bias: short
+        directness: 0.2
+        emotional_expression: watchful
+plot_threads:
+  - id: "pt:main"
+    name: The Village Not On My Maps
+    description: "Idris the cartographer has reached Tre-Halwyn with five commissioned surveys that all disagree \u2014 and a village that does not appear on any of them. Someone in the village knows why, and someone has decided he will not ask."
+    arc_position: rising
+    priority: 8
+  - id: "pt:b"
+    name: The Road Behind
+    description: "The road Idris walked in on does not match the road he remembers walking, and he is not sure when it changed."
+    arc_position: rising
+    priority: 5
+themes:
+  - id: "t:unplace"
+    proposition: a place that refuses to be mapped is a place that has already decided about you
+    stance: exploring
+  - id: "t:hospitality"
+    proposition: the welcome that never asks your business is the one that already knows it
+    stance: exploring
+foreshadowing: []
+narrator:
+  pov_character_id: player
+  pov_type: third_limited
+  worldview: "an unsettled observer \u2014 a cartographer who arrives to find the village not on his own maps"
+  editorial_stance: "precise, professionally composed, privately unmoored"
+  sensory_bias:
+    auditory: 0.35
+    interoceptive: 0.3
+    visual: 0.15
+    tactile: 0.1
+    kinesthetic: 0.05
+    olfactory: 0.05
+  attention_bias:
+    - the road behind
+    - doors with iron
+    - what the villagers don't explain
+  voice_samples:
+    - "Wrong. All of it."
+    - "\"We don't say that name after dark,\" Nesta told him. \"And you won't either, if you're staying.\""
+    - "The bell in the tower rang four times when the light was still full, and no one in the square looked up."
+    - "The road behind the village did not match the road he remembered walking in on \u2014 the stones on the left had the wear of a westward trade route he had surveyed eight years ago in a different valley entirely, the stones on the right had no wear at all, as though the road had been laid the week before he arrived, and somewhere between the last waymark and the first iron-bound door he had stopped noticing which of his feet was doing the counting."
