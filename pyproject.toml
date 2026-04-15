@@ -28,7 +28,7 @@ markers = [
     "integration: runs against a real llama-server + real model (slow, opt-in)",
     "vllm: integration tests that require a running vllm server (opt-in via -m vllm)",
 ]
-addopts = "-m 'not integration'"
+addopts = "-m 'not integration and not vllm'"
 
 [project.scripts]
 quest = "app.cli.play:app"
