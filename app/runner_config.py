@@ -50,8 +50,6 @@ class RunOptions(_Strict):
     scoring: bool = False
     rerank_weights: dict[str, float] | None = None
     sft_collection: SftCollectionConfig = Field(default_factory=SftCollectionConfig)
-    persona_cycle: bool = False
-    run_log: str | None = None
     llm_url: str
     llm_model: str
     db_path: Path | None = None

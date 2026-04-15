@@ -16,7 +16,5 @@ options:
     pov_adherence: 0.1
     named_entity_presence: 0.1
     narrator_sensory_match: 0.1
-  persona_cycle: false
-  run_log: data/stress/noir-20/run_log.jsonl
   llm_url: http://127.0.0.1:8082
   llm_model: writer_v1

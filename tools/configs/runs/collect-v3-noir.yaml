@@ -19,7 +19,5 @@ options:
   sft_collection:
     enabled: true
     dir: data/sft/v3/noir
-  persona_cycle: false
-  run_log: data/sft/v3/noir/run_log.jsonl
   llm_url: http://127.0.0.1:8082
   llm_model: writer_v1
