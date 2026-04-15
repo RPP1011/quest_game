@@ -29,3 +29,7 @@ data/stress/
 data/stress_v2/
 # Phase-3 LoRA v3 corpus collection logs (per-seed jsonl run logs)
 data/stress_v3/
+# Local quest playthrough DBs + traces
+data/quests/
+# Length A/B run outputs (local only)
+data/length_ab/

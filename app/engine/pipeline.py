@@ -18,6 +18,14 @@ from .stages import StageError, StageResult
 from .trace import PipelineTrace
 
 
+# Token budget for scene prose. Without this vllm/llama-server falls back to
+# the server default (as low as 16), which truncates scenes to a few lines.
+# 3000 fits ~2200 words — a bit of headroom above the 2000-word target set in
+# the write-stage system prompt.
+WRITE_MAX_TOKENS = 3000
+REVISE_MAX_TOKENS = 3000
+
+
 _BEAT_KEYS = ("beats", "beat_sheet", "beatsheet", "plan", "outline", "steps", "scenes")
 _CHOICE_KEYS = ("suggested_choices", "suggestedchoices", "choices", "options", "actions")
 
@@ -346,6 +354,11 @@ class Pipeline:
                 self._narrator = None
         self._last_dramatic: Any | None = None
         self._last_emotional: Any | None = None
+        # Target total words per scene, used to give the beat-loop writer a
+        # pacing budget. Not a hard cap — each beat ends when the model ends.
+        self._scene_target_words: int = int(
+            (quest_config or {}).get("scene_target_words", 2000)
+        )
         self._emotional_history_window = emotional_history_window
         self._emotional_monotony_window = emotional_monotony_window
 
@@ -1770,7 +1783,7 @@ class Pipeline:
         """
         temp = self._candidate_base_temperature + index * self._candidate_temperature_step
         temp = max(0.1, min(1.3, temp))
-        kw: dict[str, Any] = {"temperature": temp}
+        kw: dict[str, Any] = {"temperature": temp, "max_tokens": WRITE_MAX_TOKENS}
         # Best-effort seed jitter: only pass if the client likely supports it.
         # The default InferenceClient forwards **extra kwargs, so passing
         # seed is safe; fake clients that don't accept it would fail — so
@@ -1796,6 +1809,7 @@ class Pipeline:
                     ChatMessage(role="user", content=write_ctx.user_prompt),
                 ],
                 temperature=temp,
+                max_tokens=WRITE_MAX_TOKENS,
             )
         t1 = time.perf_counter()
         latency = int((t1 - t0) * 1000)
@@ -2128,6 +2142,7 @@ class Pipeline:
                         ChatMessage(role="user", content=write_ctx.user_prompt),
                     ],
                     temperature=0.8,
+                    max_tokens=WRITE_MAX_TOKENS,
                 )
                 latency = int((time.perf_counter() - t0) * 1000)
                 prose = OutputParser.parse_prose(raw)
@@ -2150,7 +2165,7 @@ class Pipeline:
             )
             return prose
 
-        # ---- New CraftPlan path: one call per scene ----
+        # ---- New CraftPlan path: one call per beat, within one scene ----
         # Build a brief lookup by scene_id
         briefs_by_scene: dict[int, Any] = {b.scene_id: b for b in plan.briefs}
 
@@ -2162,6 +2177,15 @@ class Pipeline:
         if emo_plan is not None:
             for s in getattr(emo_plan, "scenes", []) or []:
                 emotional_by_scene[s.scene_id] = s
+
+        # Build a dramatic-scene lookup so the writer can see the scene's
+        # beat sheet. Beats drive the per-beat write loop; when missing or
+        # trivial (<=1 beat) we fall back to a single write call.
+        dramatic_by_scene: dict[int, Any] = {}
+        dram_plan = getattr(self, "_last_dramatic", None)
+        if dram_plan is not None:
+            for s in getattr(dram_plan, "scenes", []) or []:
+                dramatic_by_scene[s.scene_id] = s
 
         prose_parts: list[str] = []
         recent_prose_tail = ""
@@ -2201,6 +2225,15 @@ class Pipeline:
             # voice continuity. Same default-off semantics as above.
             voice_continuity = await self._retrieve_voice_continuity(scene=scene)
 
+            dramatic_scene = dramatic_by_scene.get(scene.scene_id)
+            beats: list[str] = list(
+                getattr(dramatic_scene, "beats", None) or []
+            )
+
+            # Build the write context once per scene; per-beat fields are
+            # overlaid in the inner loop below. When the scene has 0 or 1
+            # beat, we still call once with beat=None (preserves prior
+            # single-shot behavior).
             write_ctx = self._cb.build(
                 spec=WRITE_SPEC,
                 stage_name="write",
@@ -2217,40 +2250,113 @@ class Pipeline:
                     "plan": None,
                     "style": "",
                     "player_action": player_action,
+                    "beat": None,
+                    "beat_index": None,
+                    "total_beats": len(beats),
+                    "accumulated_scene_prose": "",
+                    "scene_target_words": self._scene_target_words,
+                    "words_so_far": 0,
                 },
             )
-            if self._n_candidates == 1:
-                # Fast path — identical behaviour to pre-G2 for dev runs.
-                t0 = time.perf_counter()
-                raw = await self._client.chat(
-                    messages=[
-                        ChatMessage(role="system", content=write_ctx.system_prompt),
-                        ChatMessage(role="user", content=write_ctx.user_prompt),
-                    ],
-                    temperature=0.8,
-                )
-                latency = int((time.perf_counter() - t0) * 1000)
-                scene_prose = OutputParser.parse_prose(raw)
-                trace.add_stage(StageResult(
-                    stage_name="write",
-                    input_prompt=write_ctx.user_prompt,
-                    raw_output=raw,
-                    parsed_output=scene_prose,
-                    token_usage=TokenUsage(prompt=write_ctx.token_estimate),
-                    latency_ms=latency,
-                    detail={"scene_id": scene.scene_id},
-                ))
+
+            if self._n_candidates > 1 or len(beats) <= 1:
+                # N>1 candidates or no real beat sheet: fall back to the
+                # legacy per-scene single-call behavior. Multi-candidate
+                # rerank over a beat loop is out of scope for this change.
+                if self._n_candidates == 1:
+                    t0 = time.perf_counter()
+                    raw = await self._client.chat(
+                        messages=[
+                            ChatMessage(role="system", content=write_ctx.system_prompt),
+                            ChatMessage(role="user", content=write_ctx.user_prompt),
+                        ],
+                        temperature=0.8,
+                        max_tokens=WRITE_MAX_TOKENS,
+                    )
+                    latency = int((time.perf_counter() - t0) * 1000)
+                    scene_prose = OutputParser.parse_prose(raw)
+                    trace.add_stage(StageResult(
+                        stage_name="write",
+                        input_prompt=write_ctx.user_prompt,
+                        raw_output=raw,
+                        parsed_output=scene_prose,
+                        token_usage=TokenUsage(prompt=write_ctx.token_estimate),
+                        latency_ms=latency,
+                        detail={"scene_id": scene.scene_id, "beats": len(beats)},
+                    ))
+                else:
+                    scene_prose, _records = await self._generate_scene_candidates(
+                        trace=trace,
+                        write_ctx=write_ctx,
+                        n=self._n_candidates,
+                        scene_id=scene.scene_id,
+                        craft_plan=plan,
+                        player_action=player_action,
+                        update_number=update_number,
+                        brief_text=brief_text,
+                    )
             else:
-                scene_prose, _records = await self._generate_scene_candidates(
-                    trace=trace,
-                    write_ctx=write_ctx,
-                    n=self._n_candidates,
-                    scene_id=scene.scene_id,
-                    craft_plan=plan,
-                    player_action=player_action,
-                    update_number=update_number,
-                    brief_text=brief_text,
-                )
+                # Beat loop: one LLM call per beat, threading accumulated
+                # prose so the next call sees everything written so far in
+                # this scene.
+                scene_parts: list[str] = []
+                accumulated = ""
+                for beat_index, beat_text in enumerate(beats):
+                    words_so_far = len(accumulated.split())
+                    beat_ctx = self._cb.build(
+                        spec=WRITE_SPEC,
+                        stage_name="write",
+                        templates={"system": "stages/write/system.j2", "user": "stages/write/user.j2"},
+                        extras={
+                            "brief": brief_text,
+                            "scene": scene.model_dump() if hasattr(scene, "model_dump") else scene,
+                            "voice_samples": effective_voice_samples,
+                            "voice_anchors": voice_anchors,
+                            "quest_callbacks": quest_callbacks,
+                            "voice_continuity": voice_continuity,
+                            "recent_prose_tail": recent_prose_tail,
+                            "anti_patterns": anti_patterns or [],
+                            "plan": None,
+                            "style": "",
+                            "player_action": player_action if beat_index == 0 else None,
+                            "beat": beat_text,
+                            "beat_index": beat_index,
+                            "total_beats": len(beats),
+                            "accumulated_scene_prose": accumulated,
+                            "scene_target_words": self._scene_target_words,
+                            "words_so_far": words_so_far,
+                        },
+                    )
+                    t0 = time.perf_counter()
+                    raw = await self._client.chat(
+                        messages=[
+                            ChatMessage(role="system", content=beat_ctx.system_prompt),
+                            ChatMessage(role="user", content=beat_ctx.user_prompt),
+                        ],
+                        temperature=0.8,
+                        max_tokens=WRITE_MAX_TOKENS,
+                    )
+                    latency = int((time.perf_counter() - t0) * 1000)
+                    beat_prose = OutputParser.parse_prose(raw)
+                    scene_parts.append(beat_prose)
+                    accumulated = (
+                        accumulated + "\n\n" + beat_prose if accumulated else beat_prose
+                    )
+                    trace.add_stage(StageResult(
+                        stage_name="write",
+                        input_prompt=beat_ctx.user_prompt,
+                        raw_output=raw,
+                        parsed_output=beat_prose,
+                        token_usage=TokenUsage(prompt=beat_ctx.token_estimate),
+                        latency_ms=latency,
+                        detail={
+                            "scene_id": scene.scene_id,
+                            "beat_index": beat_index,
+                            "total_beats": len(beats),
+                            "words_so_far": words_so_far,
+                        },
+                    ))
+                scene_prose = "\n\n".join(scene_parts)
             prose_parts.append(scene_prose)
 
             # Track last ~300 chars for rhythm continuity on next scene
@@ -2468,6 +2574,7 @@ class Pipeline:
                 ChatMessage(role="user", content=ctx.user_prompt),
             ],
             temperature=0.6,
+            max_tokens=REVISE_MAX_TOKENS,
         )
         latency = int((time.perf_counter() - t0) * 1000)
         revised = OutputParser.parse_prose(raw)

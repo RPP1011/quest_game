@@ -267,7 +267,8 @@ async def test_hierarchical_pipeline_commits_chapter(world):
         {"kind": "structured", "content": _EMOTIONAL_JSON},
         # CraftPlanner call
         {"kind": "structured", "content": _CRAFT_JSON},
-        # WRITE (one scene)
+        # WRITE: one call per beat (2 beats in _DRAMATIC_JSON).
+        {"kind": "chat", "content": _PROSE_SCENE_1},
         {"kind": "chat", "content": _PROSE_SCENE_1},
         # CHECK
         {"kind": "structured", "content": _CHECK_CLEAN},
@@ -365,6 +366,7 @@ async def test_hierarchical_pipeline_plants_parallel_post_commit(world):
         {"kind": "structured", "content": _EMOTIONAL_JSON},
         {"kind": "structured", "content": _CRAFT_JSON_WITH_PARALLEL_PLANT},
         {"kind": "chat", "content": _PROSE_SCENE_1},
+        {"kind": "chat", "content": _PROSE_SCENE_1},
         {"kind": "structured", "content": _CHECK_CLEAN},
         {"kind": "structured", "content": _EMPTY_EXTRACT},
     ])
@@ -393,6 +395,7 @@ async def test_hierarchical_pipeline_plants_parallel_post_commit(world):
         {"kind": "structured", "content": _DRAMATIC_JSON},
         {"kind": "structured", "content": _EMOTIONAL_JSON},
         {"kind": "structured", "content": _CRAFT_JSON_WITH_PARALLEL_PLANT},
+        {"kind": "chat", "content": _PROSE_SCENE_1},
         {"kind": "chat", "content": _PROSE_SCENE_1},
         {"kind": "structured", "content": _CHECK_CLEAN},
         {"kind": "structured", "content": _EMPTY_EXTRACT},
@@ -528,6 +531,7 @@ async def test_hierarchical_pipeline_persists_emotional_beats_post_commit(world)
         {"kind": "structured", "content": _DRAMATIC_JSON},
         {"kind": "structured", "content": _EMOTIONAL_JSON},
         {"kind": "structured", "content": _CRAFT_JSON},
+        {"kind": "chat", "content": _PROSE_SCENE_1},
         {"kind": "chat", "content": _PROSE_SCENE_1},
         {"kind": "structured", "content": _CHECK_CLEAN},
         {"kind": "structured", "content": _EMPTY_EXTRACT},

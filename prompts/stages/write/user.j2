@@ -44,4 +44,12 @@ Scene {{ scene.scene_id }}
 
 If the action involves speaking, asking, answering, negotiating, or describing something aloud, render the words as quoted dialogue. Do not summarize speech as narration.
 
-{% endif %}Write the scene now. Output prose only — no headings, no labels.
+{% endif %}{% if beat is defined and beat %}## Current Beat (write prose for this beat only)
+Beat {{ beat_index + 1 }} of {{ total_beats }}: {{ beat }}
+
+Pacing budget: the scene targets ~{{ scene_target_words }} words total across all {{ total_beats }} beats. You have written ~{{ words_so_far }} words so far; ~{{ scene_target_words - words_so_far }} words remain across {{ total_beats - beat_index }} beat(s). Use this as a rough guide — a beat can be short if it only needs one exchange, or longer if it carries weight.
+
+{% if accumulated_scene_prose %}## Prose already written for this scene (continuity — do not repeat, do not re-establish)
+{{ accumulated_scene_prose }}
+
+{% endif %}{% endif %}Write {% if beat is defined and beat %}this beat's{% else %}the scene's{% endif %} prose now. Output prose only — no headings, no labels.
