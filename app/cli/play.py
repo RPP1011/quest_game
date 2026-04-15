@@ -85,12 +85,58 @@ def play(
     db: Path = typer.Option(..., help="Path to the quest DB."),
     server: str = typer.Option("http://127.0.0.1:8090", help="llama-server base URL."),
     traces: Path = typer.Option(Path("data/traces"), help="Directory for pipeline trace JSON files."),
+    model: str | None = typer.Option(None, help="Model id to request from the server (e.g. a LoRA name)."),
 ) -> None:
     """Play the quest — reads player actions from stdin, prints prose."""
+    import json as _json
+    from app.craft.library import CraftLibrary
+    from app.planning.arc_planner import ArcPlanner
+    from app.planning.craft_planner import CraftPlanner
+    from app.planning.dramatic_planner import DramaticPlanner
+    from app.planning.emotional_planner import EmotionalPlanner
+
     sm = _open_world(db)
-    client = InferenceClient(base_url=server, retries=1)
-    cb = ContextBuilder(sm, PromptRenderer(PROMPTS), TokenBudget())
-    pipeline = Pipeline(sm, cb, client)
+    client = InferenceClient(base_url=server, retries=1, model=model)
+    renderer = PromptRenderer(PROMPTS)
+    cb = ContextBuilder(sm, renderer, TokenBudget())
+
+    craft_data_dir = Path(__file__).parent.parent / "craft" / "data"
+    craft_library = CraftLibrary(craft_data_dir)
+    arc_planner = ArcPlanner(client, renderer)
+    dramatic_planner = DramaticPlanner(client, renderer, craft_library)
+    emotional_planner = EmotionalPlanner(client, renderer)
+    craft_planner = CraftPlanner(client, renderer, craft_library)
+
+    quest_id = db.stem
+    config_path = db.parent / "config.json"
+    quest_config: dict = {}
+    if config_path.is_file():
+        try:
+            quest_config = _json.loads(config_path.read_text())
+        except Exception:
+            quest_config = {}
+    structure = None
+    try:
+        arc_state = sm.get_arc(quest_id, "main")
+        structure = craft_library.structure(arc_state.structure_id)
+    except Exception:
+        try:
+            structure = craft_library.structure(_DEFAULT_STRUCTURE_ID)
+        except Exception:
+            structure = None
+
+    pipeline = Pipeline(
+        sm, cb, client,
+        arc_planner=arc_planner,
+        dramatic_planner=dramatic_planner,
+        emotional_planner=emotional_planner,
+        craft_planner=craft_planner,
+        craft_library=craft_library,
+        structure=structure,
+        quest_config=quest_config,
+        quest_id=quest_id,
+        arc_id="main",
+    )
     trace_store = TraceStore(traces)
 
     typer.echo("Quest started. Type an action and press enter. Ctrl-D to quit.")
