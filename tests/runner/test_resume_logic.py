@@ -114,3 +114,15 @@ def test_wrong_database_error_carries_ids():
         assert e.config_quest_id == "q"
     else:
         raise AssertionError("expected WrongDatabaseError")
+
+
+def test_wrong_quest_id_raises_even_with_zero_rows():
+    """A bootstrapped-but-empty DB with mismatched quest_id should still raise."""
+    try:
+        decide_resume(rows=[], actions=ACTIONS,
+                      db_quest_id="other", config_quest_id="q")
+    except WrongDatabaseError as e:
+        assert e.db_quest_id == "other"
+        assert e.config_quest_id == "q"
+    else:
+        raise AssertionError("expected WrongDatabaseError")

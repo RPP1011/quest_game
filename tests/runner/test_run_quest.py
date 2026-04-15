@@ -138,3 +138,23 @@ def test_progress_callback_invoked(tmp_path):
     asyncio.run(run_quest(cfg, progress_callback=cb,
                           _pipeline_factory=lambda w: FakePipeline(w)))
     assert seen == [(0, 2, "A1"), (1, 2, "A2")]
+
+
+def test_corrupt_db_raises_instead_of_wiping(tmp_path):
+    """A DB file that exists but lacks the narrative table should error."""
+    from app.runner import CorruptDatabaseError
+    import sqlite3
+
+    db = tmp_path / "corrupt.db"
+    # Create a SQLite file with no narrative table
+    conn = sqlite3.connect(db)
+    conn.execute("CREATE TABLE unrelated (x INTEGER)")
+    conn.commit()
+    conn.close()
+
+    cfg = _make_config(["A1", "A2"], db)
+    with pytest.raises(CorruptDatabaseError) as excinfo:
+        asyncio.run(run_quest(cfg, _pipeline_factory=lambda w: FakePipeline(w)))
+    assert "narrative" in str(excinfo.value)
+    # File should NOT be unlinked
+    assert db.exists()

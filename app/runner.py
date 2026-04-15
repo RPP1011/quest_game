@@ -21,6 +21,12 @@ from app.runner_resume import (
 
 @dataclass(frozen=True)
 class RunResult:
+    """Summary of a quest run.
+
+    The ``errors`` field is reserved for a future catch-and-continue mode
+    and is always ``0`` in the current implementation — pipeline crashes
+    propagate to the caller.
+    """
     run_name: str
     db_path: Path
     actions_total: int
@@ -32,6 +38,50 @@ class RunResult:
 
 
 ProgressCallback = Callable[[int, int, str], None]
+
+
+class CorruptDatabaseError(Exception):
+    """DB file exists but is missing the expected tables."""
+    def __init__(self, db_path: Path) -> None:
+        super().__init__(
+            f"DB at {db_path} is missing the 'narrative' table — "
+            f"either corrupt, pre-schema, or not a quest DB. "
+            f"Pass --fresh to overwrite, or point --config at a different db_path."
+        )
+        self.db_path = db_path
+
+
+def _narrator_for_core(narrator_cfg) -> dict:
+    """Strip runner-only fields and None values for app.craft.schemas.Narrator.
+
+    The core Narrator model doesn't define ``pov_character_id`` (runner-only)
+    and rejects None for ``editorial_stance``. Apply this anywhere the
+    narrator dict crosses into core engine code.
+    """
+    d = narrator_cfg.model_dump()
+    d.pop("pov_character_id", None)
+    return {k: v for k, v in d.items() if v is not None}
+
+
+def _db_state(db_path: Path) -> str:
+    """Classify ``db_path`` as one of:
+    - ``"absent"``: file does not exist
+    - ``"corrupt"``: file exists but ``narrative`` table is missing
+    - ``"empty"``: ``narrative`` table exists with zero rows
+    - ``"has_rows"``: ``narrative`` has at least one row
+    """
+    if not db_path.is_file():
+        return "absent"
+    import sqlite3
+    conn = sqlite3.connect(db_path)
+    try:
+        try:
+            count = conn.execute("SELECT COUNT(*) FROM narrative").fetchone()[0]
+        except sqlite3.OperationalError:
+            return "corrupt"
+        return "has_rows" if count > 0 else "empty"
+    finally:
+        conn.close()
 
 
 def _peek_db_quest_id(db_path: Path) -> str | None:
@@ -123,27 +173,28 @@ def _seed_to_dict(config: RunConfig) -> dict:
     values and drop runner-only fields before handing to ``SeedLoader``.
     """
     seed = config.seed
-    narrator_dump = seed.narrator.model_dump()
-    narrator_dump.pop("pov_character_id", None)
-    narrator_dump = {k: v for k, v in narrator_dump.items() if v is not None}
     return {
         "entities": list(seed.entities),
         "plot_threads": list(seed.plot_threads),
         "themes": list(seed.themes),
         "foreshadowing": list(seed.foreshadowing),
-        "narrator": narrator_dump,
+        "narrator": _narrator_for_core(seed.narrator),
         "rules": [],
     }
 
 
 def _build_real_pipeline(world, config: RunConfig):
-    """Wire the actual pipeline. Mirrors the boilerplate the deleted
-    scripts had. Honors config.options for retrieval/scoring."""
+    """Wire the actual pipeline. Mirrors the planner + retriever wiring
+    the deleted scripts had. Honors config.options for retrieval/scoring."""
     from app.engine import ContextBuilder, Pipeline, PromptRenderer, TokenBudget
     from app.runtime.client import InferenceClient
     from app.craft.library import CraftLibrary
     from app.planning import DramaticPlanner, EmotionalPlanner, CraftPlanner
     from app.planning.arc_planner import ArcPlanner
+    from app.retrieval import (
+        Embedder, PassageRetriever, QuestRetriever, SceneShapeRetriever,
+        MotifRetriever, ForeshadowingRetriever, VoiceRetriever,
+    )
 
     REPO = Path(__file__).resolve().parent.parent
     PROMPTS = REPO / "prompts"
@@ -170,8 +221,34 @@ def _build_real_pipeline(world, config: RunConfig):
         from app.scoring.scorer import Scorer
         scorer = Scorer()
 
+    CALIB = REPO / "data" / "calibration"
+    manifest = CALIB / "manifest.yaml"
+    passages_dir = CALIB / "passages"
+    scenes_manifest = CALIB / "scenes_manifest.yaml"
+    scenes_dir = CALIB / "scenes"
+
+    passage_retriever = None
+    if manifest.is_file():
+        passage_retriever = PassageRetriever(
+            manifest, Path("/tmp"), passages_dir, enable_semantic=False,
+        )
+    scene_retriever = None
+    if scenes_manifest.is_file():
+        try:
+            scene_retriever = SceneShapeRetriever(
+                scenes_manifest, "/tmp/labels_claude_arc_*.json", scenes_dir,
+            )
+        except Exception:
+            scene_retriever = None
+
+    embedder = Embedder()
+    quest_retriever = QuestRetriever(world, config.seed.quest_id, embedder=embedder)
+    motif_retriever = MotifRetriever(world, config.seed.quest_id)
+    foreshadow_retriever = ForeshadowingRetriever(world, config.seed.quest_id)
+    voice_retriever = VoiceRetriever(world, config.seed.quest_id)
+
     quest_config = {
-        "narrator": config.seed.narrator.model_dump(),
+        "narrator": _narrator_for_core(config.seed.narrator),
         "genre": config.seed.genre,
         "n_candidates": config.options.n_candidates,
         "retrieval": {"enabled": True},
@@ -192,6 +269,13 @@ def _build_real_pipeline(world, config: RunConfig):
         quest_config=quest_config,
         quest_id=config.seed.quest_id,
         arc_id="main",
+        passage_retriever=passage_retriever,
+        scene_retriever=scene_retriever,
+        quest_retriever=quest_retriever,
+        motif_retriever=motif_retriever,
+        foreshadowing_retriever=foreshadow_retriever,
+        voice_retriever=voice_retriever,
+        retrieval_embedder=embedder,
     )
 
 
@@ -217,8 +301,18 @@ async def run_quest(
     if fresh and db_path.is_file():
         db_path.unlink()
 
-    rows = _load_existing_rows(db_path)
-    db_quest_id = _peek_db_quest_id(db_path)
+    state = _db_state(db_path)
+    if state == "corrupt":
+        raise CorruptDatabaseError(db_path)
+    if state == "absent" or state == "empty":
+        if state == "empty":
+            db_path.unlink()
+        rows = []
+        db_quest_id = None
+    else:  # has_rows
+        rows = _load_existing_rows(db_path)
+        db_quest_id = _peek_db_quest_id(db_path)
+
     decision = decide_resume(
         rows=rows,
         actions=config.actions,
@@ -226,11 +320,7 @@ async def run_quest(
         config_quest_id=config.seed.quest_id,
     )
 
-    if decision.skipped == 0 and not db_path.is_file():
-        world, _conn = _bootstrap_world(config)
-    elif decision.skipped == 0 and db_path.is_file():
-        # Empty existing DB — wipe + bootstrap
-        db_path.unlink()
+    if state in ("absent", "empty"):
         world, _conn = _bootstrap_world(config)
     else:
         world, _conn = _reopen_world(config)
@@ -242,18 +332,13 @@ async def run_quest(
 
     committed = 0
     flagged = 0
-    errors = 0
     total = len(config.actions)
 
     for i, action in enumerate(config.actions[decision.skipped:],
                                 start=decision.start_from):
         if progress_callback is not None:
             progress_callback(committed + decision.skipped, total, action)
-        try:
-            out = await pipeline.run(player_action=action, update_number=i)
-        except Exception:
-            errors += 1
-            raise
+        out = await pipeline.run(player_action=action, update_number=i)
         outcome = getattr(out.trace, "outcome", "committed")
         if outcome == "committed":
             committed += 1
@@ -267,6 +352,6 @@ async def run_quest(
         skipped_resume=decision.skipped,
         committed=committed,
         flagged=flagged,
-        errors=errors,
+        errors=0,
         wall_clock_seconds=time.perf_counter() - t0,
     )

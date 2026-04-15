@@ -105,14 +105,13 @@ def decide_resume(
     ConfigDriftError
         DB has more committed rows than the config has actions.
     """
-    if not rows:
-        # Fresh or empty-DB path. Quest-id check only fires when both
-        # sides actually have a value, since a freshly-bootstrapped DB
-        # may or may not have an arc row yet depending on caller order.
-        return ResumeDecision(start_from=1, skipped=0)
-
+    # Quest-id check fires first so a bootstrapped-but-empty DB with the
+    # wrong quest_id raises instead of being silently wiped.
     if db_quest_id is not None and db_quest_id != config_quest_id:
         raise WrongDatabaseError(db_quest_id, config_quest_id)
+
+    if not rows:
+        return ResumeDecision(start_from=1, skipped=0)
 
     if len(rows) > len(actions):
         raise ConfigDriftError(len(rows), len(actions))
