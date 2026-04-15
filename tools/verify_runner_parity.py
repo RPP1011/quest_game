@@ -38,7 +38,7 @@ def _score_db(db_path: Path) -> dict:
 
 def main() -> int:
     new_db = Path("/tmp/parity_new.db")
-    old_db = Path("/tmp/parity_old/quest.db")
+    old_db = Path("/tmp/stress_test_5/quest.db")
     new_db.unlink(missing_ok=True)
     if old_db.exists():
         old_db.unlink()
@@ -58,7 +58,7 @@ def main() -> int:
         subprocess.run([sys.executable, str(old_script)], check=False)
         # Old script's DB path varies — adjust based on what it writes.
         # Verify the path by reading the script first.
-        old_default = Path("/tmp/stress_5/quest.db")
+        old_default = Path("/tmp/stress_test_5/quest.db")
         if old_default.is_file():
             old = _score_db(old_default)
         else:
