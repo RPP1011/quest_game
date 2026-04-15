@@ -1,0 +1,25 @@
+seed: noir
+actions: noir-investigation
+options:
+  n_candidates: 4
+  scoring: true
+  rerank_weights:
+    dialogue_ratio: 3.0
+    sentence_variance: 2.5
+    sensory_density: 2.0
+    pacing: 1.0
+    action_fidelity: 1.0
+    free_indirect_quality: 0.1
+    detail_characterization: 0.1
+    metaphor_domains_score: 0.1
+    indirection_score: 0.1
+    pov_adherence: 0.1
+    named_entity_presence: 0.1
+    narrator_sensory_match: 0.1
+  sft_collection:
+    enabled: true
+    dir: data/sft/v2/noir
+  persona_cycle: false
+  run_log: data/sft/v2/noir/run_log.jsonl
+  llm_url: http://127.0.0.1:8082
+  llm_model: writer_v1
