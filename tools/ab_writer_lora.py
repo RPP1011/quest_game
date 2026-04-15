@@ -28,10 +28,22 @@ from pathlib import Path
 from statistics import mean
 from typing import Any
 
-# Import fixture from story_gen so we write once.
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-from tools.story_gen import ACTIONS as STORY_ACTIONS, SEED as STORY_SEED  # noqa: E402
+
+import yaml
+from pathlib import Path as _Path
+
+# Load the same data the deleted tools/story_gen.py provided.
+_REPO = _Path(__file__).resolve().parent.parent
+_NOIR_SEED_YAML = _REPO / "tools" / "configs" / "seeds" / "noir.yaml"
+_NOIR_ACTIONS_YAML = _REPO / "tools" / "configs" / "actions" / "noir-demo-10.yaml"
+
+STORY_SEED = yaml.safe_load(_NOIR_SEED_YAML.read_text())
+# The seed YAML doesn't have "rules" (Pydantic SeedConfig doesn't expose it);
+# add an empty list so SeedLoader.load() finds the field it expects.
+STORY_SEED.setdefault("rules", [])
+STORY_ACTIONS = list(yaml.safe_load(_NOIR_ACTIONS_YAML.read_text()))
 
 PROMPTS = ROOT / "prompts"
 
