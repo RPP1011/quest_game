@@ -89,3 +89,28 @@ def test_resume_skips_using_max_update_number_not_count():
                              db_quest_id="q", config_quest_id="q")
     assert decision.start_from == 6
     assert decision.skipped == 5
+
+
+def test_config_drift_error_carries_counts():
+    rows = [_row(i, f"A{i}") for i in range(1, 6)]
+    short_actions = ["A1", "A2", "A3"]
+    try:
+        decide_resume(rows=rows, actions=short_actions,
+                      db_quest_id="q", config_quest_id="q")
+    except ConfigDriftError as e:
+        assert e.db_row_count == 5
+        assert e.config_action_count == 3
+    else:
+        raise AssertionError("expected ConfigDriftError")
+
+
+def test_wrong_database_error_carries_ids():
+    rows = [_row(1, "A1")]
+    try:
+        decide_resume(rows=rows, actions=ACTIONS,
+                      db_quest_id="other_quest", config_quest_id="q")
+    except WrongDatabaseError as e:
+        assert e.db_quest_id == "other_quest"
+        assert e.config_quest_id == "q"
+    else:
+        raise AssertionError("expected WrongDatabaseError")

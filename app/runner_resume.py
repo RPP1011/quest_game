@@ -22,10 +22,26 @@ class ResumeMismatchError(Exception):
 
 class ConfigDriftError(Exception):
     """Config has fewer actions than the DB has rows."""
+    def __init__(self, db_row_count: int, config_action_count: int) -> None:
+        super().__init__(
+            f"DB has {db_row_count} committed actions, "
+            f"config has only {config_action_count}. "
+            f"Pass --fresh or extend the action list."
+        )
+        self.db_row_count = db_row_count
+        self.config_action_count = config_action_count
 
 
 class WrongDatabaseError(Exception):
     """DB exists but its quest_id doesn't match the config."""
+    def __init__(self, db_quest_id: str, config_quest_id: str) -> None:
+        super().__init__(
+            f"DB has quest_id {db_quest_id!r}, "
+            f"config has {config_quest_id!r}. "
+            f"Pass --fresh or point at a different --config."
+        )
+        self.db_quest_id = db_quest_id
+        self.config_quest_id = config_quest_id
 
 
 @dataclass(frozen=True)
@@ -62,6 +78,23 @@ def decide_resume(
     ResumeDecision with the 1-based ``start_from`` index for the next
     update and the number of already-done actions to skip.
 
+    Examples
+    --------
+    >>> rows = [
+    ...     {"update_number": 1, "player_action": "A1"},
+    ...     {"update_number": 2, "player_action": "A2"},
+    ...     {"update_number": 3, "player_action": "A3"},
+    ... ]
+    >>> actions = ["A1", "A2", "A3", "A4", "A5"]
+    >>> decision = decide_resume(rows=rows, actions=actions,
+    ...                          db_quest_id="q", config_quest_id="q")
+    >>> decision.start_from
+    4
+    >>> decision.skipped
+    3
+    >>> # Caller runs ``actions[decision.skipped:]`` (i.e. ``actions[3:]``)
+    >>> # with the next ``update_number`` set to ``decision.start_from``.
+
     Raises
     ------
     WrongDatabaseError
@@ -79,16 +112,10 @@ def decide_resume(
         return ResumeDecision(start_from=1, skipped=0)
 
     if db_quest_id is not None and db_quest_id != config_quest_id:
-        raise WrongDatabaseError(
-            f"DB has quest_id {db_quest_id!r}, config has {config_quest_id!r}"
-        )
+        raise WrongDatabaseError(db_quest_id, config_quest_id)
 
     if len(rows) > len(actions):
-        raise ConfigDriftError(
-            f"DB has {len(rows)} committed actions, "
-            f"config has only {len(actions)}. Pass --fresh or extend the "
-            f"action list."
-        )
+        raise ConfigDriftError(len(rows), len(actions))
 
     for i, row in enumerate(rows):
         if row["player_action"] != actions[i]:
