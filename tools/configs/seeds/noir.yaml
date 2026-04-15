@@ -1,0 +1,54 @@
+quest_id: noir_v2
+genre: low-fantasy noir
+entities:
+  - id: inn
+    entity_type: location
+    name: The Salt and Star
+  - id: player
+    entity_type: character
+    name: Kaela
+    data:
+      voice:
+        vocabulary_level: plain
+        sentence_length_bias: short_clipped
+        directness: 0.8
+        emotional_expression: understated
+  - id: innkeeper
+    entity_type: character
+    name: Merrin
+    data:
+      voice:
+        vocabulary_level: coarse
+        directness: 0.9
+plot_threads:
+  - id: "pt:main"
+    name: The Missing Cargo
+    description: "A shipment of silver never reached the port; someone in this inn knows where it went."
+    arc_position: rising
+    priority: 8
+themes:
+  - id: "t:trust"
+    proposition: "trust is bought with small tells, not words"
+    stance: exploring
+foreshadowing: []
+narrator:
+  pov_character_id: player
+  pov_type: third_limited
+  worldview: "a weathered observer; notices hands and silences"
+  editorial_stance: sympathetic but unsentimental
+  sensory_bias:
+    visual: 0.3
+    tactile: 0.2
+    auditory: 0.15
+    kinesthetic: 0.15
+    interoceptive: 0.15
+    olfactory: 0.05
+  attention_bias:
+    - hands
+    - doorways
+    - what people don't say
+  voice_samples:
+    - "She set the cup down the way she did everything else \u2014 like the cup owed her rent."
+    - "He didn't speak. Didn't have to. The silence did the asking, and it was patient."
+    - "The room had four people in it when you walked in \u2014 the innkeeper behind the bar, two dock-hands at the corner table sharing a bowl of something that had stopped steaming an hour ago, and a woman in a grey coat who was trying not to be a fifth."
+    - "Rain. Just rain. The kind that soaks through before you notice it, and by the time you do, there's no point running."

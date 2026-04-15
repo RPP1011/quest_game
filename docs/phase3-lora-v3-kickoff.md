@@ -285,3 +285,9 @@ still serving its in-memory copy.)
 - `e4825f0` — sft/train: v3 quality-bar + CPU training for
   vllm-colocated runs
 - (this doc) — docs: phase-3 writeup
+
+## Rerun
+
+```bash
+tools/quest_run.py --config tools/configs/runs/collect-v3-folk-horror.yaml
+```

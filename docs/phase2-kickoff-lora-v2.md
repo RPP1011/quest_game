@@ -194,3 +194,11 @@ The **foreign-token leak** in v2 ("colony ahead", a few records in the corpus al
 - **3 A/B scenes per side, not 5.** sqlite db lock from a duplicate runner on actions 4-5.
 - **Heuristic rater, not literary judgement.** Picks don't always match what a careful read would prefer; the rubric is principled but mechanical.
 - **No A/B on intrigue or heist seeds.** The v1 vs v2 comparison only ran on noir actions; cross-genre transfer is untested.
+
+## Rerun
+
+```bash
+tools/quest_run.py --config tools/configs/runs/collect-v2-noir.yaml
+tools/quest_run.py --config tools/configs/runs/collect-v2-intrigue.yaml
+tools/quest_run.py --config tools/configs/runs/collect-v2-heist.yaml
+```

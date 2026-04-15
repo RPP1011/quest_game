@@ -1,0 +1,80 @@
+quest_id: heist_v2
+genre: science-fantasy heist
+entities:
+  - id: hub
+    entity_type: location
+    name: "Dock 7, Spire Harbor"
+  - id: player
+    entity_type: character
+    name: Quill
+    data:
+      voice:
+        vocabulary_level: slang-technical
+        sentence_length_bias: punchy
+        directness: 0.7
+        emotional_expression: wry
+  - id: rigger
+    entity_type: character
+    name: Sata
+    data:
+      voice:
+        vocabulary_level: jargon-heavy
+        directness: 0.9
+  - id: face
+    entity_type: character
+    name: Nevis
+    data:
+      voice:
+        vocabulary_level: smooth
+        directness: 0.3
+        emotional_expression: charming
+  - id: muscle
+    entity_type: character
+    name: Bren
+    data:
+      voice:
+        vocabulary_level: sparse
+        directness: 1.0
+        emotional_expression: deadpan
+plot_threads:
+  - id: "pt:main"
+    name: The Empyrean Array
+    description: "A stellar-relay crystal worth a city's breathing air is being auctioned in the arcology \u2014 the crew has 18 hours to swap the real thing for Sata's replica."
+    arc_position: rising
+    priority: 9
+  - id: "pt:b"
+    name: Nevis's Past
+    description: "Nevis is working with someone the crew hasn't been told about."
+    arc_position: rising
+    priority: 5
+themes:
+  - id: "t:trust"
+    proposition: "trust is a tool, and tools wear out"
+    stance: exploring
+  - id: "t:precision"
+    proposition: "the job is won in the second nobody's looking"
+    stance: exploring
+foreshadowing: []
+narrator:
+  pov_character_id: player
+  pov_type: third_limited
+  worldview: "dry, amused, notices technical details and interpersonal currents"
+  editorial_stance: "fond of the crew, skeptical of the plan"
+  sensory_bias:
+    visual: 0.3
+    auditory: 0.15
+    tactile: 0.15
+    kinesthetic: 0.2
+    interoceptive: 0.1
+    olfactory: 0.1
+  attention_bias:
+    - wiring
+    - tells
+    - who laughs first
+    - who's carrying what
+    - the hum under the floor
+  voice_samples:
+    - "Sata's toolbelt clicked when she walked \u2014 a six-note chord Quill had learned to read the way other people read a face."
+    - "Nevis smiled the way a lock smiles: nothing in it, but a clear way in if you knew the combination."
+    - "Bren was late. Bren was always late. The only surprising thing was that the rest of them had stopped flinching about it."
+    - "The vault's interior was a cathedral of teeth \u2014 interlocking brass plates in four rings that turned against each other like the gears of an impossible clock, each ring carrying the signature of a different lockmaker, each one dead for over a century."

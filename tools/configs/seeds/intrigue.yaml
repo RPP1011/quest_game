@@ -1,0 +1,71 @@
+quest_id: intrigue_v2
+genre: political intrigue
+entities:
+  - id: court
+    entity_type: location
+    name: The Iron Gallery
+  - id: player
+    entity_type: character
+    name: Ambassador Vell
+    data:
+      voice:
+        vocabulary_level: formal
+        sentence_length_bias: measured
+        directness: 0.4
+        emotional_expression: controlled
+  - id: spymaster
+    entity_type: character
+    name: Ceriel
+    data:
+      voice:
+        vocabulary_level: precise
+        directness: 0.3
+  - id: heir
+    entity_type: character
+    name: Prince Oren
+    data:
+      voice:
+        vocabulary_level: archaic
+        directness: 0.6
+        emotional_expression: bitter
+plot_threads:
+  - id: "pt:main"
+    name: The Displaced Crown
+    description: "Prince Oren was passed over for succession; Vell must decide whose faction the embassy will back before the regent's council convenes."
+    arc_position: rising
+    priority: 9
+  - id: "pt:b"
+    name: Ceriel's Price
+    description: "The spymaster has a proposal for the ambassador \u2014 the terms are not yet spoken aloud."
+    arc_position: rising
+    priority: 6
+themes:
+  - id: "t:power"
+    proposition: power is what one can decline to use in public
+    stance: exploring
+  - id: "t:loyalty"
+    proposition: a promise you cannot name is the one you keep
+    stance: exploring
+foreshadowing: []
+narrator:
+  pov_character_id: player
+  pov_type: third_limited
+  worldview: an eye for power currents and unsaid promises
+  editorial_stance: "sardonic, politically literate, amused by rituals"
+  sensory_bias:
+    visual: 0.35
+    auditory: 0.25
+    tactile: 0.1
+    kinesthetic: 0.1
+    interoceptive: 0.15
+    olfactory: 0.05
+  attention_bias:
+    - seating arrangements
+    - what goes unsaid
+    - half-bowed heads
+    - eye-lines across a room
+  voice_samples:
+    - "The regent spoke of tradition the way a gambler speaks of luck \u2014 constantly, and only after winning."
+    - "Ceriel's silences were the kind you had to pay for; his words were cheaper."
+    - "Oren bowed. He didn't mean it. Everyone in the room knew he didn't mean it, and that was the point."
+    - "The antechamber was built for three conversations to happen in it at once \u2014 one out loud for the regent, one at the window between two dukes, and a third in the corner of the room where the envoy and the spymaster would not appear to have met, though of course they had."

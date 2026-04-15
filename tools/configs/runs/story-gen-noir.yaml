@@ -1,0 +1,7 @@
+seed: noir
+actions: noir-demo-10
+options:
+  n_candidates: 1
+  scoring: false
+  llm_url: http://127.0.0.1:8082
+  llm_model: writer_v1

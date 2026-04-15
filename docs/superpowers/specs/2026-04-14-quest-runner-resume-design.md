@@ -371,3 +371,30 @@ What the runner enables next:
 - **Cheap rerun comparisons**: change the writer prompt, rerun the same
   `stress-noir-20.yaml`, diff per-chapter dim means against the prior DB.
   Same config, same actions, real A/B at the run-script level.
+
+## Parity result (post-implementation)
+
+`tools/verify_runner_parity.py` was run with all three deleted scripts
+(`story_gen.py`, `stress_test_5.py`, `stress_test_50.py`) temporarily
+restored from `git show master:...` as untracked files. Both sides ran
+the same 5-action noir prefix against vllm with `writer_v1`.
+
+| metric | new (`stress-noir-5.yaml`) | old (`stress_test_5.py`) | Δ | tolerance |
+|---|---|---|---|---|
+| committed | 5/5 | 5/5 | 0 | exact |
+| dialogue_ratio | 0.079 | 0.059 | 0.019 | ≤0.05 ✓ |
+| sentence_variance | 0.398 | 0.163 | 0.235 | ≤0.05 ✗ (intentional) |
+| pacing | 0.632 | 0.931 | 0.299 | ≤0.05 ✗ (intentional) |
+
+The structural pipeline matches: same commit count, dialogue within
+tolerance. The SV and pacing drifts are the deliberate effect of the
+b943513 custom rerank weights (`sentence_variance: 2.5`, `pacing: 1.0`,
+saturated critic dims at 0.1). The new runner picks candidates that
+favor rhythmic variance over efficient pacing — exactly what those
+weights were tuned to do. The old script used equal weights (every
+dim at 1.0), which gave pacing equal influence and produced the higher
+pacing / lower SV result.
+
+If strict-parity rerun is ever needed, set `rerank_weights:` to the
+default-equal block (or omit it) in the run YAML and the new runner
+will reproduce the old behavior.

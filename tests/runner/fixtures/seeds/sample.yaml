@@ -1,0 +1,15 @@
+quest_id: sample
+genre: test
+entities:
+  - {id: player, entity_type: character, name: Test Player}
+plot_threads: []
+themes: []
+foreshadowing: []
+narrator:
+  pov_character_id: player
+  pov_type: third_limited
+  worldview: a test narrator
+  sensory_bias: {visual: 1.0}
+  voice_samples:
+    - "Test sample one."
+    - "Test sample two — slightly longer for variance."
