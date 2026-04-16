@@ -229,18 +229,37 @@ def build_delta(
         ))
 
     _VALID_FS_STATUSES = {"planted", "referenced", "paid_off", "abandoned"}
+    # Build a set of known hook ids if a world is wired; used to drop
+    # hallucinated hook references (e.g. model emitting a location id as
+    # if it were a hook) as warnings instead of letting them blow the
+    # whole extract by failing world-side validation.
+    known_hook_ids: set[str] | None = None
+    if world is not None:
+        try:
+            rows = world._conn.execute("SELECT id FROM foreshadowing").fetchall()
+            known_hook_ids = {r[0] for r in rows}
+        except Exception:
+            known_hook_ids = None
     foreshadowing_updates: list[FSUpdate] = []
     for item in extracted.get("foreshadowing_updates", []):
         status = item.get("new_status", "referenced")
+        hook_id = item.get("id", "")
         if status not in _VALID_FS_STATUSES:
             issues.append(ValidationIssue(
                 severity="warning",
                 message=f"extract: dropped foreshadowing update with invalid status {status!r}",
-                subject=item.get("id"),
+                subject=hook_id,
+            ))
+            continue
+        if known_hook_ids is not None and hook_id not in known_hook_ids:
+            issues.append(ValidationIssue(
+                severity="warning",
+                message=f"extract: dropped foreshadowing update for unknown hook {hook_id!r}",
+                subject=hook_id,
             ))
             continue
         foreshadowing_updates.append(FSUpdate(
-            id=item.get("id", ""),
+            id=hook_id,
             new_status=status,
             add_reference=item.get("add_reference"),
         ))

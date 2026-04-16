@@ -1,6 +1,36 @@
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
+
+
+def _repair_missing_scene_ids(raw: str) -> str:
+    """Inject scene_id into scenes that lack it.
+
+    llama-server's JSON-schema enforcement doesn't always honor ``required``
+    on nested structs, so the dramatic planner frequently emits
+    ``{"beats": [...], ...}`` objects inside ``scenes`` with no ``scene_id``.
+    We assign 1..N by position here before validation so downstream layers
+    see a clean monotonic sequence. If parsing fails for any reason, return
+    the raw string unchanged and let the caller's error path handle it.
+    """
+    try:
+        data = json.loads(raw)
+    except Exception:
+        return raw
+    if not isinstance(data, dict):
+        return raw
+    scenes = data.get("scenes")
+    if not isinstance(scenes, list):
+        return raw
+    changed = False
+    for i, sc in enumerate(scenes, start=1):
+        if isinstance(sc, dict) and "scene_id" not in sc:
+            sc["scene_id"] = i
+            changed = True
+    if not changed:
+        return raw
+    return json.dumps(data)
 
 from app.craft.library import CraftLibrary
 from app.craft.schemas import Arc, Structure
@@ -199,8 +229,9 @@ class DramaticPlanner:
             messages,
             json_schema=schema,
             schema_name="DramaticPlan",
-            max_tokens=4096,
+            max_tokens=8192,
         )
+        raw = _repair_missing_scene_ids(raw)
         try:
             plan = OutputParser.parse_json(raw, schema=DramaticPlan)
         except _ParseError:
@@ -208,8 +239,9 @@ class DramaticPlanner:
                 messages,
                 json_schema=schema,
                 schema_name="DramaticPlan",
-                max_tokens=4096,
+                max_tokens=8192,
             )
+            raw = _repair_missing_scene_ids(raw)
             plan = OutputParser.parse_json(raw, schema=DramaticPlan)
 
         # Day 11: Small models routinely emit ``scene_id: 42`` (literal
