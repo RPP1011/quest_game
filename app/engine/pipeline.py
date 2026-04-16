@@ -1177,6 +1177,44 @@ class Pipeline:
             })
         return callbacks
 
+    def _resolve_scene_entities(self, scene: "Any") -> list:
+        """Look up full Entity objects for a scene's characters_present list.
+
+        Also checks the dramatic plan's characters_present when the craft
+        scene doesn't carry its own.  Returns Entity objects with their
+        full ``data`` dict so the writer template can render authoritative
+        character descriptions.
+        """
+        char_ids: list[str] = []
+        # Try craft scene first
+        cp = getattr(scene, "characters_present", None)
+        if cp:
+            char_ids = list(cp)
+        # Fall back to dramatic scene
+        if not char_ids:
+            dramatic = getattr(self, "_last_dramatic", None)
+            scene_id = getattr(scene, "scene_id", None)
+            if dramatic and scene_id is not None:
+                for ds in getattr(dramatic, "scenes", None) or []:
+                    if getattr(ds, "scene_id", None) == scene_id:
+                        cp2 = getattr(ds, "characters_present", None)
+                        if cp2:
+                            char_ids = list(cp2)
+                        break
+        if not char_ids:
+            return []
+        entities = []
+        for cid in char_ids:
+            # Normalize: dramatic plan may use bare name like "tristan"
+            # instead of "char:tristan"; try both.
+            for lookup in (cid, f"char:{cid}"):
+                try:
+                    entities.append(self._world.get_entity(lookup))
+                    break
+                except Exception:
+                    continue
+        return entities
+
     def _primary_pov_character_id(self) -> str | None:
         """Choose a representative POV character id for the whole update.
 
@@ -2132,6 +2170,8 @@ class Pipeline:
                     "voice_continuity": [],
                     "recent_prose_tail": "",
                     "player_action": player_action,
+                    "narrator": self._narrator,
+                    "scene_entities": [],
                 },
             )
             if self._n_candidates == 1:
@@ -2230,6 +2270,8 @@ class Pipeline:
                 getattr(dramatic_scene, "beats", None) or []
             )
 
+            scene_entities = self._resolve_scene_entities(scene)
+
             # Build the write context once per scene; per-beat fields are
             # overlaid in the inner loop below. When the scene has 0 or 1
             # beat, we still call once with beat=None (preserves prior
@@ -2256,6 +2298,8 @@ class Pipeline:
                     "accumulated_scene_prose": "",
                     "scene_target_words": self._scene_target_words,
                     "words_so_far": 0,
+                    "narrator": self._narrator,
+                    "scene_entities": scene_entities,
                 },
             )
 
@@ -2325,6 +2369,8 @@ class Pipeline:
                             "accumulated_scene_prose": accumulated,
                             "scene_target_words": self._scene_target_words,
                             "words_so_far": words_so_far,
+                            "narrator": self._narrator,
+                            "scene_entities": scene_entities,
                         },
                     )
                     t0 = time.perf_counter()
@@ -2404,6 +2450,7 @@ class Pipeline:
         entities = self._world.list_entities()
         from app.world.schema import EntityStatus
         active_entities = [e for e in entities if e.status == EntityStatus.ACTIVE]
+        all_known_entities = [e for e in entities if e.status != EntityStatus.DESTROYED]
 
         # Gap G4: surface current themes (with proposition + stance) so the
         # extractor can emit theme_stance_updates on material shifts.
@@ -2489,7 +2536,7 @@ class Pipeline:
             ))
             return
 
-        known_ids = {e.id for e in active_entities}
+        known_ids = {e.id for e in all_known_entities}
         delta, build_issues = build_delta(
             extracted, update_number, known_ids=known_ids, world=self._world,
         )
@@ -2519,6 +2566,23 @@ class Pipeline:
 
         # Apply atomically.
         self._world.apply_delta(delta, update_number)
+
+        # Activate DORMANT entities the dramatic planner chose to surface.
+        dramatic = getattr(self, "_last_dramatic", None)
+        if dramatic is not None:
+            to_surface = getattr(dramatic, "entities_to_surface", None) or []
+            for eid in to_surface:
+                for lookup in (eid, f"char:{eid}"):
+                    try:
+                        ent = self._world.get_entity(lookup)
+                        if ent.status == EntityStatus.DORMANT:
+                            self._world.update_entity(lookup, {
+                                "status": EntityStatus.ACTIVE.value,
+                                "last_referenced_update": update_number,
+                            })
+                        break
+                    except Exception:
+                        continue
 
         # Theme stance evolution (Gap G4). Stance updates are persisted but
         # the LLM-driven assessment that *decides* the new stance is a stub

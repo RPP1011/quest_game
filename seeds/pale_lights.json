@@ -1,0 +1,346 @@
+{
+  "genre": "secondary-world trial fantasy, close-POV, alternating",
+  "premise": "On the continent of Vesper — a world lit by the Glare leaking from cracks in the firmament and haunted by the Gloam beneath — two would-be Watchmen board the cog Bluebell bound for the Dominion of Lost Things. Tristan Abrascal is a rat-thief from Sacromonte's Murk, contracted to the goddess Fortuna, carrying a List of five names he means to kill. Angharad Tredegar is a disgraced Pereduri noblewoman with a foresight pact to the old spirit called the Fisher, fleeing an assassination contracted by her own peers. Both have been routed toward the same island: a proving ground of three trials — Lines, Ruins, Weeds — where the Watch conscripts the survivors. What none of them know is that the Dominion is not a recruitment ground. It is a prison. The trials are a feeding mechanism for the lesser gods that keep a greater one — the Red Maw — contained beneath the mountain.",
+  "protagonist": "char:tristan",
+  "structure_id": "three_act",
+  "themes": [
+    {"id": "t:honor_vs_survival", "proposition": "survival asks what honor refuses to answer", "stance": "exploring"},
+    {"id": "t:lost_things", "proposition": "every institution keeps its power by losing people on purpose", "stance": "exploring"},
+    {"id": "t:contracts", "proposition": "every pact is a debt wearing a better word", "stance": "exploring"}
+  ],
+  "motifs": [
+    {"id": "m:pale_lights", "name": "pale lights", "description": "lamps, quartz, Glare-leak — any artificial simulacrum of the firmament's light standing in for a truth the characters can't see", "semantic_range": ["lanterns", "palestone", "Rhadamanthine quartz", "pyres", "the Glare itself"]},
+    {"id": "m:rats", "name": "rats and the Law of Rats", "description": "smallness, scavenging, the moral code of the cornered", "semantic_range": ["rats", "vermin", "the Murk", "hungry bite", "beggared snatch", "cornered fight"]},
+    {"id": "m:hands", "name": "hands and what they reach for", "description": "hands as the true tell — what people grip, what they let go", "semantic_range": ["grips", "knuckles", "outstretched fingers", "the List", "letting go"]},
+    {"id": "m:water_and_fishing", "name": "water, hooks, patient fishermen", "description": "the Fisher's domain — patience, the hook set long before it is pulled", "semantic_range": ["lines", "hooks", "currents", "patience", "the Fisher"]}
+  ],
+  "narrator": {
+    "pov_type": "third_limited_alternating",
+    "worldview": "a chronicler who loves both protagonists and is embarrassed for neither; reads the world through its ironies — the Watch that isn't watching, the Law of Rats that is a code of honor, the noblewoman who fights cleaner than any thief; treats the gods and the dirt with equal attention",
+    "editorial_stance": "sympathetic, dry, occasionally aphoristic; willing to puncture its own protagonists without betraying them",
+    "register": "literary but street-aware; Iberian-Spanish-flavored diction sliding without warning into Bantu, Tianxi, and Nahua registers depending on whose POV we're in",
+    "register_flex": ["gutter slang when Tristan is frightened", "formal can lan cadence when Angharad steels herself"],
+    "knowledge_scope": "close-third inside one protagonist per chapter; alternates strictly at chapter breaks; never blends POVs within a chapter; may look slightly past the POV character's conscious awareness into their body and habits, but not into other minds",
+    "withholding_tendency": "withholds world exegesis — names a thing (Hoja Roja, Spinster's Milk, Gongmin lock) and moves on; the reader catches up by accretion, not by explanation",
+    "reliability": 0.95,
+    "unreliability_axes": ["protagonist self-deception about their own cruelty (Tristan) and their own pride (Angharad)"],
+    "sensory_bias": {"visual": 0.25, "tactile": 0.2, "auditory": 0.15, "kinesthetic": 0.2, "interoceptive": 0.1, "olfactory": 0.1},
+    "attention_bias": ["hands", "what people don't say", "the edges of light", "clothing as caste-tell", "small objects passed between people"],
+    "voice_samples": [
+      "The rat understood, as rats do, that a door left open was not a kindness but an invitation to be blamed.",
+      "Honor, her father had said once, is the weight you carry into a room so the room knows what to cost you.",
+      "Fortuna sprawled across the rafter like a girl who had never been told that rafters were not for her, which, being a goddess, she had not.",
+      "The Fisher did not speak so much as leave silences shaped like questions, and Angharad had learned — was learning — to put her answers where they fit.",
+      "Sacromonte was a city built of rats and cathedrals, and only one of those was interested in God."
+    ]
+  },
+  "entities": [
+    {
+      "id": "char:tristan", "entity_type": "character", "name": "Tristan Abrascal",
+      "status": "active",
+      "data": {
+        "role": "protagonist",
+        "origin": "Sacromonte, the Murk",
+        "age": 19,
+        "description": "A thin, dark-haired rat from the Estebra District of Sacromonte's Murk. Lockpicks, a blackjack, a dosing kit of Spinster's Milk and black verity. Polite smile, unhurried hands, a 'ticking' in his head that is the goddess Fortuna reading odds.",
+        "skills": ["lockpicking", "poisons", "reading a room", "killing quietly", "running"],
+        "worldview": "the Law of Rats — the hungry bite, the beggared snatch, the cornered fight; the Watch and the infanzones are different flags on the same con",
+        "voice": {
+          "vocabulary_level": "plain with gutter slang", "sentence_length_bias": "short_clipped",
+          "directness": 0.4, "emotional_expression": "masked",
+          "signature_tics": ["calls women 'tia' and 'abuelita'", "calls the infanzones 'they'", "narrates to himself in gambling metaphors"]
+        },
+        "unconscious_motives": ["to be worthy of Abuela's faith", "to stop being afraid of the powerful by becoming something the powerful are afraid of"],
+        "secrets": ["carries a List of five names he means to kill", "contracted to Fortuna since childhood", "killed a Watchman last night"]
+      }
+    },
+    {
+      "id": "char:fortuna", "entity_type": "character", "name": "Fortuna",
+      "status": "active",
+      "data": {
+        "role": "pact-god, Tristan's companion voice",
+        "description": "A girl-shaped goddess of long odds, red dress, hair and eyes of molten gold. Visible and audible only to Tristan. Cannot touch the material world; rests her chin on his shoulder, sprawls on rafters, throws tantrums at inanimate objects. Called, aptly, a collection of terrible habits made into a deity.",
+        "abilities": ["bends probability by small, costly increments", "sees the truth of hearts and hands"],
+        "constraints": ["cannot leave a room's length from Tristan", "cannot touch matter", "weaker when Tristan is confident, stronger when he is desperate"],
+        "voice": {"vocabulary_level": "vulgar-aristocratic", "directness": 0.9, "emotional_expression": "theatrical",
+          "signature_tics": ["bellows", "pouts", "feuds with inanimate objects"]}
+      }
+    },
+    {
+      "id": "char:abuela", "entity_type": "character", "name": "Abuela",
+      "status": "dormant",
+      "data": {
+        "role": "Tristan's mentor and handler; off-stage letter-writer",
+        "description": "The old woman who raised Tristan out of the gutter of the Murk. Runs contracts through Hoja Roja channels but does not belong to them. Writes with a guiding, almost manipulative hand.",
+        "secrets": ["has some relationship with the Watch; perhaps a former blackcloak", "arranged Tristan's trial-by-theft on purpose"]
+      }
+    },
+    {
+      "id": "char:angharad", "entity_type": "character", "name": "Angharad Tredegar",
+      "status": "active",
+      "data": {
+        "role": "protagonist",
+        "origin": "Duchy of Peredur, High Isle (a petty province of the Kingdom of Malan)",
+        "age": 21,
+        "description": "A tall, dark-skinned Pereduri noblewoman of House Tredegar (two-tailed snake seal). Saber, straight back, 'fluid grace'. A 'coldly smiling' fighter when her foresight pact flares.",
+        "skills": ["saber", "horsemanship", "Malani court etiquette", "foresight via the Fisher", "can lan recitation"],
+        "worldview": "honor is what you carry into a room so the room knows what to cost you; the Watch is the one institution that might be paid in something other than her family's blood",
+        "voice": {
+          "vocabulary_level": "formal, Pereduri-inflected", "sentence_length_bias": "measured",
+          "directness": 0.7, "emotional_expression": "controlled; 'icy calm' under pressure",
+          "signature_tics": ["quotes her father", "hums can lan when thinking", "prunes words to leave holes for others to find"]
+        },
+        "unconscious_motives": ["to be worthy of her murdered mother Rhiannon", "to believe that honor was not what killed her House"],
+        "secrets": ["foretelling is capital-punishable in the Kingdom of Malan", "the Fisher is not what she thinks it is"]
+      }
+    },
+    {
+      "id": "char:fisher", "entity_type": "character", "name": "The Fisher",
+      "status": "dormant",
+      "data": {
+        "role": "pact-spirit, Angharad's patron",
+        "description": "An old, old spirit that grants Angharad glimpses of the immediate future in exchange for moments of her attention. Does not appear; leaves silences shaped like questions. Associated with water, line, hook, patience.",
+        "abilities": ["grants foresight: short glimpses", "can pull a soul out of a moment and set it down again"],
+        "constraints": ["demands oaths, not prayers", "each glimpse costs a fractional second of the present"],
+        "secrets": ["older and stranger than Angharad has been told", "connected to the drowned gods of the Dominion"]
+      }
+    },
+    {
+      "id": "char:uncle_osian", "entity_type": "character", "name": "Uncle Osian",
+      "status": "dormant",
+      "data": {
+        "role": "Angharad's uncle; Captain in the Watch; off-stage letter-writer",
+        "description": "A Watch captain with a practical hand and vague duties. Wrote the letter that set Angharad toward Vieja Perdida."
+      }
+    },
+    {
+      "id": "char:cozme", "entity_type": "character", "name": "Cozme Aflor",
+      "status": "dormant",
+      "data": {
+        "role": "retainer; first name on Tristan's List",
+        "description": "A burn scar near his ear. Smug, well-spoken. Serves the Villazur procession ostensibly; has older ties to the people who killed Tristan's father. Does not know Tristan on sight.",
+        "secrets": ["participated in the butchery of children", "ties to the 'Almsgiver'"]
+      }
+    },
+    {
+      "id": "char:yong", "entity_type": "character", "name": "Yong",
+      "status": "dormant",
+      "data": {
+        "role": "Tianxi veteran; potential ally on the Bluebell",
+        "description": "A gruff, practical soldier of the Heavenly Republics. Drinks rotgut like water but has sharp eyes. Impeccably groomed even when battle-worn.",
+        "unconscious_motives": ["to earn enough Watch standing to buy his husband Pietro out of Hoja Roja debt"],
+        "secrets": ["survived a military massacre he cannot speak about", "is in deep to the Cordero Sonriente through Hoja Roja"]
+      }
+    },
+    {
+      "id": "char:song", "entity_type": "character", "name": "Song Ren",
+      "status": "dormant",
+      "data": {
+        "role": "Tianxi passenger on the Bluebell",
+        "description": "A young Tianxi woman of a clan bearing the stigma of the Dimming. Uses a jian; unusually precise pistol-shot. Can, by a trained trick of attention, 'decipher' contracts.",
+        "secrets": ["her clan's Luminary-mirror was shattered, plunging the Republic of Jigong into gloam", "she studied Signs under someone the Watch does not name"]
+      }
+    },
+    {
+      "id": "char:isabel", "entity_type": "character", "name": "Lady Isabel Ruesta",
+      "status": "dormant",
+      "data": {
+        "role": "infanzona; wealthy heiress, passenger on the Bluebell",
+        "description": "A noble of House Ruesta — charm, careful gestures, a handmaid named Beatris. Betrothed to Remund Cerdan by family arrangement.",
+        "secrets": ["carries a charm-contract, a 'perception filter' her crew does not see through"]
+      }
+    },
+    {
+      "id": "char:augusto", "entity_type": "character", "name": "Lord Augusto Cerdan",
+      "status": "dormant",
+      "data": {
+        "role": "infanzon; elder Cerdan brother",
+        "description": "Arrogant, brittle, and cowardly underneath. A duelist's posture without a duelist's nerve.",
+        "secrets": ["will betray the company at the first sufficient threat; will do it again"]
+      }
+    },
+    {
+      "id": "char:remund", "entity_type": "character", "name": "Lord Remund Cerdan",
+      "status": "dormant",
+      "data": {
+        "role": "infanzon; younger Cerdan brother",
+        "description": "A quieter Cerdan with a light-ring contract from the temple god Tiller-of-Rectitude: solid light that supports weight but burns flesh."
+      }
+    },
+    {
+      "id": "char:tupoc", "entity_type": "character", "name": "Tupoc Xical",
+      "status": "dormant",
+      "data": {
+        "role": "Aztlan noble; rival crew leader",
+        "description": "Lean, grinning, competent. Speaks softly and asks for oaths like a man offering soup. Runs a crew that is not quite a warband and not quite not."
+      }
+    },
+    {
+      "id": "char:lan", "entity_type": "character", "name": "Lan",
+      "status": "dormant",
+      "data": {
+        "role": "Meng-Xiaofan twin; surviving half of Ju-and-Lan",
+        "description": "A 'rat' like Tristan; sells dust, whalechew, pipe poppy. Blue-tinted teeth from dewroot. Survived her twin's murder; is the kind of person who now collects small information and sells it."
+      }
+    },
+    {
+      "id": "char:ju", "entity_type": "character", "name": "Ju",
+      "status": "dormant",
+      "data": {
+        "role": "Meng-Xiaofan twin",
+        "description": "Lan's sister. Will be murdered and used as the frame for a planted knife; her death opens Tristan's first real power-move of the trials."
+      }
+    },
+    {
+      "id": "char:francho", "entity_type": "character", "name": "Francho",
+      "status": "dormant",
+      "data": {
+        "role": "old scholar, Master of Moral Philosophy out of the University of Reve",
+        "description": "Contracted to the Bibliognost. Knows history the way some men know weather. Will, eventually, say the word 'Antediluvian' in a tone that closes a room.",
+        "secrets": ["knows the Dominion is a prison, not a trial ground"]
+      }
+    },
+    {
+      "id": "char:vasanti", "entity_type": "character", "name": "Lieutenant Vasanti",
+      "status": "dormant",
+      "data": {
+        "role": "Watch officer, secret tinker",
+        "description": "An old Watch officer at the Old Fort who has, quietly and against orders, been studying the aetheric machinery at the base of the pillar for two decades."
+      }
+    },
+    {
+      "id": "char:crestina", "entity_type": "character", "name": "Captain Crestina Elvir",
+      "status": "dormant",
+      "data": {
+        "role": "Watch blackcloak captain; ceremonially opens the Trial of Lines"
+      }
+    },
+    {
+      "id": "char:yaotl", "entity_type": "character", "name": "Yaotl Cuatzo",
+      "status": "active",
+      "data": {
+        "role": "the man in the room — a Watchman deserter hiding in the Azulejo hostel",
+        "origin": "Aztlan",
+        "description": "An Aztlan man with darker skin and a broad chin. Calm voice with anger close to the surface, faint Aztlan accent clicking against the tongue. Sleeping in the room Tristan is robbing. Has a pistol and arming sword atop a trunk, over a half-folded black cloak. A deserter from the Watch — or worse, working Hoja Roja's side while wearing the black.",
+        "secrets": ["working for Hoja Roja while ostensibly still Watch", "the papers in his room link the guild to Watch operations"]
+      }
+    },
+    {
+      "id": "char:red_maw", "entity_type": "character", "name": "The Red Maw",
+      "status": "dormant",
+      "data": {
+        "role": "imprisoned god beneath the Dominion; unseen antagonist",
+        "description": "The reason the Dominion exists. A greater god bound beneath the mountain; the trials are how it is fed enough to stay bound. Can impersonate the smaller gods of the maze.",
+        "constraints": ["cannot leave the mountain while the trials continue to feed the lesser gods"]
+      }
+    },
+
+    {"id": "loc:sacromonte", "entity_type": "location", "name": "Sacromonte", "status": "active",
+      "data": {"description": "A large Iberian-flavored city of filth and cathedrals on the continent of Vesper. Infanzones at the top, the Murk at the bottom, the Guardia in between. Tristan's home; Angharad's cage.", "regions": ["the Murk", "Estebra District", "the docks"]}},
+    {"id": "loc:bluebell", "entity_type": "location", "name": "The Bluebell", "status": "active",
+      "data": {"description": "A sturdy old cog used by the Watch to ferry trial-takers from Sacromonte to Vieja Perdida. Two days out, two days back. Black-cloaked officers; a one-armed crone named Celipa; a captain named Sfiso."}},
+    {"id": "loc:vieja_perdida", "entity_type": "location", "name": "Vieja Perdida / the Dominion of Lost Things", "status": "dormant",
+      "data": {"description": "The island where the Watch's annual trials are run. Named, by the Watch, a 'proving ground.' Named, by what remembers older, 'a prison.'", "regions": ["the docks and funeral pyres", "the High Road aqueduct", "the Old Fort", "the shrine maze of the Trial of Ruins", "the town of Cantica"]}},
+    {"id": "loc:old_fort", "entity_type": "location", "name": "The Old Fort", "status": "dormant",
+      "data": {"description": "A Watch outpost on the Dominion, anchored to an ancient stone pillar that reaches into the dark of the firmament. Sanctuary from beasts and cultists by rule; not by kindness."}},
+    {"id": "loc:cantica", "entity_type": "location", "name": "Cantica", "status": "dormant",
+      "data": {"description": "A small fortified Watch colony at the far end of the Dominion where the third trial — the Trial of Weeds — is run as a vote-to-execute. Lamplights that are too good to be the age they claim."}},
+    {"id": "loc:rookery", "entity_type": "location", "name": "The Rookery", "status": "dormant",
+      "data": {"description": "The island-fortress that is the Watch's true seat. Off-stage. Issues treaties (the Iscariot Accords) and demands reparations from whole kingdoms."}},
+
+    {"id": "fac:watch", "entity_type": "faction", "name": "The Watch", "status": "active",
+      "data": {"description": "An ancient institution of killers under treaty. Blackcloaks in the field; the Conclave at the Rookery; the Skiritai as the elite Sword circle. Conducts yearly trials on the Dominion to conscript survivors. Claims to protect Vesper from the Old Night. Is, in some sense, telling the truth.", "public_face": "sanctuary and trial", "hidden_face": "jailer of the Red Maw"}},
+    {"id": "fac:hoja_roja", "entity_type": "faction", "name": "Hoja Roja", "status": "active",
+      "data": {"description": "The premier criminal guild of Sacromonte. Runs the parlours. Writes debts that walk. The Watchman Tristan killed last night was in their pocket — which means Hoja Roja is now in the market for him.", "allied_debt_holder": "Cordero Sonriente"}},
+    {"id": "fac:red_eye", "entity_type": "faction", "name": "The Red Eye", "status": "dormant",
+      "data": {"description": "A cult of bloody-handed gods out of the Old Night — the reason there is a Watch at all. Operates on the Dominion as warbands of hollows and darklings; operates on the continent as thiefcatchers. Serves, without knowing, the Red Maw."}},
+    {"id": "fac:guardia", "entity_type": "faction", "name": "The Guardia", "status": "active",
+      "data": {"description": "Sacromonte's red-cloaked city guard. Corrupt by tradition. Held Angharad's inn yesterday; lost her at the docks."}},
+    {"id": "fac:cordero_sonriente", "entity_type": "faction", "name": "Cordero Sonriente", "status": "dormant",
+      "data": {"description": "A charitable house in Sacromonte that has, over three generations, become the predatory creditor of the Murk. Holds Yong's husband, among thousands of others. Nominally separate from Hoja Roja; operationally adjacent."}},
+    {"id": "fac:cerdan", "entity_type": "faction", "name": "House Cerdan", "status": "dormant",
+      "data": {"description": "An infanzone house — Augusto and Remund, their handmaids, their money, and their pride. On the Bluebell because the trials are how second sons become first."}},
+    {"id": "fac:ruesta", "entity_type": "faction", "name": "House Ruesta", "status": "dormant",
+      "data": {"description": "Isabel's house. Betrothed into Cerdan. Carries its own charm-contract lineage and does not discuss it.", "allied_with": "fac:cerdan"}},
+    {"id": "fac:villazur", "entity_type": "faction", "name": "House Villazur", "status": "dormant",
+      "data": {"description": "The procession Cozme Aflor rides with. Ferranda Villazur, eventually, will have her own reasons to matter."}},
+
+    {"id": "concept:glare", "entity_type": "concept", "name": "the Glare", "status": "active",
+      "data": {"description": "The light that leaks through cracks in the firmament, nourishes plants, and prevents Gloam sickness. All visible light in Vesper is a piece of the Glare or a simulacrum of it."}},
+    {"id": "concept:gloam", "entity_type": "concept", "name": "the Gloam", "status": "active",
+      "data": {"description": "The dark beneath the light. Traceable as Signs by the initiated; breeds lemures where it pools. The Straying Sea lies under unbroken Gloam."}},
+    {"id": "concept:contracts", "entity_type": "concept", "name": "contracts (pacts with gods)", "status": "active",
+      "data": {"description": "A binding between a god or spirit and a mortal. Manifests as a physical tic, an enhanced sense, or a bounded power. Governed, between kingdoms, by the Iscariot Accords. Foretelling is a capital-punishable contract in Malan.", "examples": ["Fortuna (Tristan)", "the Fisher (Angharad)", "Tiller-of-Rectitude (Remund)"]}},
+    {"id": "concept:law_of_rats", "entity_type": "concept", "name": "the Law of Rats", "status": "active",
+      "data": {"description": "The Murk's moral code, rendered as a verse: 'the hungry bite, the beggared snatch, the cornered fight.' A philosophy, a permission, and a confession."}},
+    {"id": "concept:trials", "entity_type": "concept", "name": "the Trials (Lines, Ruins, Weeds)", "status": "active",
+      "data": {"description": "Three named stages of the Watch's annual conscription on the Dominion. Trial of Lines: march from the docks to the Old Fort. Trial of Ruins: survive the shrine maze. Trial of Weeds: at Cantica, a vote-to-execute reckoning that can only be ended by unanimous mercy.", "public_purpose": "selection of Watchmen", "hidden_purpose": "annual feeding of the lesser maze-gods who keep the Red Maw bound"}},
+    {"id": "concept:iscariot_accords", "entity_type": "concept", "name": "the Iscariot Accords", "status": "dormant",
+      "data": {"description": "An ancient set of treaties that let the Watch force temporary truces between contracted parties. The Rookery can cite the Accords to demand reparations or war from whole kingdoms."}},
+    {"id": "concept:signs", "entity_type": "concept", "name": "Signs", "status": "dormant",
+      "data": {"description": "A forbidden but tolerated art of tracing the Gloam into stable shapes — a memory, a lock, a veil. Practitioners (like Maryam / 'Sarai') are often mistaken for magicians."}},
+    {"id": "concept:red_maw_truth", "entity_type": "concept", "name": "the truth of the Dominion", "status": "dormant",
+      "data": {"description": "That the Dominion of Lost Things is not a proving ground but a prison, and the trials feed the lesser gods of the maze so that the greater god — the Red Maw — remains bound beneath the mountain. Known to Francho, Vasanti (in part), and the Conclave."}},
+
+    {"id": "item:spinsters_milk", "entity_type": "item", "name": "Spinster's Milk", "status": "active",
+      "data": {"description": "A paralyzing venom rendered from Caotl's Spinsters (large scorpions). Fresh-brewed. Not cured by conventional medicine. Tristan carries two vials in a dosing kit."}},
+    {"id": "item:lodestone_extract", "entity_type": "item", "name": "lodestone extract", "status": "active",
+      "data": {"description": "A clear fluid pressed from a specific northern berry. Smells exactly like fresh blood to lemures and lupines. One of Tristan's most useful tools."}},
+    {"id": "item:tristans_list", "entity_type": "item", "name": "Tristan's List", "status": "active",
+      "data": {"description": "Five names Tristan carries in his marrow, not on paper. First name: Cozme Aflor. He will not say the others even to himself."}},
+    {"id": "item:rhadamanthine_pistol", "entity_type": "item", "name": "Rhadamanthine quartz relic pistol", "status": "dormant",
+      "data": {"description": "An heirloom-grade pistol fitted with Rhadamantine quartz — a glowing stone from Rasen that holds Glare. Effective against most spirits. Owned by the Meng twins on embarkation; likely to change hands within days."}},
+    {"id": "item:angharads_saber", "entity_type": "item", "name": "Angharad's saber", "status": "active",
+      "data": {"description": "Pereduri straight saber. Family weapon. The only thing she took from the inn when the Guardia came."}},
+    {"id": "item:osians_letter", "entity_type": "item", "name": "Uncle Osian's letter", "status": "active",
+      "data": {"description": "A letter from Captain Osian Tredegar naming the people who orchestrated the fall of House Tredegar and offering the Watch as shelter. In Angharad's coat."}},
+    {"id": "item:cabinet_papers", "entity_type": "item", "name": "papers from the stolen cabinet", "status": "active",
+      "data": {"description": "The papers Tristan lifted from the Azulejo hostel. Reveal that the man he killed was working Hoja Roja's side, and that Abuela's 'test' was a setup to route him toward the Bluebell."}}
+  ],
+  "relationships": [
+    {"source_id": "char:tristan", "target_id": "char:fortuna", "rel_type": "contracted_to"},
+    {"source_id": "char:tristan", "target_id": "char:abuela", "rel_type": "mentored_by"},
+    {"source_id": "char:tristan", "target_id": "char:cozme", "rel_type": "hunts"},
+    {"source_id": "char:tristan", "target_id": "fac:hoja_roja", "rel_type": "hunted_by"},
+    {"source_id": "char:angharad", "target_id": "char:fisher", "rel_type": "contracted_to"},
+    {"source_id": "char:angharad", "target_id": "char:uncle_osian", "rel_type": "kin_of"},
+    {"source_id": "char:angharad", "target_id": "fac:guardia", "rel_type": "hunted_by"},
+    {"source_id": "char:yong", "target_id": "fac:cordero_sonriente", "rel_type": "indebted_to"},
+    {"source_id": "char:isabel", "target_id": "char:remund", "rel_type": "betrothed_to"},
+    {"source_id": "char:augusto", "target_id": "char:remund", "rel_type": "kin_of"},
+    {"source_id": "char:cozme", "target_id": "fac:villazur", "rel_type": "serves"},
+    {"source_id": "fac:watch", "target_id": "loc:vieja_perdida", "rel_type": "controls"},
+    {"source_id": "fac:watch", "target_id": "concept:red_maw_truth", "rel_type": "keeps_secret_of"},
+    {"source_id": "char:red_maw", "target_id": "loc:vieja_perdida", "rel_type": "imprisoned_beneath"},
+    {"source_id": "fac:red_eye", "target_id": "char:red_maw", "rel_type": "unknowingly_serves"}
+  ],
+  "rules": [
+    {"id": "r:foretelling_illegal", "category": "law", "description": "Foretelling contracts are capital-punishable in the Kingdom of Malan; Angharad must never openly demonstrate the Fisher's gift before Malani authority."},
+    {"id": "r:iscariot_accords", "category": "magic", "description": "Contracted parties may be forced into temporary truce by a Watch officer invoking the Iscariot Accords; breaking that truce is itself a Watch-actionable offense."},
+    {"id": "r:fortuna_proximity", "category": "magic", "description": "Fortuna cannot manifest more than a room's length from Tristan and cannot touch matter; her luck-bending costs increase as Tristan's confidence rises."},
+    {"id": "r:fisher_cost", "category": "magic", "description": "Each glimpse the Fisher grants Angharad costs a fractional slice of her present — a momentary dissociation that, stacked, leaves her reeling."},
+    {"id": "r:gloam_sickness", "category": "cosmology", "description": "Prolonged exposure to food or regions deprived of the Glare causes Gloam sickness — a wasting of body and mind that only Glare-grown food or palestone can arrest."},
+    {"id": "r:sanctuary", "category": "social", "description": "Watch sanctuaries on the Dominion (yellow lamps) are inviolable by beasts and cultists by ancient pact; by Watch rule, any contract-bearer must declare their pact within an hour of entering or be shot."},
+    {"id": "r:trial_weeds_mechanics", "category": "social", "description": "At Cantica, each survivor votes in private to put three of their peers in iron cages; the group narrows until one remains for execution unless unanimous mercy is declared."}
+  ],
+  "plot_threads": [
+    {"id": "pt:tristans_list", "name": "Tristan's List", "description": "Tristan carries five names he means to kill; Cozme Aflor's presence on the Bluebell converts a long vendetta into an active hunt.", "arc_position": "rising", "priority": 9, "status": "active", "involved_entities": ["char:tristan", "char:cozme", "item:tristans_list"]},
+    {"id": "pt:angharads_revenge", "name": "Angharad's revenge", "description": "House Tredegar was destroyed by orchestrated infanzone conspiracy; Angharad means to survive the Watch's trials and come back with standing enough to answer it.", "arc_position": "rising", "priority": 9, "status": "active", "involved_entities": ["char:angharad", "char:uncle_osian", "item:osians_letter"]},
+    {"id": "pt:the_trials", "name": "The three trials", "description": "Lines, then Ruins, then Weeds. The ostensible throughline: survive each and earn a blackcloak. The hidden throughline: feed the maze-gods enough to keep the Red Maw bound.", "arc_position": "rising", "priority": 10, "status": "active", "involved_entities": ["fac:watch", "loc:vieja_perdida", "concept:trials", "concept:red_maw_truth"]},
+    {"id": "pt:hoja_roja_hunts_tristan", "name": "Hoja Roja hunts Tristan", "description": "The Watchman Tristan killed in the Azulejo hostel was on Hoja Roja's hook; the guild will extend onto the Dominion through proxies.", "arc_position": "rising", "priority": 7, "status": "active", "involved_entities": ["char:tristan", "fac:hoja_roja"]},
+    {"id": "pt:red_maw_containment", "name": "The Red Maw and the failing prison", "description": "The prison is holding, barely. The Red Maw impersonates the smaller gods of the maze; the Watch has quietly given up on ever destroying it.", "arc_position": "rising", "priority": 10, "status": "dormant", "involved_entities": ["char:red_maw", "fac:watch", "concept:red_maw_truth"]},
+    {"id": "pt:yongs_husband", "name": "Yong's husband in debt to Cordero Sonriente", "description": "Yong is on the Bluebell because the only coin that buys Pietro out of Cordero Sonriente is a Watch commission.", "arc_position": "rising", "priority": 6, "status": "dormant", "involved_entities": ["char:yong", "fac:cordero_sonriente"]}
+  ],
+  "foreshadowing": [
+    {"id": "fs:red_maw", "description": "A god older than the maze, impersonating the smaller gods — the reason the Dominion exists at all", "planted_at_update": 0, "payoff_target": "Red Maw revelation in Trial of Ruins"},
+    {"id": "fs:fishers_nature", "description": "The Fisher is not an old Pereduri spirit — it is something much older that used to be drowned", "planted_at_update": 0, "payoff_target": "Angharad's second Fisher-trial"},
+    {"id": "fs:augusto_will_betray", "description": "Augusto Cerdan's duelist posture conceals a coward; he will betray the company at the first real threat and do it again", "planted_at_update": 0, "payoff_target": "Augusto's first betrayal in Trial of Lines"},
+    {"id": "fs:isabel_charm_contract", "description": "Isabel Ruesta carries a contract no one is naming — a perception-filter that makes her easier to trust than she should be", "planted_at_update": 0, "payoff_target": "Ferranda's accusation and Song's deciphering"},
+    {"id": "fs:dominion_is_prison", "description": "The Watch's trials are not recruitment; they are a feeding mechanism keeping a greater thing bound", "planted_at_update": 0, "payoff_target": "Francho tells Tristan the truth"},
+    {"id": "fs:cantica_lamps", "description": "The lamplights of Cantica are too perfect — original C/C models that should have exploded by now; someone is maintaining them and does not want to be asked why", "planted_at_update": 0, "payoff_target": "devils in the square at Cantica"},
+    {"id": "fs:abuelas_real_hand", "description": "Abuela's 'test' was a route; whatever network she serves, it puts its own into the Watch on purpose", "planted_at_update": 0, "payoff_target": "late revelation about Abuela and the Krypteia"},
+    {"id": "fs:songs_dimming", "description": "Song Ren's clan broke a Luminary and darkened a whole Tianxi republic; she is not here as an applicant, she is here to finish something", "planted_at_update": 0, "payoff_target": "Song's champion-shot in the mayura temple"},
+    {"id": "fs:tupocs_crew", "description": "Tupoc Xical offers oaths like soup; his crew is not quite a warband and not quite not", "planted_at_update": 0, "payoff_target": "cultist ambush led by Tupoc on the crags"},
+    {"id": "fs:pistol_changes_hands", "description": "A Rhadamanthine-quartz relic pistol aboard the Bluebell that the current owners cannot defend and will not keep", "planted_at_update": 0, "payoff_target": "Tristan takes the pistol from the Meng twins on the docks"}
+  ]
+}

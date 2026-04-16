@@ -71,8 +71,12 @@ class DramaticPlanner:
         recent_tool_ids:
             Tool ids used in recent pipeline turns (for recency penalty).
         """
-        # Pull world context
-        characters = world.list_entities()
+        # Pull world context — split active vs dormant so the planner
+        # can see what's available to surface this update.
+        from app.world.schema import EntityStatus
+        all_entities = world.list_entities()
+        characters = [e for e in all_entities if e.status == EntityStatus.ACTIVE]
+        dormant_entities = [e for e in all_entities if e.status == EntityStatus.DORMANT]
         plot_threads = world.list_plot_threads()
         all_narrative = world.list_narrative(limit=10_000)
         recent_narrative = all_narrative[-2:] if all_narrative else []
@@ -169,6 +173,7 @@ class DramaticPlanner:
                 "directive": directive,
                 "player_action": player_action,
                 "characters": characters,
+                "dormant_entities": dormant_entities,
                 "plot_threads": plot_threads,
                 "recent_narrative": recent_narrative,
                 "tools_with_examples": tools_with_examples,

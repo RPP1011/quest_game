@@ -74,6 +74,7 @@ def init(
         "premise": raw_seed.get("premise", ""),
         "themes": raw_seed.get("themes", []),
         "protagonist": raw_seed.get("protagonist", ""),
+        "narrator": raw_seed.get("narrator", {}),
     }
     config_path = db.parent / "config.json"
     config_path.write_text(_json.dumps(quest_config, indent=2))
