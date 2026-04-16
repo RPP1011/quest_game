@@ -1,0 +1,40 @@
+thematic_presence (chapter-scale): The input is a FULL CHAPTER. Score
+whether thematic material is actively worked into the prose — through
+image repetition, symbolic action, structural echo — or whether themes
+are either absent or merely named. Judge what the chapter DOES with a
+theme, not what it SAYS about one.
+
+0.0 = no detectable theme. Events carry themselves and nothing else; no
+      image returns; no recurring concern organizes the scenes.
+0.3 = a theme is named or gestured at once (in a speech, in a
+      narrator aside) but not embodied in the chapter's structure or
+      imagery. Theme as flag, not fabric.
+0.6 = a theme is worked into at least two of {recurring imagery,
+      parallel action between scenes, a decision that embodies the
+      concern}. The chapter argues something, not just asserts it.
+0.9 = thematic material saturates the chapter without ever being named
+      directly. The same concern returns in different scales (a
+      conversation mirrors an earlier physical act; a small transaction
+      echoes a standing moral question). The chapter's concerns and its
+      events are inseparable.
+
+Strong themes in this corpus tend to be: debt and obligation, name as
+identity, the cost of survival, the difference between mercy and
+weakness, the honor/shame economy of nobles. But any concern
+consistently worked is scorable — do not require the theme to be
+"literary" in tone.
+
+Red flags for LOW:
+  - Characters give speeches about The Theme.
+  - Events happen; no pattern across scenes connects to any concern.
+  - Different scenes feel like different chapters stapled together.
+
+Signs of HIGH:
+  - An image from scene 1 is inverted or completed in scene 4.
+  - Two otherwise unrelated exchanges share structure (a bargain in
+    scene 2 mirrors a betrayal in scene 5).
+  - A small physical action in scene 3 literalizes the theme the
+    chapter is running.
+
+Return a single score in [0.0, 1.0] and one sentence of rationale naming
+the theme and one concrete place it is worked (not just named).

@@ -1,0 +1,44 @@
+interiority_depth (chapter-scale): The input is a FULL CHAPTER. Score
+how deeply the reader sits inside the POV character's mind. Judge the
+closeness of the lens and the specificity of the interior detail —
+not the frequency. A single well-earned interior beat can outscore a
+chapter of constant internal monologue.
+
+0.0 = pure external camera. Actions, dialogue, and descriptions only;
+      no access to character thought or feeling except via behavior.
+0.3 = occasional shallow interiority. A line here and there of
+      character reaction ("she was afraid"), mostly summarized rather
+      than embodied. Reader is near the POV but not in them.
+0.6 = steady close third (or close second / first). Reader has access
+      to specific thoughts, memories, and associations — not just
+      feelings — at least once per scene. Interiority has texture:
+      the POV notices particular things because of who they are.
+0.9 = fully embedded close POV. Reader sees the world through the
+      character's specific cognitive filter: their biases, their
+      jokes, the comparisons that come to mind, the things they
+      refuse to look at directly. Interior and exterior are
+      continuous — world detail is already characterization.
+
+Depth over frequency: a chapter that dips into interiority sparingly
+but always with specificity and consequence scores higher than one
+that narrates every reaction. Interior paragraphs that restate what
+the dialogue just showed score LOW.
+
+Red flags for LOW:
+  - Generic emotion labels ("she felt angry", "he was uncertain") that
+    could apply to any character.
+  - Interior monologue that restates or summarizes what the scene just
+    dramatized.
+  - Access to thought only during big emotional beats; zero during
+    action or transition.
+
+Signs of HIGH:
+  - A small detail of the setting (a cracked tile, a particular bird)
+    gets a private association that belongs only to this character.
+  - The POV's reading of another character's behavior is both
+    plausible and wrong in a way the reader can feel.
+  - A memory surfaces mid-scene and colors the next line of dialogue.
+
+Return a single score in [0.0, 1.0] and one sentence of rationale
+pointing to one specific moment where the lens goes close (or noting
+that it does not).

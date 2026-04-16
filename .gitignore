@@ -21,6 +21,8 @@ data/calibration/pairs_train.jsonl
 data/calibration/pairs_test.jsonl
 data/calibration/lora_adapter/
 data/calibration/lora_pairwise/
+# Annotations (regenerable via tools/annotate_chapter.py + tools/judge_chapters.py)
+data/calibration/annotations/
 # SFT collection: per-scene craft-brief + candidates + scores, local only
 data/sft/
 # Day 10 50-chapter stress test: per-update metrics, local only
