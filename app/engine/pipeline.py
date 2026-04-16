@@ -2690,6 +2690,7 @@ class Pipeline:
             ],
             temperature=0.6,
             max_tokens=REVISE_MAX_TOKENS,
+            thinking=False,  # revise must emit prose only — no chain-of-thought
         )
         latency = int((time.perf_counter() - t0) * 1000)
         revised = OutputParser.parse_prose(raw)
