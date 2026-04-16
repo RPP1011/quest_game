@@ -183,7 +183,7 @@ async def test_run_rollout_happy_path_resume(tmp_path: Path):
         with patch.object(harness_mod, "select_action", fake_select_action):
             await run_rollout(
                 quests_dir=quests, quest_id="q1", rollout_id=rid,
-                client=SimpleNamespace(),
+                client=SimpleNamespace(), score=False,
             )
 
     # Verify: 2 chapters committed
@@ -217,7 +217,7 @@ async def test_run_rollout_happy_path_resume(tmp_path: Path):
         with patch.object(harness_mod, "select_action", fake_select_action):
             await run_rollout(
                 quests_dir=quests, quest_id="q1", rollout_id=rid,
-                client=SimpleNamespace(),
+                client=SimpleNamespace(), score=False,
             )
     # Only 2 new pipeline.run calls (chapters 3 and 4)
     assert call_count["n"] - before == 2
@@ -249,7 +249,7 @@ async def test_run_rollout_failure_marks_status(tmp_path: Path):
         with pytest.raises(RuntimeError):
             await run_rollout(
                 quests_dir=quests, quest_id="q1", rollout_id=rid,
-                client=SimpleNamespace(),
+                client=SimpleNamespace(), score=False,
             )
 
     conn = open_db(quests / "q1" / "quest.db")

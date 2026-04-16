@@ -1697,6 +1697,106 @@ class WorldStateManager:
         ).fetchall()
         return [_row_to_rollout_chapter(r) for r in rows]
 
+    # ---- KB tables (Phase 4: scoring + extraction) ----
+    def save_chapter_scores(
+        self, rollout_id: str, chapter_index: int,
+        scores: dict[str, dict],
+    ) -> None:
+        """Upsert per-dim score rows. ``scores`` is a {dim: {score, rationale}}
+        mapping (the shape returned by the chapter judge)."""
+        for dim, payload in scores.items():
+            score = float(payload.get("score", 0.0))
+            rationale = str(payload.get("rationale", ""))
+            self._conn.execute(
+                "INSERT INTO kb_chapter_scores(rollout_id, chapter_index, dim, "
+                "score, rationale) VALUES (?, ?, ?, ?, ?) "
+                "ON CONFLICT(rollout_id, chapter_index, dim) DO UPDATE SET "
+                "score=excluded.score, rationale=excluded.rationale",
+                (rollout_id, chapter_index, dim, score, rationale),
+            )
+        self._conn.commit()
+
+    def list_chapter_scores(
+        self, rollout_id: str, chapter_index: int | None = None,
+    ) -> list[dict]:
+        if chapter_index is None:
+            rows = self._conn.execute(
+                "SELECT chapter_index, dim, score, rationale "
+                "FROM kb_chapter_scores WHERE rollout_id=? "
+                "ORDER BY chapter_index, dim",
+                (rollout_id,),
+            ).fetchall()
+        else:
+            rows = self._conn.execute(
+                "SELECT chapter_index, dim, score, rationale "
+                "FROM kb_chapter_scores WHERE rollout_id=? AND chapter_index=? "
+                "ORDER BY dim",
+                (rollout_id, chapter_index),
+            ).fetchall()
+        return [
+            {"chapter_index": r["chapter_index"], "dim": r["dim"],
+             "score": r["score"], "rationale": r["rationale"]}
+            for r in rows
+        ]
+
+    def save_hook_payoff(
+        self, *, quest_id: str, rollout_id: str, hook_id: str,
+        planted_at_chapter: int | None = None,
+        paid_off_at_chapter: int | None = None,
+    ) -> None:
+        self._conn.execute(
+            "INSERT INTO kb_hook_payoffs(quest_id, rollout_id, hook_id, "
+            "planted_at_chapter, paid_off_at_chapter) VALUES (?, ?, ?, ?, ?) "
+            "ON CONFLICT(rollout_id, hook_id) DO UPDATE SET "
+            "planted_at_chapter=COALESCE(excluded.planted_at_chapter, planted_at_chapter), "
+            "paid_off_at_chapter=COALESCE(excluded.paid_off_at_chapter, paid_off_at_chapter)",
+            (quest_id, rollout_id, hook_id, planted_at_chapter, paid_off_at_chapter),
+        )
+        self._conn.commit()
+
+    def list_hook_payoffs(self, quest_id: str) -> list[dict]:
+        rows = self._conn.execute(
+            "SELECT rollout_id, hook_id, planted_at_chapter, paid_off_at_chapter "
+            "FROM kb_hook_payoffs WHERE quest_id=? ORDER BY hook_id, rollout_id",
+            (quest_id,),
+        ).fetchall()
+        return [
+            {"rollout_id": r["rollout_id"], "hook_id": r["hook_id"],
+             "planted_at_chapter": r["planted_at_chapter"],
+             "paid_off_at_chapter": r["paid_off_at_chapter"]}
+            for r in rows
+        ]
+
+    def save_entity_usage(
+        self, *, quest_id: str, rollout_id: str, entity_id: str,
+        introduced_at_chapter: int | None = None,
+        mention_chapters: list[int] | None = None,
+    ) -> None:
+        self._conn.execute(
+            "INSERT INTO kb_entity_usage(quest_id, rollout_id, entity_id, "
+            "introduced_at_chapter, mention_chapters) VALUES (?, ?, ?, ?, ?) "
+            "ON CONFLICT(rollout_id, entity_id) DO UPDATE SET "
+            "introduced_at_chapter=COALESCE(excluded.introduced_at_chapter, introduced_at_chapter), "
+            "mention_chapters=excluded.mention_chapters",
+            (quest_id, rollout_id, entity_id,
+             introduced_at_chapter,
+             json.dumps(mention_chapters or [])),
+        )
+        self._conn.commit()
+
+    def list_entity_usage(self, quest_id: str) -> list[dict]:
+        rows = self._conn.execute(
+            "SELECT rollout_id, entity_id, introduced_at_chapter, mention_chapters "
+            "FROM kb_entity_usage WHERE quest_id=? ORDER BY entity_id, rollout_id",
+            (quest_id,),
+        ).fetchall()
+        return [
+            {"rollout_id": r["rollout_id"], "entity_id": r["entity_id"],
+             "introduced_at_chapter": r["introduced_at_chapter"],
+             "mention_chapters": json.loads(r["mention_chapters"] or "[]")}
+            for r in rows
+        ]
+
     def snapshot(self) -> WorldSnapshot:
         return WorldSnapshot(
             entities=self.list_entities(),

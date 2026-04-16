@@ -264,6 +264,99 @@ def create_app(*, quests_dir: Path, server_url: str) -> FastAPI:
             raise HTTPException(500, f"candidate generation failed: {e}")
         return [c.model_dump(mode="json") for c in cands]
 
+    @app.get("/api/quests/{qid}/kb")
+    def get_kb(qid: str) -> dict:
+        """Aggregated KB views across all rollouts for this quest.
+
+        Returns:
+        - hook_payoffs: per-hook list of {planted_at_chapter, paid_off_at_chapter}
+          across rollouts, plus a payoff_rate (paid_off_count / total_rollouts).
+        - entity_usage: per-entity {introduced_at_chapter, mention_chapters}
+          rows, plus a screen_time count.
+        - dim_means_by_chapter: per-chapter-index, per-dim mean scores
+          across all rollouts.
+        """
+        sm, _ = _open(qid)
+        rollouts = sm.list_rollouts(quest_id=qid)
+        n_rollouts = len(rollouts)
+
+        hooks_raw = sm.list_hook_payoffs(qid)
+        # Group by hook_id
+        from collections import defaultdict
+        hooks_by_id: dict[str, list] = defaultdict(list)
+        for r in hooks_raw:
+            hooks_by_id[r["hook_id"]].append(r)
+        hook_payoffs = []
+        for hid, rows in sorted(hooks_by_id.items()):
+            paid = sum(1 for r in rows if r["paid_off_at_chapter"] is not None)
+            hook_payoffs.append({
+                "hook_id": hid,
+                "planted_count": sum(1 for r in rows if r["planted_at_chapter"] is not None),
+                "paid_off_count": paid,
+                "total_rollouts": n_rollouts,
+                "payoff_rate": paid / n_rollouts if n_rollouts > 0 else 0.0,
+                "rows": rows,
+            })
+
+        eu_raw = sm.list_entity_usage(qid)
+        eu_by_id: dict[str, list] = defaultdict(list)
+        for r in eu_raw:
+            eu_by_id[r["entity_id"]].append(r)
+        entity_usage = []
+        for eid, rows in sorted(eu_by_id.items()):
+            total_mentions = sum(len(r["mention_chapters"]) for r in rows)
+            entity_usage.append({
+                "entity_id": eid,
+                "introduced_count": sum(1 for r in rows if r["introduced_at_chapter"] is not None),
+                "total_rollouts": n_rollouts,
+                "screen_time": total_mentions,
+                "rows": rows,
+            })
+
+        # Per-(chapter_index, dim) mean across all rollouts for this quest
+        dim_means: dict[tuple[int, str], list[float]] = defaultdict(list)
+        for r in rollouts:
+            for s in sm.list_chapter_scores(r.id):
+                dim_means[(s["chapter_index"], s["dim"])].append(s["score"])
+        dim_means_by_chapter: list[dict] = []
+        for (ch_idx, dim), scores in sorted(dim_means.items()):
+            dim_means_by_chapter.append({
+                "chapter_index": ch_idx, "dim": dim,
+                "mean": sum(scores) / len(scores),
+                "n_rollouts_scored": len(scores),
+            })
+
+        return {
+            "n_rollouts": n_rollouts,
+            "hook_payoffs": hook_payoffs,
+            "entity_usage": entity_usage,
+            "dim_means_by_chapter": dim_means_by_chapter,
+        }
+
+    @app.get("/api/quests/{qid}/rollouts/{rid}/scores")
+    def get_rollout_scores(qid: str, rid: str) -> dict:
+        """Per-chapter dim breakdown for one rollout."""
+        sm, _ = _open(qid)
+        try:
+            sm.get_rollout(rid)
+        except Exception:
+            raise HTTPException(404, f"unknown rollout: {rid}")
+        rows = sm.list_chapter_scores(rid)
+        # Group by chapter
+        from collections import defaultdict
+        by_chapter: dict[int, dict] = defaultdict(dict)
+        for r in rows:
+            by_chapter[r["chapter_index"]][r["dim"]] = {
+                "score": r["score"], "rationale": r["rationale"],
+            }
+        return {
+            "rollout_id": rid,
+            "chapters": [
+                {"chapter_index": idx, "dims": dims}
+                for idx, dims in sorted(by_chapter.items())
+            ],
+        }
+
     @app.get("/api/quests/{qid}/rollouts")
     def list_rollouts(qid: str) -> list[dict]:
         sm, _ = _open(qid)

@@ -29,7 +29,9 @@ from app.world.schema import (
 from app.world.state_manager import WorldStateManager
 
 from .action_selector import select_action
+from .kb_extractor import persist_chapter_kb
 from .profiles import VirtualPlayerProfile, load_profile
+from .scorer import score_and_persist_chapter
 
 
 def _utcnow_iso() -> str:
@@ -141,6 +143,7 @@ async def run_rollout(
     quest_id: str,
     rollout_id: str,
     client: InferenceClient,
+    score: bool = True,
 ) -> RolloutRun:
     """Execute (or resume) a single rollout end-to-end.
 
@@ -150,6 +153,11 @@ async def run_rollout(
         Root quests dir (e.g. ``data/quests``).
     quest_id:
         The parent quest's id.
+    score:
+        If True (default), runs the 8-dim chapter judge after each
+        committed chapter and persists scores into kb_chapter_scores +
+        the chapter row's judge_scores. Adds ~5–15s per chapter.
+        Disable for fast smoke tests.
     rollout_id:
         The rollout_runs row id. Must already exist.
 
@@ -236,15 +244,43 @@ async def run_rollout(
                 prior_choices = list(out.choices or [])
 
                 # Persist chapter to main DB
-                main_sm.save_rollout_chapter(RolloutChapter(
+                chapter = RolloutChapter(
                     rollout_id=rollout_id, chapter_index=ch_idx,
                     player_action=player_action, prose=prose,
                     trace_id=out.trace.trace_id,
                     extract=RolloutExtract(),
-                ))
+                )
+                main_sm.save_rollout_chapter(chapter)
                 main_sm.update_rollout(
                     rollout_id, chapters_complete=ch_idx,
                 )
+
+                # Phase 4: KB extraction (always on, no LLM cost)
+                try:
+                    trace_dict = json.loads(
+                        out.trace.model_dump_json()
+                    )
+                    persist_chapter_kb(
+                        world=main_sm, quest_id=quest_id,
+                        rollout_id=rollout_id, chapter_index=ch_idx,
+                        prose=prose, trace=trace_dict,
+                        all_entities=rollout_sm.list_entities(),
+                    )
+                except Exception:
+                    # KB extraction is best-effort; never fail a rollout
+                    # because the parser hit something unexpected.
+                    pass
+
+                # Phase 4: scoring (opt-in, ~5-15s per chapter)
+                if score:
+                    try:
+                        await score_and_persist_chapter(
+                            client=client, world=main_sm,
+                            rollout_id=rollout_id, chapter=chapter,
+                        )
+                    except Exception:
+                        # Same: scoring failures don't break the rollout.
+                        pass
         finally:
             rollout_conn.close()
 

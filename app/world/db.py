@@ -263,6 +263,50 @@ CREATE TABLE IF NOT EXISTS rollout_chapters (
     PRIMARY KEY (rollout_id, chapter_index),
     FOREIGN KEY (rollout_id) REFERENCES rollout_runs(id) ON DELETE CASCADE
 );
+
+-- Phase 4: KB tables. judge_scores live in two places: per-row JSON on
+-- rollout_chapters (fast access for one chapter) AND per-dim rows on
+-- kb_chapter_scores (aggregation queries across rollouts).
+
+CREATE TABLE IF NOT EXISTS kb_chapter_scores (
+    rollout_id TEXT NOT NULL,
+    chapter_index INTEGER NOT NULL,
+    dim TEXT NOT NULL,
+    score REAL NOT NULL,
+    rationale TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (rollout_id, chapter_index, dim),
+    FOREIGN KEY (rollout_id) REFERENCES rollout_runs(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_kb_chapter_scores_dim
+    ON kb_chapter_scores(dim, score);
+
+CREATE TABLE IF NOT EXISTS kb_hook_payoffs (
+    quest_id TEXT NOT NULL,
+    rollout_id TEXT NOT NULL,
+    hook_id TEXT NOT NULL,
+    planted_at_chapter INTEGER,
+    paid_off_at_chapter INTEGER,
+    PRIMARY KEY (rollout_id, hook_id),
+    FOREIGN KEY (rollout_id) REFERENCES rollout_runs(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_kb_hook_payoffs_quest
+    ON kb_hook_payoffs(quest_id, hook_id);
+
+CREATE TABLE IF NOT EXISTS kb_entity_usage (
+    quest_id TEXT NOT NULL,
+    rollout_id TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    introduced_at_chapter INTEGER,
+    mention_chapters TEXT NOT NULL DEFAULT '[]',
+    PRIMARY KEY (rollout_id, entity_id),
+    FOREIGN KEY (rollout_id) REFERENCES rollout_runs(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_kb_entity_usage_quest
+    ON kb_entity_usage(quest_id, entity_id);
 """
 
 
