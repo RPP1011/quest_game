@@ -22,9 +22,7 @@ class PipelineTrace(BaseModel):
     def set_on_update(self, fn: Callable[["PipelineTrace"], None] | None) -> None:
         self._on_update = fn
 
-    def add_stage(self, result: StageResult) -> None:
-        self.stages.append(result)
-        self.total_latency_ms += result.latency_ms
+    def _maybe_persist(self) -> None:
         if self._on_update is not None:
             try:
                 self._on_update(self)
@@ -32,6 +30,18 @@ class PipelineTrace(BaseModel):
                 # Live persistence is best-effort; never let a save failure
                 # bubble up and break the pipeline.
                 pass
+
+    def add_stage(self, result: StageResult) -> None:
+        self.stages.append(result)
+        self.total_latency_ms += result.latency_ms
+        self._maybe_persist()
+
+    def set_outcome(self, outcome: str) -> None:
+        """Set the final outcome and trigger an incremental persist so the
+        on-disk trace reflects the terminal state (otherwise the save only
+        fires on the last add_stage and shows outcome='running')."""
+        self.outcome = outcome
+        self._maybe_persist()
 
     @property
     def total_tokens(self) -> TokenUsage:

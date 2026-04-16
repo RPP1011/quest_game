@@ -547,7 +547,7 @@ class Pipeline:
                 pipeline_trace_id=trace.trace_id,
                 pov_character_id=self._primary_pov_character_id(),
             ))
-            trace.outcome = outcome
+            trace.set_outcome(outcome)
 
             # Wave 1c: gated narrative-embedding write. No-op while
             # ``_retrieval_embedder`` is ``None`` (default); Wave 3b activates.
@@ -622,7 +622,7 @@ class Pipeline:
             pipeline_trace_id=trace.trace_id,
             pov_character_id=self._primary_pov_character_id(),
         ))
-        trace.outcome = outcome
+        trace.set_outcome(outcome)
 
         if (outcome == "committed"
                 and self._quest_id is not None
@@ -1659,7 +1659,7 @@ class Pipeline:
                 errors=[StageError(kind="parse_error", message="not a dict")],
                 latency_ms=latency,
             ))
-            trace.outcome = "failed"
+            trace.set_outcome("failed")
             raise ParseError(f"plan not a dict: {parsed!r}")
         normalized = _normalize_beat_sheet(parsed)
         errors: list[StageError] = []
