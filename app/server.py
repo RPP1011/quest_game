@@ -245,6 +245,109 @@ def create_app(*, quests_dir: Path, server_url: str) -> FastAPI:
         except Exception:
             return {}
 
+    @app.get("/api/quests/{qid}/world")
+    def get_world(qid: str) -> dict:
+        """Browseable snapshot of the seeded world.
+
+        Groups entities by type (character, location, faction, item,
+        concept), and returns plot threads, foreshadowing hooks, world
+        rules, and motifs. Everything the seed shipped, made discoverable
+        in the UI without the player having to read a JSON file.
+        """
+        from app.world.schema import EntityStatus, EntityType
+        sm, _ = _open(qid)
+        entities = sm.list_entities()
+        non_destroyed = [e for e in entities if e.status != EntityStatus.DESTROYED]
+
+        by_type: dict[str, list] = {
+            t.value: [] for t in EntityType
+        }
+        for e in non_destroyed:
+            by_type[e.entity_type.value].append({
+                "id": e.id, "name": e.name,
+                "status": e.status.value,
+                "description": e.data.get("description", ""),
+                "role": e.data.get("role", ""),
+                "data": e.data,
+            })
+
+        plot_threads = [
+            {
+                "id": t.id, "name": t.name, "description": t.description,
+                "status": t.status.value, "priority": t.priority,
+                "arc_position": t.arc_position.value,
+                "involved_entities": t.involved_entities,
+            }
+            for t in sm.list_plot_threads()
+        ]
+
+        try:
+            hook_rows = sm._conn.execute(
+                "SELECT id, description, status, planted_at_update, payoff_target FROM foreshadowing ORDER BY id"
+            ).fetchall()
+            hooks = [
+                {
+                    "id": r[0], "description": r[1], "status": r[2],
+                    "planted_at_update": r[3], "payoff_target": r[4],
+                }
+                for r in hook_rows
+            ]
+        except Exception:
+            hooks = []
+
+        rules = [
+            {"id": r.id, "category": r.category, "description": r.description}
+            for r in sm.list_rules()
+        ]
+
+        try:
+            motifs = [
+                {
+                    "id": m.id, "name": m.name, "description": m.description,
+                    "semantic_range": m.semantic_range,
+                }
+                for m in sm.list_motifs(qid)
+            ]
+        except Exception:
+            motifs = []
+
+        return {
+            "entities_by_type": by_type,
+            "plot_threads": plot_threads,
+            "foreshadowing": hooks,
+            "rules": rules,
+            "motifs": motifs,
+        }
+
+    @app.get("/api/quests/{qid}/starting-actions")
+    def get_starting_actions(qid: str) -> list[dict]:
+        """Suggested opening actions for chapter 1.
+
+        Derived from the seed's top-priority active plot threads, so the
+        player has concrete invitations into the world without having to
+        invent an action from the premise alone.
+        """
+        from app.world.schema import EntityStatus, ThreadStatus
+        sm, _ = _open(qid)
+        # Only offer suggestions when no chapters have been committed yet
+        records = sm.list_narrative(limit=1)
+        if records:
+            return []
+        threads = sm.list_plot_threads()
+        active = [t for t in threads if t.status == ThreadStatus.ACTIVE]
+        active.sort(key=lambda t: -t.priority)
+        out: list[dict] = []
+        # Build suggestions from top-3 active threads. We use their
+        # description verbatim as the "hook" — the LLM will turn the
+        # suggestion into a first action when submitted.
+        for t in active[:3]:
+            out.append({
+                "title": t.name,
+                "description": t.description,
+                "thread_id": t.id,
+            })
+        return out
+
     @app.get("/api/quests/{qid}/scene")
     def get_scene(qid: str) -> SceneContext:
         from app.world.schema import EntityStatus, EntityType, ThreadStatus
@@ -315,6 +418,7 @@ def create_app(*, quests_dir: Path, server_url: str) -> FastAPI:
             quest_config=quest_config,
             quest_id=qid,
             arc_id="main",
+            live_trace_save=store.save,
         )
         records = sm.list_narrative(limit=10_000)
         update_number = (max((r.update_number for r in records), default=0)) + 1

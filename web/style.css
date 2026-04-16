@@ -84,6 +84,28 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .choices-bar button.choice.write-in:hover { background: #1e1a22; border-color: #5a4a5a; }
 .tag { display: inline-block; background: #1e1a12; color: #a59680; border: 1px solid #3a3222; border-radius: 3px; padding: 1px 6px; font-size: 10px; font-style: normal; text-transform: lowercase; font-family: system-ui, sans-serif; }
 
+/* --- Starter actions (empty quest invitation) --- */
+#starting-actions { margin-top: 20px; padding-top: 18px; border-top: 1px solid #2a241a; font-family: system-ui, sans-serif; }
+.starter-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #8a7a60; margin-bottom: 10px; }
+#starter-list { display: flex; flex-direction: column; gap: 8px; }
+.starter { background: #1a1610; color: #d4c8ae; border: 1px solid #2a241a; padding: 10px 14px; border-radius: 4px; cursor: pointer; font-size: 13px; text-align: left; margin-top: 0; transition: background 0.15s, border-color 0.15s; }
+.starter:hover { background: #2a241a; border-color: #5a4a32; }
+.starter .starter-title { font-weight: 500; color: #e8dcc0; margin-bottom: 4px; }
+.starter .starter-desc { font-size: 12px; color: #a59680; line-height: 1.5; font-style: italic; }
+
+/* --- Live stage progress during generation --- */
+.gen-header { display: flex; gap: 16px; align-items: center; }
+.gen-stages { margin-top: 14px; padding-top: 14px; border-top: 1px solid #2a241a; }
+.gen-stages-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #8a7a60; margin-bottom: 8px; }
+.gen-stages-list { display: flex; flex-direction: column; gap: 4px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+.gen-stages-list li { padding: 4px 8px; color: #a59680; cursor: default; background: transparent; }
+.gen-stages-list li:hover { background: transparent; }
+.gen-stages-list li.stage-done { color: #8abc7a; }
+.gen-stages-list li.stage-error { color: #c78a7a; }
+.gen-stages-list li .stage-name { color: inherit; margin-right: 8px; }
+.gen-stages-list li .stage-lat { color: #6a5f48; font-variant-numeric: tabular-nums; }
+.gen-stages-list .stage-empty { color: #6a5f48; font-style: italic; }
+
 /* --- Traces --- */
 .stage { margin-bottom: 8px; font-size: 12px; }
 .stage summary { cursor: pointer; padding: 4px 0; color: #a59680; }
@@ -91,3 +113,32 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .outcome-committed { color: #8abc7a; }
 .outcome-flagged_qm { color: #c8b897; }
 .outcome-failed { color: #c78a7a; }
+.outcome-running { color: #c8b897; }
+
+/* --- World drawer --- */
+.header-spacer { flex: 1; }
+#world-toggle { margin: 0; background: #2a241a; border-color: #5a4a32; color: #d4c8ae; font-size: 12px; padding: 6px 14px; letter-spacing: 0.08em; text-transform: uppercase; }
+#world-toggle:hover { background: #3a3222; }
+#world-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 10; }
+#world-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(640px, 90vw); background: #14110d; border-left: 1px solid #3a3222; z-index: 11; display: flex; flex-direction: column; overflow: hidden; box-shadow: -8px 0 24px rgba(0,0,0,0.5); font-family: system-ui, sans-serif; }
+.drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid #2a241a; }
+.drawer-header h2 { margin: 0; }
+#world-close { margin: 0; background: transparent; border: none; color: #8a7a60; font-size: 16px; padding: 4px 8px; }
+#world-close:hover { background: #2a241a; color: #e8dcc0; }
+.drawer-tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px 16px; border-bottom: 1px solid #2a241a; background: #0f0d0b; }
+.drawer-tab { margin: 0; padding: 5px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; background: transparent; border: 1px solid transparent; color: #8a7a60; border-radius: 4px; }
+.drawer-tab:hover { background: #1a1610; color: #c8b897; }
+.drawer-tab.active { background: #2a241a; border-color: #5a4a32; color: #e8dcc0; }
+.drawer-content { flex: 1; overflow-y: auto; padding: 18px 22px; color: #d4c8ae; font-size: 13px; line-height: 1.5; }
+.world-item { padding: 12px 0; border-bottom: 1px solid #2a241a; }
+.world-item:last-child { border-bottom: none; }
+.world-item-header { display: flex; gap: 10px; align-items: baseline; margin-bottom: 4px; }
+.world-item-name { font-weight: 500; color: #e8dcc0; font-size: 14px; }
+.world-item-id { color: #6a5f48; font-size: 11px; font-family: ui-monospace, Menlo, monospace; }
+.world-item-status { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; padding: 1px 6px; border-radius: 3px; }
+.world-item-status.active { background: #1a2a1a; color: #8abc7a; }
+.world-item-status.dormant { background: #2a241a; color: #a59680; }
+.world-item-status.resolved, .world-item-status.paid_off { background: #1a1a2a; color: #8a8abd; }
+.world-item-role { color: #a59680; font-size: 12px; font-style: italic; margin-bottom: 4px; }
+.world-item-desc { color: #c8b897; line-height: 1.55; }
+.world-item-meta { color: #8a7a60; font-size: 11px; margin-top: 6px; }

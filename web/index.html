@@ -9,6 +9,8 @@
 <header>
   <h1>Quest Game</h1>
   <div id="header-context"></div>
+  <div class="header-spacer"></div>
+  <button id="world-toggle" hidden title="Browse the world (characters, factions, hooks, rules)">World</button>
 </header>
 <main>
   <aside id="quests-panel">
@@ -41,6 +43,10 @@
             <span id="hero-location"></span>
           </div>
         </div>
+        <div id="starting-actions" hidden>
+          <div class="starter-label">Opening threads — click to seed the first chapter</div>
+          <div id="starter-list"></div>
+        </div>
       </section>
       <section id="scene-panel" hidden>
         <div class="scene-field"><span class="scene-label">Location</span><span id="scene-location">--</span></div>
@@ -55,11 +61,17 @@
       </form>
       <div id="status"></div>
       <div id="generating-panel" hidden>
-        <div class="gen-spinner"></div>
-        <div class="gen-text">
-          <div class="gen-title">Generating chapter&hellip;</div>
-          <div class="gen-sub">Running arc → dramatic → craft planners, then writing the scene beat-by-beat. Typically ~5 minutes.</div>
-          <div class="gen-timer"><span id="gen-elapsed">0:00</span> elapsed</div>
+        <div class="gen-header">
+          <div class="gen-spinner"></div>
+          <div class="gen-text">
+            <div class="gen-title">Generating chapter&hellip;</div>
+            <div class="gen-sub">Running the full pipeline. Typically ~5 minutes on this model.</div>
+            <div class="gen-timer"><span id="gen-elapsed">0:00</span> elapsed</div>
+          </div>
+        </div>
+        <div class="gen-stages">
+          <div class="gen-stages-label">Live progress (polled every 2s)</div>
+          <ul id="gen-stages-list" class="gen-stages-list"></ul>
         </div>
       </div>
     </div>
@@ -70,6 +82,30 @@
     <div id="trace-detail"></div>
   </aside>
 </main>
+
+<!-- World drawer -->
+<div id="world-backdrop" hidden></div>
+<aside id="world-drawer" hidden>
+  <header class="drawer-header">
+    <h2>World</h2>
+    <button id="world-close" title="Close">✕</button>
+  </header>
+  <nav id="world-tabs" class="drawer-tabs">
+    <button class="drawer-tab active" data-tab="characters">Characters</button>
+    <button class="drawer-tab" data-tab="factions">Factions</button>
+    <button class="drawer-tab" data-tab="locations">Locations</button>
+    <button class="drawer-tab" data-tab="items">Items</button>
+    <button class="drawer-tab" data-tab="concepts">Concepts</button>
+    <button class="drawer-tab" data-tab="threads">Threads</button>
+    <button class="drawer-tab" data-tab="hooks">Hooks</button>
+    <button class="drawer-tab" data-tab="rules">Rules</button>
+    <button class="drawer-tab" data-tab="motifs">Motifs</button>
+  </nav>
+  <div id="world-content" class="drawer-content">
+    <p class="muted">Loading…</p>
+  </div>
+</aside>
+
 <script src="/static/app.js"></script>
 </body>
 </html>

@@ -331,6 +331,7 @@ class Pipeline:
         scene_retriever: "Any | None" = None,
         scorer: "Any | None" = None,
         llm_judge_client: "Any | None" = None,
+        live_trace_save: "Callable[[Any], None] | None" = None,
     ) -> None:
         self._world = world
         self._cb = context_builder
@@ -361,6 +362,7 @@ class Pipeline:
         )
         self._emotional_history_window = emotional_history_window
         self._emotional_monotony_window = emotional_monotony_window
+        self._live_trace_save = live_trace_save
 
         # ---- Gap G2: Generate-N + Rerank ----
         # quest_config takes precedence over ctor default so CLI/server can
@@ -477,6 +479,8 @@ class Pipeline:
 
     async def run(self, *, player_action: str, update_number: int) -> PipelineOutput:
         trace = PipelineTrace(trace_id=uuid.uuid4().hex, trigger=player_action)
+        if self._live_trace_save is not None:
+            trace.set_on_update(self._live_trace_save)
 
         if self.is_hierarchical:
             craft_plan, plan_like_dict = await self._run_hierarchical(
