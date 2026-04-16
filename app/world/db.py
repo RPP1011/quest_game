@@ -307,6 +307,33 @@ CREATE TABLE IF NOT EXISTS kb_entity_usage (
 
 CREATE INDEX IF NOT EXISTS idx_kb_entity_usage_quest
     ON kb_entity_usage(quest_id, entity_id);
+
+-- Phase 5: refinement attempts. One row per attempt to improve a
+-- (rollout_id, chapter_index) pair. accepted=1 means the
+-- rollout_chapters row was updated with this attempt's prose + scores.
+
+CREATE TABLE IF NOT EXISTS refinement_attempts (
+    id TEXT PRIMARY KEY,
+    quest_id TEXT NOT NULL,
+    rollout_id TEXT NOT NULL,
+    chapter_index INTEGER NOT NULL,
+    strategy TEXT NOT NULL,
+    reason TEXT NOT NULL DEFAULT '',
+    guidance TEXT NOT NULL DEFAULT '',
+    baseline_scores TEXT NOT NULL DEFAULT '{}',
+    refined_prose TEXT NOT NULL DEFAULT '',
+    refined_scores TEXT NOT NULL DEFAULT '{}',
+    refined_trace_id TEXT,
+    delta_mean REAL,
+    delta_min REAL,
+    accepted INTEGER NOT NULL DEFAULT 0,
+    rejection_reason TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (rollout_id) REFERENCES rollout_runs(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_refinement_chapter
+    ON refinement_attempts(rollout_id, chapter_index);
 """
 
 

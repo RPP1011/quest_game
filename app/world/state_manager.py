@@ -23,6 +23,7 @@ from .schema import (
     HookPlacement,
     QuestArcState,
     ReaderState,
+    RefinementAttempt,
     Relationship,
     RolloutChapter,
     RolloutExtract,
@@ -201,6 +202,27 @@ def _row_to_rollout_chapter(row: sqlite3.Row) -> RolloutChapter:
         trace_id=row["trace_id"],
         judge_scores=json.loads(scores_raw) if scores_raw else None,
         extract=RolloutExtract(**json.loads(extract_raw)),
+    )
+
+
+def _row_to_refinement_attempt(row: sqlite3.Row) -> RefinementAttempt:
+    return RefinementAttempt(
+        id=row["id"],
+        quest_id=row["quest_id"],
+        rollout_id=row["rollout_id"],
+        chapter_index=row["chapter_index"],
+        strategy=row["strategy"],
+        reason=row["reason"] or "",
+        guidance=row["guidance"] or "",
+        baseline_scores=json.loads(row["baseline_scores"] or "{}"),
+        refined_prose=row["refined_prose"] or "",
+        refined_scores=json.loads(row["refined_scores"] or "{}"),
+        refined_trace_id=row["refined_trace_id"],
+        delta_mean=row["delta_mean"],
+        delta_min=row["delta_min"],
+        accepted=bool(row["accepted"]),
+        rejection_reason=row["rejection_reason"],
+        created_at=row["created_at"],
     )
 
 
@@ -1783,6 +1805,54 @@ class WorldStateManager:
              json.dumps(mention_chapters or [])),
         )
         self._conn.commit()
+
+    # ---- refinement attempts (Phase 5) ----
+    def save_refinement_attempt(self, attempt: RefinementAttempt) -> None:
+        self._conn.execute(
+            "INSERT INTO refinement_attempts(id, quest_id, rollout_id, "
+            "chapter_index, strategy, reason, guidance, baseline_scores, "
+            "refined_prose, refined_scores, refined_trace_id, delta_mean, "
+            "delta_min, accepted, rejection_reason) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(id) DO UPDATE SET "
+            "refined_prose=excluded.refined_prose, "
+            "refined_scores=excluded.refined_scores, "
+            "refined_trace_id=excluded.refined_trace_id, "
+            "delta_mean=excluded.delta_mean, "
+            "delta_min=excluded.delta_min, "
+            "accepted=excluded.accepted, "
+            "rejection_reason=excluded.rejection_reason",
+            (
+                attempt.id, attempt.quest_id, attempt.rollout_id,
+                attempt.chapter_index, attempt.strategy, attempt.reason,
+                attempt.guidance, json.dumps(attempt.baseline_scores),
+                attempt.refined_prose,
+                json.dumps(attempt.refined_scores),
+                attempt.refined_trace_id, attempt.delta_mean,
+                attempt.delta_min, 1 if attempt.accepted else 0,
+                attempt.rejection_reason,
+            ),
+        )
+        self._conn.commit()
+
+    def list_refinement_attempts(
+        self, *, quest_id: str | None = None,
+        rollout_id: str | None = None,
+        chapter_index: int | None = None,
+    ) -> list[RefinementAttempt]:
+        clauses, args = [], []
+        if quest_id is not None:
+            clauses.append("quest_id=?"); args.append(quest_id)
+        if rollout_id is not None:
+            clauses.append("rollout_id=?"); args.append(rollout_id)
+        if chapter_index is not None:
+            clauses.append("chapter_index=?"); args.append(chapter_index)
+        where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
+        rows = self._conn.execute(
+            f"SELECT * FROM refinement_attempts{where} ORDER BY created_at",
+            args,
+        ).fetchall()
+        return [_row_to_refinement_attempt(r) for r in rows]
 
     def list_entity_usage(self, quest_id: str) -> list[dict]:
         rows = self._conn.execute(

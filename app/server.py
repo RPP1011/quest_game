@@ -264,6 +264,75 @@ def create_app(*, quests_dir: Path, server_url: str) -> FastAPI:
             raise HTTPException(500, f"candidate generation failed: {e}")
         return [c.model_dump(mode="json") for c in cands]
 
+    @app.get("/api/quests/{qid}/refinements")
+    def list_refinements(qid: str, rollout_id: str | None = None) -> list[dict]:
+        sm, _ = _open(qid)
+        attempts = sm.list_refinement_attempts(
+            quest_id=qid, rollout_id=rollout_id,
+        )
+        return [a.model_dump(mode="json") for a in attempts]
+
+    @app.post("/api/quests/{qid}/rollouts/{rid}/refine", status_code=202)
+    async def start_refinement(
+        qid: str, rid: str, strategy: str = "weak",
+        max_targets: int = 3, threshold: float = 0.55,
+    ) -> dict:
+        """Launch a refinement pass against a rollout in the background.
+
+        Returns immediately with the count of selected targets and a
+        list of attempt ids that will be created. Progress polled via
+        GET /refinements.
+        """
+        from app.refinement.framework import run_refinement_pass
+        from app.refinement.selectors import (
+            SiblingOutscoredSelector, UnpaidHookSelector, WeakChapterSelector,
+        )
+        sm, _ = _open(qid)
+        try:
+            sm.get_rollout(rid)
+        except Exception:
+            raise HTTPException(404, f"unknown rollout: {rid}")
+
+        selectors_to_run: list = []
+        if strategy in ("weak", "all"):
+            selectors_to_run.append(WeakChapterSelector(sm, threshold=threshold))
+        if strategy in ("hooks", "all"):
+            selectors_to_run.append(UnpaidHookSelector(sm))
+        if strategy in ("sibling", "all"):
+            selectors_to_run.append(SiblingOutscoredSelector(sm))
+        if not selectors_to_run:
+            raise HTTPException(400, f"unknown strategy: {strategy}")
+
+        targets: list = []
+        for sel in selectors_to_run:
+            targets.extend(sel.select(
+                quest_id=qid, rollout_id=rid, max_targets=max_targets,
+            ))
+
+        async def _run():
+            try:
+                await run_refinement_pass(
+                    targets=targets, quests_dir=quests_dir,
+                    main_world=sm, client=client,
+                )
+            except Exception:
+                pass
+
+        if targets:
+            asyncio.create_task(_run())
+
+        return {
+            "rollout_id": rid, "strategy": strategy,
+            "n_targets": len(targets),
+            "targets": [
+                {
+                    "rollout_id": t.rollout_id, "chapter_index": t.chapter_index,
+                    "strategy": t.strategy, "reason": t.reason,
+                }
+                for t in targets
+            ],
+        }
+
     @app.get("/api/quests/{qid}/kb")
     def get_kb(qid: str) -> dict:
         """Aggregated KB views across all rollouts for this quest.

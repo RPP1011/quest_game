@@ -370,6 +370,37 @@ class RolloutChapter(BaseModel):
     extract: RolloutExtract = Field(default_factory=RolloutExtract)
 
 
+class RefinementStrategy(str, Enum):
+    WEAK_CHAPTER = "weak_chapter"
+    UNPAID_HOOK = "unpaid_hook"
+    SIBLING_OUTSCORED = "sibling_outscored"
+
+
+class RefinementAttempt(BaseModel):
+    """One attempt to refine a single (rollout_id, chapter_index) pair.
+
+    accepted=True means the rollout_chapters row was updated with this
+    attempt's prose + scores. Rejected attempts persist for audit /
+    cross-strategy learning.
+    """
+    id: str
+    quest_id: str
+    rollout_id: str
+    chapter_index: int
+    strategy: str  # one of RefinementStrategy values
+    reason: str = ""
+    guidance: str = ""
+    baseline_scores: dict[str, float] = Field(default_factory=dict)
+    refined_prose: str = ""
+    refined_scores: dict[str, float] = Field(default_factory=dict)
+    refined_trace_id: str | None = None
+    delta_mean: float | None = None
+    delta_min: float | None = None
+    accepted: bool = False
+    rejection_reason: str | None = None
+    created_at: str | None = None
+
+
 class QuestArcState(BaseModel):
     """Persisted arc state (thin — references the craft-level Arc)."""
     arc_id: str                 # matches app.craft.Arc.id
