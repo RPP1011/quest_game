@@ -1,0 +1,42 @@
+voice_distinctiveness (chapter-scale): The input is a FULL CHAPTER. Score
+how distinctive the prose voice is — the authorial or close-POV register
+that persists across scenes. Judge the sound of the chapter, not the
+plot it carries. Would a careful reader, shown a random page, recognize
+the writer?
+
+0.0 = transparent generic prose. Any competent commercial-fiction author
+      could have written this. No identifiable rhythm, vocabulary, or
+      syntactic habit repeats across scenes.
+0.3 = faint signature. A couple of mannerisms recur (a stock metaphor, a
+      particular cadence on dialogue tags) but the voice does not
+      survive in quiet exposition or transition.
+0.6 = clear voice. Sentence-level choices (diction, rhythm, images) are
+      consistent across scenes and would be recognizable to a reader
+      familiar with the author. The voice carries even in low-incident
+      passages.
+0.9 = unmistakable voice. Near-unique diction and syntactic choices
+      recur across every scene; sentence rhythm and image repertoire
+      are instantly identifying. The voice carries the chapter even in
+      its quietest moments.
+
+Judge at the SENTENCE and IMAGE level, not at the level of content. A
+chapter with many named factions and magic systems is not automatically
+distinctive; a chapter of plain actions in plain rooms can be if the
+sentences sing in a particular key.
+
+Red flags for LOW:
+  - Dialogue that could be swapped between speakers with no change.
+  - Metaphors from a generic pool (diamond stars, storm clouds, knife-
+    edge tension).
+  - Sentence lengths uniform or uniformly short.
+
+Signs of HIGH:
+  - Recurring image families (water imagery, trade metaphors, religious
+    syntax) that map to the chapter's themes.
+  - Dialogue tags that do narrative work ("he said, not looking up" vs
+    bare "he said").
+  - Sentence rhythm that varies systematically with emotional beat
+    (short when cornered, long when scheming).
+
+Return a single score in [0.0, 1.0] and one sentence of rationale naming
+at least one voice fingerprint you could point to.

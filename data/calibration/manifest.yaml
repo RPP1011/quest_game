@@ -1099,7 +1099,7 @@ works:
     update_self_containment: 0.7
   passages:
   - id: p01
-    sha256: f039292439eca71ea06946518e91725186c556f62d8fbb8a9c85b0eeda109e56
+    sha256: 601cb03260fdea8241a4bb47b22054738db9c265551806745fbf5350f078bd15
     expected_high:
     - voice_distinctiveness
     - tension_execution
@@ -1108,7 +1108,7 @@ works:
     - pacing
     - subtext_presence
   - id: p02
-    sha256: 8130423b27cdd91eabcce6b18bb39d032a70504a073cda87dc6c462985f3a62b
+    sha256: ff30515f6be27531ff6b42da178d60a4767c49831837c3de078553345fc24827
     expected_high:
     - sentence_variance
     - thematic_presence
@@ -1116,7 +1116,7 @@ works:
     - pacing
     - clarity
   - id: p03
-    sha256: a89f193873ed7fd74f0fe5e8ff6ce0500588aa1233b0d14a596b4f9a6b2aa9a2
+    sha256: b063fee3f06ab0ab045e603ea0d0e814422d1f4be7520dd3ae9166d462df347e
     expected_high: &id019
     - clarity
     - action_fidelity
@@ -1125,51 +1125,51 @@ works:
     - free_indirect_quality
     - subtext_presence
   - id: p04
-    sha256: dcbad11198dc971e7ab887039589393d21940575d67fa62e3a5c1542fdd7d567
+    sha256: bb918b07a4f93441eb87d2bf30087f0aa3d81053a3220c845d37cefcaf17e34c
     expected_high: *id019
     expected_low: *id020
   - id: p05
-    sha256: e2bdc3078b513227a7ff1d05b5ec2af1941bf1dd3c16b16f294339222a2a20d1
+    sha256: d0acf92384d2e7528d1577de79736bda2e1aab44ae4bc8ebcd7ea561541cd6bf
     expected_high: *id019
     expected_low: *id020
   - id: p06
-    sha256: 9761308965bd76382e9fc8f4d71c7ad71ae86ad85e0dba486cc1783865d24d8d
+    sha256: a38248d3a93309c33757441e72d7f4dfa944ca781295212ce692d07b97584156
     expected_high: *id019
     expected_low: *id020
   - id: p07
-    sha256: 591009a80773d4b5bf6cfb7334abf9096f88c31c3b19f85949124397b5a9d194
+    sha256: c8dfa086d5a97694e90b487143edb65ce658dfa6280ccc258dfdd5674206176b
     expected_high: *id019
     expected_low: *id020
   - id: p08
-    sha256: 332247d1362b1c797d6eacb730f827a9d6212ef0667064b760792ed70436e0f1
+    sha256: e7b4528c052c8eb0120d59bbb51b79273777ab9ff0ed092483d09b04f8359ead
     expected_high: *id019
     expected_low: *id020
   - id: p09
-    sha256: 2bd87965970908b151d48386ff5a4a0b3ae437893ce3913e0d2711013698df54
+    sha256: d1067baba56e4b6b7a8b2fd9c98ec0825384736b03b566c92e35f1c8c3cc9615
     expected_high: *id019
     expected_low: *id020
   - id: p10
-    sha256: 2e43bec78754d3a68a848fb468f6a235f13e0d932ab680086feea159ddd0ac7b
+    sha256: 07d4ca9bdfd2481b2366da9a212aa684fa53ad0ed4a0eb550d2f3c3c87884bac
     expected_high: *id019
     expected_low: *id020
   - id: p11
-    sha256: 0413c53528890b6037dfebae4f01d513faf08873da9e13e303adc9a6bb5c1b0f
+    sha256: 249c84d116fde81118b6c95a3e72889d797ada5e0cdca39499719449289b8b7e
     expected_high: *id019
     expected_low: *id020
   - id: p12
-    sha256: 804cfb2c944814d12a52a3b52c74523b7237b107b96ecec7a6456cd10c8be69c
+    sha256: 9c72a92eaa45438ecd04a3d9abc91ab5f708aa68ccc069954cbe8f7643dcb491
     expected_high: *id019
     expected_low: *id020
   - id: p13
-    sha256: a100dc2ea459b3817015ac89537c74aa37af79298b0d5f5d41b206581d1d4041
+    sha256: 43395988f89fbed3c16a511be378ad4f8c879918a54a5679caa2533f656176cb
     expected_high: *id019
     expected_low: *id020
   - id: p14
-    sha256: b2614dfec7ad9a21ee4c7ddb3ca233ec25be9c8092f52cd35650963d16bb5e06
+    sha256: 6e54ebda7f6f2e221228d6734bbc52a781ed1c607c73f1974619b9188b95f50d
     expected_high: *id019
     expected_low: *id020
   - id: p15
-    sha256: 552132e23eb950fbef28dd876a6b0ea8ed9e7124eaca01d881261ea69813a360
+    sha256: 4422f2b75c2befc4aad4cd433c6def14c8c640ba0b2ccefc8e51db75fa237f31
     expected_high: *id019
     expected_low: *id020
 - id: my_man_jeeves

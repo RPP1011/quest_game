@@ -1,0 +1,40 @@
+update_self_containment (chapter-scale): The input is a FULL CHAPTER. Can
+it stand on its own as a unit of reading? A new reader picking up this
+chapter — without having read the prior chapters — should be able to
+follow who, where, what-is-at-stake, and close on a beat that feels like
+an ending, not a dangling comma.
+
+0.0 = unreadable without prior-chapter memory. Opens mid-action with
+      unexplained proper nouns; ends mid-scene with no resolution.
+0.3 = partially legible. Some orientation is present but most threads are
+      dangling on entry. A careful reader can reconstruct context but
+      the chapter does not help.
+0.5 = readable but lossy. A new reader will miss emotional stakes
+      without prior context; key NPCs are named but their significance
+      is not re-surfaced.
+0.7 = opens with enough orientation (who / where / what-is-at-stake) to
+      ground a new reader and closes with a clear chapter-beat. Load-
+      bearing names are re-established by action or dialogue at least
+      once, not assumed.
+1.0 = fully self-contained chapter. Opening scenes plant necessary
+      context by action and dialogue, not exposition dump. Closing beat
+      lands without requiring prior-chapter callbacks. A new reader can
+      follow the entire arc and feel its stakes; standing threats and
+      promises are re-surfaced at the moment they matter in this chapter.
+
+Note: self-containment is NOT the same as "no serial continuity." A
+chapter can reference recurring characters, carry a multi-chapter plot
+arc, and still score 0.9 if it re-establishes those elements in-text
+rather than relying on the reader's memory.
+
+Anchors:
+  HIGH: a chapter that opens with the protagonist arriving at a known
+        town, uses a first-scene dialogue to re-establish who is with
+        them and what they want, and ends on a concrete decision.
+  MID : a chapter that assumes you remember a name mentioned once, three
+        chapters ago, and closes on a reveal that trades on that memory.
+  LOW : a chapter that opens "She did it anyway" and closes "and that was
+        when everything changed" referring to unstated prior events.
+
+Return a single score in [0.0, 1.0] and one sentence of rationale calling
+out opening context legibility and closing-beat completeness.

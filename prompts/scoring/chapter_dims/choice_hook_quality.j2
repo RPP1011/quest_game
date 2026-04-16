@@ -1,0 +1,40 @@
+choice_hook_quality (chapter-scale, quest-only): The input is a FULL
+CHAPTER. Score the quality of the decision hook at or near the chapter's
+end. For quest fiction this is the voting prompt; for published serials
+it is the implicit next-choice the POV character faces.
+
+0.0 = no hook. Chapter ends on denouement, reflection, or a closed beat
+      with nothing the POV must decide next.
+0.3 = a hook exists but is vague ("what now?"). No concrete options are
+      implied, and the chapter has not primed the reader to care about
+      any specific axis of choice.
+0.5 = 2+ options are implied but they differ only in flavor or tactics,
+      not in consequence. The chapter has done the work to raise the
+      question but not to make the branches feel different.
+0.7 = sharp, specific options with visible stakes. A reader or voter can
+      name what is being traded against what. The chapter has planted the
+      context for each branch earlier in its own body — the hook is not
+      parachuted in.
+1.0 = options are stakes-laden, mutually exclusive, each one implies a
+      visibly different next chapter, and the chapter's tension ladder
+      has built directly to this choice. The tone of the hook matches
+      the pressure the chapter has spent 8k words earning.
+
+Anchors:
+  HIGH: a chapter where the protagonist has spent 10k words learning that
+        their mentor is a traitor, and closes with "confront them
+        publicly (lose the alliance), feed them false intel (lose your
+        own conscience), or flee the city tonight (lose the chance to
+        ever come back)."
+  MID : a chapter where the protagonist investigates two leads across
+        several scenes and ends with "tail the nobleman, or interview
+        the maid"; both continue the same investigation.
+  LOW : a chapter ending with "they went to bed, thinking of what came
+        next" with no hook surfaced.
+
+Score 0 if the chapter is explicitly non-quest (authorial narration with
+no decision point) — do not penalize non-quest published prose for lacking
+a hook. Indicate this in rationale.
+
+Return a single score in [0.0, 1.0] and one sentence of rationale naming
+the options and what they trade.

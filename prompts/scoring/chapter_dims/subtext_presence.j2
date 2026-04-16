@@ -1,0 +1,44 @@
+subtext_presence (chapter-scale): The input is a FULL CHAPTER. Score
+how much the chapter leaves unsaid. Subtext is what characters mean but
+don't say, what the prose registers but doesn't name, what two beats
+imply when placed side by side. Judge the quiet; the loud is easy.
+
+0.0 = everything is on the surface. Characters say what they mean;
+      narration explains what characters feel; motivations are stated
+      rather than performed. Dialogue is information transfer, not
+      negotiation.
+0.3 = occasional moment of implication — one image that does double
+      duty, one exchange where the surface words cover a different
+      concern — but mostly surface prose. Subtext is incidental, not
+      structural.
+0.6 = sustained subtext across at least one scene. Dialogue carries
+      two conversations at once (stated + implicit); characters act
+      against or around their stated wants; silences and avoidances do
+      real narrative work.
+0.9 = the chapter runs on what is NOT said. Much of the heat is
+      between the lines; characters lie, misdirect, or protect each
+      other through evasion. A reader has to assemble motive from
+      behavior, not from narration. Moments of surface speech feel
+      pointed because they are rare.
+
+Test: pick the chapter's highest-stakes exchange. Do the characters
+say what they actually mean? If yes, surface. If they are arguing
+about X while really arguing about Y, and Y is legible without being
+named, subtext.
+
+Red flags for LOW:
+  - Narrator explains character motivation in the paragraph after the
+    action ("he said that because he was afraid of losing her").
+  - Dialogue answers its own questions; no character speaks while
+    thinking something else.
+  - Reveals are performed as announcements, not as behavior.
+
+Signs of HIGH:
+  - Characters negotiate through a proxy topic (a chess game, a
+    recipe, a memory of third parties).
+  - A gesture closes a line of argument that words did not settle.
+  - Two characters each pretend not to notice what the other is
+    avoiding, and the reader sees both evasions.
+
+Return a single score in [0.0, 1.0] and one sentence of rationale
+pointing to one exchange or beat where surface != meaning.

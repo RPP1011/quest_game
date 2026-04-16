@@ -1,0 +1,34 @@
+emotional_trajectory (chapter-scale): The input is a FULL CHAPTER (typically
+4,000-13,000 words, containing 3-6 scenes). Score whether the chapter moves
+through a legible emotional shape across its scenes, or sits on one note.
+Judge change between scenes and within scenes — entry, midpoint, exit — not
+the intensity of any single feeling.
+
+0.0 = flat affect across the whole chapter. One uniform register (steady
+      wariness, steady dread, steady detachment) from first scene to last;
+      no shift registered either between scenes or within them.
+0.3 = a single emotional note is held. A clear feeling is present, but the
+      chapter stays inside it; scenes vary in event but not in feel. No
+      pivot, no turn, no gradation.
+0.6 = the chapter moves between two emotional registers with a clear pivot
+      somewhere in its middle. Entry tone differs from exit tone, and
+      there is a locatable beat (a line, a silence, a discovery) where the
+      shift happens. Individual scenes may or may not have their own
+      internal arcs.
+0.9 = a full emotional arc lands across the chapter — entry / midpoint /
+      exit states are distinct, motivated, and the transitions are earned.
+      Individual scenes carry their own smaller emotional turns that ladder
+      into the chapter-level shape. A reader could name three different
+      states across the chapter and point to what caused each transition.
+
+Do NOT reward mere intensity. A chapter can be quietly melancholic
+throughout and still land 0.9 if the melancholy has structure. A chapter
+can be high-stakes panic throughout and still score 0.3 if the panic is
+monotone.
+
+For multi-POV chapters (rare but possible): judge the emotional shape of
+the POV character. If POV shifts mid-chapter, judge the union: does the
+hand-off produce a legible combined arc, or two disconnected notes?
+
+Return a single score in [0.0, 1.0] and one sentence of rationale naming
+entry state, midpoint pivot, and exit state (or noting which is missing).

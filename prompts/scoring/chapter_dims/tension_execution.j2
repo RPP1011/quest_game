@@ -1,0 +1,44 @@
+tension_execution (chapter-scale): The input is a FULL CHAPTER (typically
+4,000-13,000 words, containing 3-6 scenes). Score how effectively pressure
+is raised, delayed, inverted, and paid off across the whole chapter — not
+within any one scene.
+
+0.0 = chapter is inert: pressure does not change from first scene to last;
+      no complication is introduced or complicated further; the opening
+      stakes and closing stakes are indistinguishable.
+0.3 = stakes are named but flat. One scene may feel tense, but the chapter
+      as a unit does not move — tension neither escalates across scenes
+      nor reverses. Other scenes are transit or recap.
+0.5 = one clear beat of rising tension across 2-3 scenes, but the chapter
+      lets it resolve too easily or lets the middle slacken. The spine is
+      visible but weak.
+0.7 = the chapter shows a setup -> complication -> partial resolution arc
+      across its scenes, with at least one reversal or active delay. The
+      reader feels the chapter as a single escalating unit. Consequences
+      from early scenes land in later ones.
+1.0 = sharp multi-scene escalation with active delay, at least one
+      reversal, and a consequential beat at or near the chapter close that
+      reframes what came before. The chapter as a whole leans the reader
+      forward; each scene compounds the last.
+
+Anchors:
+  HIGH: a chapter where the protagonist enters a negotiation confident,
+        discovers mid-chapter that a co-negotiator has already betrayed
+        them, tries three escalating bluffs that each fail harder, and
+        ends by committing to an act they entered the chapter unwilling
+        to consider.
+  MID : a chapter where the protagonist fights one tough opponent in one
+        scene, survives, and then walks home across two scenes of
+        reflection; competent but self-contained.
+  LOW : a chapter of three scenes of exposition, supply-gathering, and a
+        quiet conversation, with no thread carrying pressure across the
+        seams.
+
+A chapter can score high on pure talk (interrogation chapters) or pure
+action — judge the tension shape, not the genre of the events. A chapter
+of six conversations can score 0.9 if the conversations compound; a
+chapter of four action scenes can score 0.3 if each one resets.
+
+Return a single score in [0.0, 1.0] and one sentence of rationale naming
+the entry stakes, the point of highest pressure, and how the chapter
+closes them.
