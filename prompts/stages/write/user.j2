@@ -1,3 +1,18 @@
+{% if scene_entities is defined and scene_entities %}
+## Characters in this scene — authoritative descriptions (honor these precisely)
+{% for ent in scene_entities %}
+
+### {{ ent.name }} (`{{ ent.id }}`)
+{% if ent.data.get("description") %}- **Description:** {{ ent.data["description"] }}
+{% endif %}{% if ent.data.get("role") %}- **Role:** {{ ent.data["role"] }}
+{% endif %}{% if ent.data.get("voice") %}- **Voice:** {% for k, v in ent.data["voice"].items() %}{{ k }}={{ v }}{% if not loop.last %}, {% endif %}{% endfor %}
+{% endif %}{% if ent.data.get("skills") %}- **Skills:** {{ ent.data["skills"] | join(", ") }}
+{% endif %}{% if ent.data.get("worldview") %}- **Worldview:** {{ ent.data["worldview"] }}
+{% endif %}{% if ent.data.get("abilities") %}- **Abilities:** {{ ent.data["abilities"] | join("; ") }}
+{% endif %}{% if ent.data.get("constraints") %}- **Constraints:** {{ ent.data["constraints"] | join("; ") }}
+{% endif %}{% endfor %}
+
+{% endif %}
 {% if voice_anchors is defined and voice_anchors %}## VOICE ANCHORS — passages to match in style and rhythm (do NOT copy content)
 {% for a in voice_anchors %}--- anchor {{ loop.index }} (pov: {{ a.pov }}, voice_dist: {{ "%.2f"|format(a.score) }}) ---
 {{ a.text.split()[:300] | join(" ") }}
