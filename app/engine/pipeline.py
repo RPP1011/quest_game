@@ -23,7 +23,11 @@ from .trace import PipelineTrace
 # 3000 fits ~2200 words — a bit of headroom above the 2000-word target set in
 # the write-stage system prompt.
 WRITE_MAX_TOKENS = 3000
-REVISE_MAX_TOKENS = 3000
+# Revise rewrites the FULL chapter in one call (vs. write which is per-beat),
+# so it needs proportionally more output budget. ~5k tokens covers ~3.5k-word
+# chapters with headroom; truncating revise causes mid-sentence cutoffs and
+# silent shortening of the committed prose.
+REVISE_MAX_TOKENS = 8000
 
 
 _BEAT_KEYS = ("beats", "beat_sheet", "beatsheet", "plan", "outline", "steps", "scenes")
