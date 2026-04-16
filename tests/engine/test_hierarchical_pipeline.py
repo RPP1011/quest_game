@@ -147,7 +147,8 @@ class FakeArcPlanner:
     def __init__(self, client: ScriptedClient) -> None:
         self._client = client
 
-    async def plan(self, *, quest_config, arc_state, world_snapshot, structure):
+    async def plan(self, *, quest_config, arc_state, world_snapshot, structure,
+                   skeleton_chapter=None):
         from app.planning.schemas import ArcDirective
         raw = await self._client.chat_structured(
             messages=[], json_schema={}, schema_name="ArcDirective"
@@ -162,7 +163,8 @@ class FakeDramaticPlanner:
 
     async def plan(self, *, directive, player_action, world, arc, structure,
                    recent_tool_ids=None, quest_id=None, scene_retriever=None,
-                   foreshadowing_retriever=None, update_number=None):
+                   foreshadowing_retriever=None, update_number=None,
+                   skeleton_chapter=None):
         from app.planning.schemas import DramaticPlan
         raw = await self._client.chat_structured(
             messages=[], json_schema={}, schema_name="DramaticPlan"

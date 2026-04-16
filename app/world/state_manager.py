@@ -19,11 +19,15 @@ from .schema import (
     Parallel,
     ParallelStatus,
     PlotThread,
+    ArcSkeleton,
+    HookPlacement,
     QuestArcState,
     ReaderState,
     Relationship,
+    SkeletonChapter,
     StoryCandidate,
     StoryCandidateStatus,
+    ThemeBeat,
     ThreadStatus,
     TimelineEvent,
     WorldRule,
@@ -162,6 +166,17 @@ def _row_to_thread(row: sqlite3.Row) -> PlotThread:
         involved_entities=json.loads(row["involved_entities"]),
         arc_position=row["arc_position"],
         priority=row["priority"],
+    )
+
+
+def _row_to_arc_skeleton(row: sqlite3.Row) -> ArcSkeleton:
+    return ArcSkeleton(
+        id=row["id"],
+        candidate_id=row["candidate_id"],
+        quest_id=row["quest_id"],
+        chapters=[SkeletonChapter(**c) for c in json.loads(row["chapters"])],
+        theme_arc=[ThemeBeat(**t) for t in json.loads(row["theme_arc"])],
+        hook_schedule=[HookPlacement(**h) for h in json.loads(row["hook_schedule"])],
     )
 
 
@@ -1506,6 +1521,43 @@ class WorldStateManager:
             (quest_id, StoryCandidateStatus.PICKED.value),
         ).fetchone()
         return _row_to_story_candidate(row) if row else None
+
+    # ---- arc skeletons (Phase 2: story-rollout architecture) ----
+    def save_arc_skeleton(self, skeleton: ArcSkeleton) -> None:
+        """Upsert a skeleton by id. Used by the planner on (re)generation."""
+        self._conn.execute(
+            "INSERT INTO arc_skeletons(id, candidate_id, quest_id, chapters, "
+            "theme_arc, hook_schedule) VALUES (?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(id) DO UPDATE SET "
+            "chapters=excluded.chapters, theme_arc=excluded.theme_arc, "
+            "hook_schedule=excluded.hook_schedule",
+            (
+                skeleton.id, skeleton.candidate_id, skeleton.quest_id,
+                json.dumps([c.model_dump() for c in skeleton.chapters]),
+                json.dumps([t.model_dump() for t in skeleton.theme_arc]),
+                json.dumps([h.model_dump() for h in skeleton.hook_schedule]),
+            ),
+        )
+        self._conn.commit()
+
+    def get_arc_skeleton(self, skeleton_id: str) -> ArcSkeleton:
+        row = self._conn.execute(
+            "SELECT * FROM arc_skeletons WHERE id=?", (skeleton_id,),
+        ).fetchone()
+        if row is None:
+            raise WorldStateError(f"no arc skeleton {skeleton_id!r}")
+        return _row_to_arc_skeleton(row)
+
+    def get_skeleton_for_candidate(
+        self, candidate_id: str,
+    ) -> ArcSkeleton | None:
+        """Return the most-recent skeleton for a candidate, or None."""
+        row = self._conn.execute(
+            "SELECT * FROM arc_skeletons WHERE candidate_id=? "
+            "ORDER BY created_at DESC LIMIT 1",
+            (candidate_id,),
+        ).fetchone()
+        return _row_to_arc_skeleton(row) if row else None
 
     def snapshot(self) -> WorldSnapshot:
         return WorldSnapshot(

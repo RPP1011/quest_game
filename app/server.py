@@ -263,6 +263,42 @@ def create_app(*, quests_dir: Path, server_url: str) -> FastAPI:
             raise HTTPException(500, f"candidate generation failed: {e}")
         return [c.model_dump(mode="json") for c in cands]
 
+    @app.get("/api/quests/{qid}/candidates/{cid}/skeleton")
+    def get_skeleton(qid: str, cid: str) -> dict:
+        """Return the latest arc skeleton for a candidate, or 404 if none."""
+        sm, _ = _open(qid)
+        # Validate candidate exists
+        try:
+            sm.get_story_candidate(cid)
+        except Exception:
+            raise HTTPException(404, f"unknown candidate: {cid}")
+        skel = sm.get_skeleton_for_candidate(cid)
+        if skel is None:
+            raise HTTPException(404, f"no skeleton for candidate: {cid}")
+        return skel.model_dump(mode="json")
+
+    @app.post("/api/quests/{qid}/candidates/{cid}/skeleton/generate")
+    async def generate_skeleton(qid: str, cid: str) -> dict:
+        """Generate an arc skeleton for a picked candidate.
+
+        Uses the candidate's expected_chapter_count as target length.
+        Overwrites any prior skeleton for this candidate. Blocks for the
+        full LLM call (~1–2 minutes on the current writer). Callers
+        should expect a long request.
+        """
+        from app.planning.arc_skeleton_planner import ArcSkeletonPlanner
+        sm, _ = _open(qid)
+        try:
+            cand = sm.get_story_candidate(cid)
+        except Exception:
+            raise HTTPException(404, f"unknown candidate: {cid}")
+        planner = ArcSkeletonPlanner(client, renderer)
+        try:
+            skel = await planner.generate(world=sm, candidate=cand)
+        except Exception as e:
+            raise HTTPException(500, f"skeleton generation failed: {e}")
+        return skel.model_dump(mode="json")
+
     @app.post("/api/quests/{qid}/candidates/{cid}/pick")
     def pick_candidate(qid: str, cid: str) -> dict:
         """Mark a candidate as picked; persist into config.json so the

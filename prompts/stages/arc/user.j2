@@ -59,6 +59,24 @@ The player has committed to this arc shape. Honor its emphasis.
 - No tension observations yet
 {% endif %}
 
+{% if skeleton_chapter %}
+---
+
+## Skeleton Chapter {{ skeleton_chapter.chapter_index }} (current tick's slot)
+
+The arc was pre-outlined. This chapter's slot is committed; honor it.
+
+**POV**: `{{ skeleton_chapter.pov_character_id or "unspecified" }}`
+{% if skeleton_chapter.location_constraint %}**Location**: `{{ skeleton_chapter.location_constraint }}`
+{% endif %}**Dramatic question**: {{ skeleton_chapter.dramatic_question }}
+**Target tension**: {{ "%.2f"|format(skeleton_chapter.target_tension) }}
+**Required plot beats** (the chapter's scenes must deliver these — translate into `plot_objectives`):
+{% for b in skeleton_chapter.required_plot_beats %}  - {{ b }}
+{% endfor %}
+{% if skeleton_chapter.entities_to_surface %}**Entities to surface this chapter** (DORMANT → ACTIVE): {{ skeleton_chapter.entities_to_surface | join(", ") }}
+{% endif %}{% if skeleton_chapter.theme_emphasis %}**Theme emphasis this chapter**: {{ skeleton_chapter.theme_emphasis | join(", ") }}
+{% endif %}
+{% endif %}
 ---
 
 ## Plot Threads

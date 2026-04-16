@@ -274,6 +274,52 @@ class StoryCandidate(BaseModel):
     status: StoryCandidateStatus = StoryCandidateStatus.DRAFT
 
 
+class SkeletonChapter(BaseModel):
+    """One chapter slot in an ArcSkeleton.
+
+    The dramatic planner consults the SkeletonChapter for the current
+    update_number and treats its fields as directive input — not
+    overrides, but strong constraints. See Phase 2 of the story-rollout
+    architecture spec.
+    """
+    chapter_index: int                     # 1..N
+    pov_character_id: str | None = None
+    location_constraint: str | None = None
+    dramatic_question: str
+    required_plot_beats: list[str] = Field(default_factory=list)
+    target_tension: float = 0.5
+    entities_to_surface: list[str] = Field(default_factory=list)
+    theme_emphasis: list[str] = Field(default_factory=list)
+
+
+class HookPlacement(BaseModel):
+    """When a seeded foreshadowing hook is expected to pay off."""
+    hook_id: str
+    planted_by_chapter: int = 1
+    paid_off_by_chapter: int
+
+
+class ThemeBeat(BaseModel):
+    """Chapter index at which a theme hits a crescendo."""
+    theme_id: str
+    peak_chapter: int
+    stance_at_peak: str = "exploring"
+
+
+class ArcSkeleton(BaseModel):
+    """A chapter-by-chapter outline for a picked story candidate.
+
+    One skeleton per candidate (latest generation wins on regenerate).
+    Chapters are numbered 1..N matching the pipeline's update_number.
+    """
+    id: str
+    candidate_id: str
+    quest_id: str
+    chapters: list[SkeletonChapter]
+    theme_arc: list[ThemeBeat] = Field(default_factory=list)
+    hook_schedule: list[HookPlacement] = Field(default_factory=list)
+
+
 class QuestArcState(BaseModel):
     """Persisted arc state (thin — references the craft-level Arc)."""
     arc_id: str                 # matches app.craft.Arc.id

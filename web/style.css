@@ -141,6 +141,37 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .outcome-failed { color: #c78a7a; }
 .outcome-running { color: #c8b897; }
 
+/* --- Arc outline (skeleton tab in world drawer) --- */
+.outline-empty { padding: 40px 20px; text-align: center; color: #8a7a60; font-family: system-ui, sans-serif; font-size: 13px; line-height: 1.6; }
+.outline-empty p { margin: 0 0 14px; }
+.outline-empty button { margin: 0; }
+.outline-header { margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid #2a241a; display: flex; justify-content: space-between; align-items: baseline; font-family: system-ui, sans-serif; }
+.outline-header h3 { margin: 0; font-size: 14px; color: #e8dcc0; font-weight: 500; font-family: system-ui, sans-serif; }
+.outline-header-meta { font-size: 11px; color: #8a7a60; }
+.outline-regen { background: transparent; border: 1px dashed #3a3222; color: #8a7a60; font-size: 11px; margin: 0; padding: 4px 10px; }
+.outline-regen:hover:not(:disabled) { background: #1a1610; border-color: #5a4a32; color: #c8b897; }
+.outline-generating { display: flex; gap: 12px; align-items: center; padding: 28px 14px; color: #a59680; font-family: system-ui, sans-serif; font-size: 13px; }
+.skeleton-chapter { padding: 12px 14px; border-left: 3px solid #2a241a; background: #14110d; margin-bottom: 12px; border-radius: 0 4px 4px 0; transition: border-color 0.15s; }
+.skeleton-chapter.done { border-left-color: #8abc7a; opacity: 0.65; }
+.skeleton-chapter.current { border-left-color: #c8b897; background: #1a1610; }
+.sc-header { display: flex; gap: 10px; align-items: baseline; margin-bottom: 6px; }
+.sc-num { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: #8a7a60; }
+.sc-pov { font-size: 11px; color: #c8b897; text-transform: uppercase; letter-spacing: 0.08em; }
+.sc-loc { font-size: 11px; color: #8a7a60; font-style: italic; margin-left: auto; }
+.sc-tension { font-family: ui-monospace, Menlo, monospace; font-size: 10px; color: #8a7a60; }
+.sc-question { font-family: "Iowan Old Style", Palatino, Georgia, serif; color: #e8dcc0; font-size: 14px; font-style: italic; margin-bottom: 8px; }
+.sc-beats { list-style: none; padding: 0; margin: 0 0 8px; }
+.sc-beats li { padding: 2px 0; color: #c8b897; font-size: 12px; cursor: default; background: transparent; }
+.sc-beats li:hover { background: transparent; }
+.sc-beats li::before { content: "▸ "; color: #6a5f48; }
+.sc-surface { font-size: 11px; color: #8a7a60; margin-top: 4px; }
+.sc-surface strong { color: #a59680; font-weight: 500; }
+.skel-schedules { margin-top: 20px; padding-top: 14px; border-top: 1px solid #2a241a; font-size: 12px; font-family: system-ui, sans-serif; }
+.skel-schedules h4 { margin: 14px 0 6px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #8a7a60; font-weight: 600; }
+.skel-schedules ul { padding-left: 0; }
+.skel-schedules li { padding: 3px 0; color: #c8b897; cursor: default; background: transparent; }
+.skel-schedules li:hover { background: transparent; }
+
 /* --- World drawer --- */
 .header-spacer { flex: 1; }
 #world-toggle { margin: 0; background: #2a241a; border-color: #5a4a32; color: #d4c8ae; font-size: 12px; padding: 6px 14px; letter-spacing: 0.08em; text-transform: uppercase; }

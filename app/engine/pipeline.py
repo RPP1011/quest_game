@@ -751,6 +751,7 @@ class Pipeline:
                 scene_retriever=self._scene_retriever,
                 foreshadowing_retriever=self._foreshadowing_retriever,
                 update_number=update_number,
+                skeleton_chapter=self._current_skeleton_chapter(update_number),
             ),
             validator=lambda plan: critics.validate_dramatic(
                 plan,
@@ -1205,6 +1206,29 @@ class Pipeline:
             })
         return callbacks
 
+    def _current_skeleton_chapter(self, update_number: int) -> "Any | None":
+        """Return the SkeletonChapter for the current update_number, or None.
+
+        The pipeline consults this once per tick. If the quest has a picked
+        candidate with a saved skeleton, we look up the chapter by index.
+        Returns None when there's no pick, no skeleton, or no matching
+        chapter (e.g. the player has run past the skeleton's end).
+        """
+        pc = (self._quest_config or {}).get("picked_candidate") or {}
+        cid = pc.get("id")
+        if not cid:
+            return None
+        try:
+            skel = self._world.get_skeleton_for_candidate(cid)
+        except Exception:
+            return None
+        if skel is None:
+            return None
+        for ch in skel.chapters:
+            if ch.chapter_index == update_number:
+                return ch
+        return None
+
     def _resolve_scene_entities(self, scene: "Any") -> list:
         """Look up full Entity objects for a scene's characters_present list.
 
@@ -1402,6 +1426,7 @@ class Pipeline:
                         arc_state=arc_state,
                         world_snapshot=self._world,
                         structure=self._structure,
+                        skeleton_chapter=self._current_skeleton_chapter(update_number),
                     )
                 except Exception as e:
                     directive = _make_minimal_arc_directive()
@@ -1440,6 +1465,7 @@ class Pipeline:
                 arc_state=arc_state,
                 world_snapshot=self._world,
                 structure=self._structure,
+                skeleton_chapter=self._current_skeleton_chapter(update_number),
             )
             trace.add_stage(StageResult(
                 stage_name="arc",

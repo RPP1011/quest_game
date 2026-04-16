@@ -8,8 +8,12 @@ const state = {
   liveTracePollId: null,
   liveTraceSeenTids: new Set(),
   activeLiveTid: null,
-  worldTab: 'characters',
+  worldTab: 'outline',
 };
+
+let cachedWorld = null;
+let cachedSkeleton = null;
+let skeletonGenerating = false;
 
 async function fetchJSON(url, opts) {
   const r = await fetch(url, opts);
@@ -46,6 +50,8 @@ async function refreshQuests() {
 
 async function selectQuest(qid) {
   state.currentQuest = qid;
+  cachedWorld = null;
+  cachedSkeleton = null;
   document.getElementById('no-quest-state').hidden = true;
   document.getElementById('quest-view').hidden = false;
   document.getElementById('world-toggle').hidden = false;
@@ -365,8 +371,6 @@ document.getElementById('new-quest-btn').onclick = async () => {
 // World drawer
 // ---------------------------------------------------------------------------
 
-let cachedWorld = null;
-
 function openWorldDrawer() {
   document.getElementById('world-backdrop').hidden = false;
   document.getElementById('world-drawer').hidden = false;
@@ -413,6 +417,11 @@ function renderWorldTab(tab) {
     if (!items || !items.length) return `<p class="muted">No ${label} seeded.</p>`;
     return items.map(renderEntity).join('');
   };
+
+  if (tab === 'outline') {
+    renderOutlineTab();
+    return;
+  }
 
   const entityTabMap = {
     characters: 'character', factions: 'faction', locations: 'location',
@@ -576,6 +585,7 @@ async function pickCandidate(cid) {
     alert(`Pick failed: ${err.message}`);
     return;
   }
+  cachedSkeleton = null;
   await refreshConfig();
   document.getElementById('candidate-picker').hidden = true;
   renderPickedBanner();
@@ -616,6 +626,145 @@ document.getElementById('unpick-btn').onclick = async () => {
   document.getElementById('candidate-picker').hidden = false;
   await loadCandidates({autoGenerate: false});
 };
+
+// ---------------------------------------------------------------------------
+// Arc outline (skeleton tab in world drawer)
+// ---------------------------------------------------------------------------
+
+async function renderOutlineTab() {
+  const box = document.getElementById('world-content');
+  const picked = state.config && state.config.picked_candidate;
+  if (!picked) {
+    box.innerHTML = `
+      <div class="outline-empty">
+        <p>Pick a story candidate first. The arc outline is generated from the picked candidate — it's a chapter-by-chapter map of the story the planners follow.</p>
+      </div>`;
+    return;
+  }
+
+  const cid = picked.id;
+  if (skeletonGenerating) {
+    box.innerHTML = `
+      <div class="outline-generating">
+        <div class="gen-spinner"></div>
+        <div>
+          <div>Generating arc outline…</div>
+          <div style="color:#6a5f48;font-size:11px;margin-top:4px;">One LLM call, ~1–2 min on the current model.</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  // Try to load existing
+  if (!cachedSkeleton || cachedSkeleton.candidate_id !== cid) {
+    try {
+      cachedSkeleton = await fetchJSON(`/api/quests/${state.currentQuest}/candidates/${cid}/skeleton`);
+    } catch (_) {
+      cachedSkeleton = null;
+    }
+  }
+
+  if (!cachedSkeleton) {
+    box.innerHTML = `
+      <div class="outline-empty">
+        <p><strong>No outline yet for "${escapeHtml(picked.title)}".</strong></p>
+        <p>The arc outline is a ${picked.expected_chapter_count}-chapter skeleton the planners consult every tick to stay on the committed arc shape. Generation is a single LLM call, typically 1–2 minutes.</p>
+        <button id="gen-outline-btn">Generate arc outline</button>
+      </div>`;
+    document.getElementById('gen-outline-btn').onclick = () => generateOutline(cid);
+    return;
+  }
+
+  renderSkeleton(cachedSkeleton);
+}
+
+async function generateOutline(cid) {
+  skeletonGenerating = true;
+  renderOutlineTab();
+  try {
+    cachedSkeleton = await fetchJSON(
+      `/api/quests/${state.currentQuest}/candidates/${cid}/skeleton/generate`,
+      {method: 'POST'}
+    );
+  } catch (err) {
+    skeletonGenerating = false;
+    document.getElementById('world-content').innerHTML =
+      `<div class="outline-empty"><p>Generation failed: ${escapeHtml(err.message)}</p>
+       <button id="gen-outline-btn">Retry</button></div>`;
+    document.getElementById('gen-outline-btn').onclick = () => generateOutline(cid);
+    return;
+  }
+  skeletonGenerating = false;
+  renderOutlineTab();
+}
+
+function renderSkeleton(skel) {
+  const box = document.getElementById('world-content');
+  const currentChapter = (state.chapters && state.chapters.length) + 1;
+  const chapters = skel.chapters || [];
+  const doneCount = Math.min(state.chapters.length, chapters.length);
+
+  let html = `
+    <div class="outline-header">
+      <h3>${chapters.length}-chapter outline</h3>
+      <div class="outline-header-meta">${doneCount}/${chapters.length} done</div>
+    </div>`;
+
+  for (const ch of chapters) {
+    const status = ch.chapter_index <= state.chapters.length
+      ? 'done'
+      : (ch.chapter_index === currentChapter ? 'current' : '');
+    html += `
+      <div class="skeleton-chapter ${status}">
+        <div class="sc-header">
+          <span class="sc-num">Ch ${ch.chapter_index}</span>
+          ${ch.pov_character_id ? `<span class="sc-pov">${escapeHtml(ch.pov_character_id)}</span>` : ''}
+          ${ch.location_constraint ? `<span class="sc-loc">@ ${escapeHtml(ch.location_constraint)}</span>` : '<span class="sc-loc"></span>'}
+          <span class="sc-tension">t=${Number(ch.target_tension).toFixed(2)}</span>
+        </div>
+        <div class="sc-question">${escapeHtml(ch.dramatic_question || '')}</div>
+        ${(ch.required_plot_beats && ch.required_plot_beats.length) ? `
+          <ul class="sc-beats">${ch.required_plot_beats.map(b => `<li>${escapeHtml(b)}</li>`).join('')}</ul>
+        ` : ''}
+        ${(ch.entities_to_surface && ch.entities_to_surface.length) ? `
+          <div class="sc-surface"><strong>Surface:</strong> ${ch.entities_to_surface.map(escapeHtml).join(', ')}</div>
+        ` : ''}
+        ${(ch.theme_emphasis && ch.theme_emphasis.length) ? `
+          <div class="sc-surface"><strong>Theme:</strong> ${ch.theme_emphasis.map(escapeHtml).join(', ')}</div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  if ((skel.hook_schedule && skel.hook_schedule.length) || (skel.theme_arc && skel.theme_arc.length)) {
+    html += `<div class="skel-schedules">`;
+    if (skel.hook_schedule && skel.hook_schedule.length) {
+      html += `<h4>Hook schedule</h4><ul>`;
+      for (const h of skel.hook_schedule) {
+        html += `<li><code>${escapeHtml(h.hook_id)}</code> — planted by ch ${h.planted_by_chapter}, paid off by ch ${h.paid_off_by_chapter}</li>`;
+      }
+      html += `</ul>`;
+    }
+    if (skel.theme_arc && skel.theme_arc.length) {
+      html += `<h4>Theme arc</h4><ul>`;
+      for (const t of skel.theme_arc) {
+        html += `<li><code>${escapeHtml(t.theme_id)}</code> peaks at ch ${t.peak_chapter} (${escapeHtml(t.stance_at_peak || 'exploring')})</li>`;
+      }
+      html += `</ul>`;
+    }
+    html += `</div>`;
+  }
+
+  html += `<div style="margin-top:18px;text-align:right;">
+    <button class="outline-regen" id="outline-regen-btn">Regenerate</button>
+  </div>`;
+
+  box.innerHTML = html;
+  document.getElementById('outline-regen-btn').onclick = () => {
+    if (!confirm('Regenerate the outline? The old one will be replaced.')) return;
+    generateOutline(skel.candidate_id);
+  };
+}
 
 document.getElementById('world-toggle').onclick = openWorldDrawer;
 document.getElementById('world-close').onclick = closeWorldDrawer;

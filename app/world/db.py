@@ -218,6 +218,19 @@ CREATE TABLE IF NOT EXISTS story_candidates (
 );
 
 CREATE INDEX IF NOT EXISTS idx_story_candidates_quest ON story_candidates(quest_id);
+
+CREATE TABLE IF NOT EXISTS arc_skeletons (
+    id TEXT PRIMARY KEY,
+    candidate_id TEXT NOT NULL,
+    quest_id TEXT NOT NULL,
+    chapters TEXT NOT NULL DEFAULT '[]',
+    theme_arc TEXT NOT NULL DEFAULT '[]',
+    hook_schedule TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (candidate_id) REFERENCES story_candidates(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_arc_skeletons_candidate ON arc_skeletons(candidate_id);
 """
 
 
