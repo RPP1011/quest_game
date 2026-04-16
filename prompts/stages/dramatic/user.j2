@@ -67,9 +67,7 @@ No characters established yet.
 
 These exist in the world but have not yet appeared on-screen. To introduce one this update, add its id to `entities_to_surface` in your plan and include it in a scene's `characters_present`. Surface 0–3 per update — only when narrative need demands it.
 
-{% for ent in dormant_entities %}
-- **{{ ent.name }}** ({{ ent.id }}, {{ ent.entity_type.value }}){% if ent.data.get("description") %}: {{ ent.data.get("description") }}{% endif %}
-
+{% for ent in dormant_entities %}- **{{ ent.name }}** (`{{ ent.id }}`, {{ ent.entity_type.value }}){% if ent.data.get("role") %} — {{ ent.data.get("role") }}{% endif %}
 {% endfor %}
 {% endif %}
 

@@ -199,7 +199,7 @@ class DramaticPlanner:
             messages,
             json_schema=schema,
             schema_name="DramaticPlan",
-            max_tokens=4096,
+            max_tokens=8192,
         )
         try:
             plan = OutputParser.parse_json(raw, schema=DramaticPlan)
@@ -208,7 +208,7 @@ class DramaticPlanner:
                 messages,
                 json_schema=schema,
                 schema_name="DramaticPlan",
-                max_tokens=4096,
+                max_tokens=8192,
             )
             plan = OutputParser.parse_json(raw, schema=DramaticPlan)
 
