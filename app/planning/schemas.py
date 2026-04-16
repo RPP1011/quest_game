@@ -122,6 +122,7 @@ class DramaticPlan(BaseModel):
     questions_closed: list[str] = []
     expectations_set: list[str] = []
     expectations_subverted: list[str] = []
+    entities_to_surface: list[str] = []
 
 
 # ---- EMOTIONAL layer ----

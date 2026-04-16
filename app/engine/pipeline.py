@@ -2450,6 +2450,7 @@ class Pipeline:
         entities = self._world.list_entities()
         from app.world.schema import EntityStatus
         active_entities = [e for e in entities if e.status == EntityStatus.ACTIVE]
+        all_known_entities = [e for e in entities if e.status != EntityStatus.DESTROYED]
 
         # Gap G4: surface current themes (with proposition + stance) so the
         # extractor can emit theme_stance_updates on material shifts.
@@ -2535,7 +2536,7 @@ class Pipeline:
             ))
             return
 
-        known_ids = {e.id for e in active_entities}
+        known_ids = {e.id for e in all_known_entities}
         delta, build_issues = build_delta(
             extracted, update_number, known_ids=known_ids, world=self._world,
         )
@@ -2565,6 +2566,23 @@ class Pipeline:
 
         # Apply atomically.
         self._world.apply_delta(delta, update_number)
+
+        # Activate DORMANT entities the dramatic planner chose to surface.
+        dramatic = getattr(self, "_last_dramatic", None)
+        if dramatic is not None:
+            to_surface = getattr(dramatic, "entities_to_surface", None) or []
+            for eid in to_surface:
+                for lookup in (eid, f"char:{eid}"):
+                    try:
+                        ent = self._world.get_entity(lookup)
+                        if ent.status == EntityStatus.DORMANT:
+                            self._world.update_entity(lookup, {
+                                "status": EntityStatus.ACTIVE.value,
+                                "last_referenced_update": update_number,
+                            })
+                        break
+                    except Exception:
+                        continue
 
         # Theme stance evolution (Gap G4). Stance updates are persisted but
         # the LLM-driven assessment that *decides* the new stance is a stub

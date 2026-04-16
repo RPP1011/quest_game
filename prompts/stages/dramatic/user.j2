@@ -62,6 +62,17 @@
 No characters established yet.
 {% endif %}
 
+{% if dormant_entities is defined and dormant_entities %}
+### Dormant Entities (available to surface)
+
+These exist in the world but have not yet appeared on-screen. To introduce one this update, add its id to `entities_to_surface` in your plan and include it in a scene's `characters_present`. Surface 0–3 per update — only when narrative need demands it.
+
+{% for ent in dormant_entities %}
+- **{{ ent.name }}** ({{ ent.id }}, {{ ent.entity_type.value }}){% if ent.data.get("description") %}: {{ ent.data.get("description") }}{% endif %}
+
+{% endfor %}
+{% endif %}
+
 {% if plot_threads %}
 ### Active Plot Threads
 

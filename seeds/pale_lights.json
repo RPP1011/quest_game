@@ -216,6 +216,16 @@
       }
     },
     {
+      "id": "char:yaotl", "entity_type": "character", "name": "Yaotl Cuatzo",
+      "status": "active",
+      "data": {
+        "role": "the man in the room — a Watchman deserter hiding in the Azulejo hostel",
+        "origin": "Aztlan",
+        "description": "An Aztlan man with darker skin and a broad chin. Calm voice with anger close to the surface, faint Aztlan accent clicking against the tongue. Sleeping in the room Tristan is robbing. Has a pistol and arming sword atop a trunk, over a half-folded black cloak. A deserter from the Watch — or worse, working Hoja Roja's side while wearing the black.",
+        "secrets": ["working for Hoja Roja while ostensibly still Watch", "the papers in his room link the guild to Watch operations"]
+      }
+    },
+    {
       "id": "char:red_maw", "entity_type": "character", "name": "The Red Maw",
       "status": "dormant",
       "data": {
