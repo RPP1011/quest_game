@@ -731,7 +731,7 @@ class Pipeline:
         from app.planning.schemas import ArcDirective
 
         # ---- ARC layer: load or generate ----
-        directive = await self._load_or_generate_arc(trace)
+        directive = await self._load_or_generate_arc(trace, update_number=update_number)
 
         # ---- DRAMATIC layer ----
         # Day 11: pass scene_retriever + foreshadowing_retriever +
@@ -1392,7 +1392,9 @@ class Pipeline:
             })
         return out
 
-    async def _load_or_generate_arc(self, trace: PipelineTrace) -> "Any":
+    async def _load_or_generate_arc(
+        self, trace: PipelineTrace, update_number: int = 1,
+    ) -> "Any":
         """Load persisted ArcDirective or generate one with arc_planner."""
         from app.planning.schemas import ArcDirective
 
