@@ -6,7 +6,10 @@
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<header><h1>Quest Game</h1></header>
+<header>
+  <h1>Quest Game</h1>
+  <div id="header-context"></div>
+</header>
 <main>
   <aside id="quests-panel">
     <h2>Quests</h2>
@@ -14,21 +17,54 @@
     <button id="new-quest-btn">New Quest</button>
   </aside>
   <section id="play-panel">
-    <h2 id="quest-title">No quest selected</h2>
-    <div id="chapters"></div>
-    <section id="scene-panel" hidden>
-      <div class="scene-field"><span class="scene-label">Location</span><span id="scene-location">--</span></div>
-      <div class="scene-field"><span class="scene-label">Characters</span><span id="scene-characters">--</span></div>
-      <div class="scene-field"><span class="scene-label">Plot threads</span><span id="scene-threads">--</span></div>
-      <div class="scene-field scene-recap"><span class="scene-label">Recap</span><span id="scene-recap">--</span></div>
-    </section>
-    <form id="action-form">
-      <input type="text" id="action-input" placeholder="What do you do?" disabled>
-      <button type="submit" disabled>Advance</button>
-    </form>
-    <div id="status"></div>
+    <div id="no-quest-state">
+      <p class="muted">Select a quest from the left, or create a new one.</p>
+    </div>
+    <div id="quest-view" hidden>
+      <div id="quest-header">
+        <h2 id="quest-title"></h2>
+        <div id="quest-genre" class="quest-genre"></div>
+      </div>
+      <section id="hero-panel" hidden>
+        <div id="hero-premise"></div>
+        <div id="hero-meta">
+          <div class="hero-field" id="hero-themes-field" hidden>
+            <span class="hero-label">Themes</span>
+            <ul id="hero-themes"></ul>
+          </div>
+          <div class="hero-field" id="hero-chars-field" hidden>
+            <span class="hero-label">Cast at Curtain-Up</span>
+            <span id="hero-chars"></span>
+          </div>
+          <div class="hero-field" id="hero-location-field" hidden>
+            <span class="hero-label">Opening Location</span>
+            <span id="hero-location"></span>
+          </div>
+        </div>
+      </section>
+      <section id="scene-panel" hidden>
+        <div class="scene-field"><span class="scene-label">Location</span><span id="scene-location">--</span></div>
+        <div class="scene-field"><span class="scene-label">Characters</span><span id="scene-characters">--</span></div>
+        <div class="scene-field"><span class="scene-label">Plot threads</span><span id="scene-threads">--</span></div>
+        <div class="scene-field scene-recap"><span class="scene-label">Recap</span><span id="scene-recap">--</span></div>
+      </section>
+      <div id="chapters"></div>
+      <form id="action-form">
+        <input type="text" id="action-input" placeholder="What do you do?" autocomplete="off">
+        <button type="submit">Advance</button>
+      </form>
+      <div id="status"></div>
+      <div id="generating-panel" hidden>
+        <div class="gen-spinner"></div>
+        <div class="gen-text">
+          <div class="gen-title">Generating chapter&hellip;</div>
+          <div class="gen-sub">Running arc → dramatic → craft planners, then writing the scene beat-by-beat. Typically ~5 minutes.</div>
+          <div class="gen-timer"><span id="gen-elapsed">0:00</span> elapsed</div>
+        </div>
+      </div>
+    </div>
   </section>
-  <aside id="trace-panel">
+  <aside id="trace-panel" hidden>
     <h2>Traces</h2>
     <ul id="trace-list"></ul>
     <div id="trace-detail"></div>

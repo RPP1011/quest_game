@@ -229,6 +229,22 @@ def create_app(*, quests_dir: Path, server_url: str) -> FastAPI:
             ))
         return results
 
+    @app.get("/api/quests/{qid}/config")
+    def get_config(qid: str) -> dict:
+        """Quest metadata derived from the seed: genre, premise, themes,
+        protagonist, narrator. Used by the UI to render a hero panel for
+        empty quests. Returns ``{}`` if no config.json was written."""
+        paths = _quest_paths(quests_dir, qid)
+        if not paths["db"].is_file():
+            raise HTTPException(404, f"unknown quest: {qid}")
+        config_path = paths["root"] / "config.json"
+        if not config_path.is_file():
+            return {}
+        try:
+            return json.loads(config_path.read_text())
+        except Exception:
+            return {}
+
     @app.get("/api/quests/{qid}/scene")
     def get_scene(qid: str) -> SceneContext:
         from app.world.schema import EntityStatus, EntityType, ThreadStatus
