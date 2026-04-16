@@ -245,6 +245,35 @@ class EmotionalBeat(BaseModel):
     source: str
 
 
+class StoryCandidateStatus(str, Enum):
+    DRAFT = "draft"
+    PICKED = "picked"
+    REJECTED = "rejected"
+
+
+class StoryCandidate(BaseModel):
+    """A candidate story arc for a given seed.
+
+    A single seed supports multiple candidates (Phase 1 of the story-rollout
+    architecture). Each candidate commits to a specific arc emphasis —
+    which plot threads are primary, which character is protagonist, which
+    themes drive the emphasis — so the same seed can produce materially
+    different stories. The player picks one; subsequent planning honors
+    the pick.
+    """
+    id: str
+    quest_id: str
+    title: str
+    synopsis: str
+    primary_thread_ids: list[str] = Field(default_factory=list)
+    secondary_thread_ids: list[str] = Field(default_factory=list)
+    protagonist_character_id: str | None = None
+    emphasized_theme_ids: list[str] = Field(default_factory=list)
+    climax_description: str = ""
+    expected_chapter_count: int = 15
+    status: StoryCandidateStatus = StoryCandidateStatus.DRAFT
+
+
 class QuestArcState(BaseModel):
     """Persisted arc state (thin — references the craft-level Arc)."""
     arc_id: str                 # matches app.craft.Arc.id

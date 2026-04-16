@@ -2,6 +2,22 @@
 
 **Genre:** {{ quest_config.get("genre") or "unspecified" }}
 **Premise:** {{ quest_config.get("premise") or "unspecified" }}
+{% set _picked = quest_config.get("picked_candidate") %}
+{% if _picked %}
+
+### Picked Story Arc: {{ _picked.title }}
+
+The player has committed to this arc shape. Honor its emphasis.
+
+**Synopsis:** {{ _picked.synopsis }}
+
+**Protagonist:** `{{ _picked.protagonist_character_id or "unspecified" }}`
+**Primary plot threads (promote priority in `plot_objectives`):** {{ _picked.primary_thread_ids | join(", ") }}
+{% if _picked.secondary_thread_ids %}**Secondary threads (keep warm but not lead):** {{ _picked.secondary_thread_ids | join(", ") }}
+{% endif %}{% if _picked.emphasized_theme_ids %}**Emphasized themes (favor in `theme_priorities`):** {{ _picked.emphasized_theme_ids | join(", ") }}
+{% endif %}**Target arc length:** ~{{ _picked.expected_chapter_count }} chapters
+**Climax target:** {{ _picked.climax_description }}
+{% endif %}
 {% if themes %}
 **Themes (debatable propositions the quest is interrogating):**
 {% for th in themes %}

@@ -1,0 +1,50 @@
+{% if genre %}**Genre**: {{ genre }}
+{% endif %}
+{% if premise %}## Premise
+
+{{ premise }}
+
+{% endif %}
+## Seeded characters
+
+{% if characters %}
+{% for ch in characters %}
+- **{{ ch.name }}** (`{{ ch.id }}`, {{ ch.status.value }}){% if ch.data.get("role") %} — {{ ch.data.get("role") }}{% endif %}{% if ch.data.get("description") %}: {{ ch.data.get("description") }}{% endif %}
+{% endfor %}
+{% else %}
+No characters seeded.
+{% endif %}
+
+## Seeded plot threads
+
+{% if plot_threads %}
+{% for pt in plot_threads %}
+- **{{ pt.name }}** (`{{ pt.id }}`, priority {{ pt.priority }}, status {{ pt.status.value }}): {{ pt.description }}
+{% endfor %}
+{% else %}
+No plot threads seeded.
+{% endif %}
+
+## Seeded themes
+
+{% if themes %}
+{% for t in themes %}
+- `{{ t.id }}`: {{ t.proposition }}
+{% endfor %}
+{% else %}
+No themes seeded.
+{% endif %}
+
+{% if foreshadowing %}
+## Pre-planted foreshadowing (available for any candidate to pay off)
+
+{% for h in foreshadowing %}
+- `{{ h.id }}`: {{ h.description }}
+{% endfor %}
+{% endif %}
+
+---
+
+Propose {{ n }} candidate stories. Each must use a distinct combination of (protagonist, primary threads, theme emphasis). Make them *different* arcs, not variations on the same arc.
+
+Return JSON only.

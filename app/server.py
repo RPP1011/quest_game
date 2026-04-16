@@ -229,6 +229,62 @@ def create_app(*, quests_dir: Path, server_url: str) -> FastAPI:
             ))
         return results
 
+    @app.get("/api/quests/{qid}/candidates")
+    def list_candidates(qid: str) -> list[dict]:
+        """List story candidates for this quest."""
+        sm, _ = _open(qid)
+        return [c.model_dump(mode="json") for c in sm.list_story_candidates(qid)]
+
+    @app.post("/api/quests/{qid}/candidates/generate")
+    async def generate_candidates(qid: str, n: int = 3) -> list[dict]:
+        """Generate N story candidates for this quest.
+
+        Uses the seed's world state as grounding. Persists candidates;
+        returns them. If candidates already exist, this appends — the
+        caller should check ``list_candidates`` first if they want to
+        avoid regeneration.
+        """
+        from app.planning.story_candidate_planner import StoryCandidatePlanner
+        sm, _ = _open(qid)
+        paths = _quest_paths(quests_dir, qid)
+        config_path = paths["root"] / "config.json"
+        quest_config: dict = {}
+        if config_path.is_file():
+            try:
+                quest_config = json.loads(config_path.read_text())
+            except Exception:
+                quest_config = {}
+        planner = StoryCandidatePlanner(client, renderer)
+        try:
+            cands = await planner.generate(
+                world=sm, quest_id=qid, quest_config=quest_config, n=n,
+            )
+        except Exception as e:
+            raise HTTPException(500, f"candidate generation failed: {e}")
+        return [c.model_dump(mode="json") for c in cands]
+
+    @app.post("/api/quests/{qid}/candidates/{cid}/pick")
+    def pick_candidate(qid: str, cid: str) -> dict:
+        """Mark a candidate as picked; persist into config.json so the
+        pipeline's arc planner can read it as directive input."""
+        sm, _ = _open(qid)
+        try:
+            cand = sm.pick_story_candidate(qid, cid)
+        except Exception as e:
+            raise HTTPException(404, str(e))
+        # Persist pick into config.json for pipeline reads
+        paths = _quest_paths(quests_dir, qid)
+        config_path = paths["root"] / "config.json"
+        cfg: dict = {}
+        if config_path.is_file():
+            try:
+                cfg = json.loads(config_path.read_text())
+            except Exception:
+                cfg = {}
+        cfg["picked_candidate"] = cand.model_dump(mode="json")
+        config_path.write_text(json.dumps(cfg, indent=2))
+        return cand.model_dump(mode="json")
+
     @app.get("/api/quests/{qid}/config")
     def get_config(qid: str) -> dict:
         """Quest metadata derived from the seed: genre, premise, themes,

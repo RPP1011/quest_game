@@ -84,6 +84,32 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .choices-bar button.choice.write-in:hover { background: #1e1a22; border-color: #5a4a5a; }
 .tag { display: inline-block; background: #1e1a12; color: #a59680; border: 1px solid #3a3222; border-radius: 3px; padding: 1px 6px; font-size: 10px; font-style: normal; text-transform: lowercase; font-family: system-ui, sans-serif; }
 
+/* --- Candidate picker (Phase 1: choose-your-story) --- */
+#candidate-picker { margin-bottom: 28px; }
+.picker-header { margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid #2a241a; font-family: system-ui, sans-serif; }
+.picker-header h3 { margin: 0 0 6px; font-family: "Iowan Old Style", Palatino, Georgia, serif; font-size: 22px; font-weight: 400; color: #e8dcc0; letter-spacing: 0.02em; }
+.picker-sub { margin: 0; color: #8a7a60; font-size: 13px; line-height: 1.5; }
+#candidate-loading { display: flex; gap: 12px; align-items: center; padding: 24px; color: #a59680; font-size: 13px; font-family: system-ui, sans-serif; }
+#candidate-list { display: flex; flex-direction: column; gap: 12px; }
+.candidate-card { padding: 18px 22px; background: linear-gradient(180deg, #1a1610 0%, #14110d 100%); border: 1px solid #2a241a; border-radius: 6px; cursor: pointer; transition: border-color 0.15s, transform 0.15s; font-family: system-ui, sans-serif; }
+.candidate-card:hover { border-color: #5a4a32; transform: translateY(-1px); }
+.candidate-card .cand-title { font-family: "Iowan Old Style", Palatino, Georgia, serif; font-size: 18px; font-weight: 500; color: #e8dcc0; margin-bottom: 8px; }
+.candidate-card .cand-synopsis { color: #d4c8ae; line-height: 1.6; font-size: 14px; margin-bottom: 14px; font-family: "Iowan Old Style", Palatino, Georgia, serif; }
+.candidate-card .cand-meta { display: grid; gap: 6px; padding-top: 12px; border-top: 1px solid #2a241a; font-size: 12px; }
+.cand-meta-row { display: flex; gap: 10px; }
+.cand-meta-label { color: #8a7a60; text-transform: uppercase; letter-spacing: 0.1em; font-size: 10px; min-width: 100px; flex-shrink: 0; align-self: baseline; padding-top: 2px; }
+.cand-meta-val { color: #c8b897; }
+.candidate-card .cand-climax { font-style: italic; color: #a59680; }
+#candidate-actions { margin-top: 14px; }
+#regen-candidates { font-size: 11px; background: transparent; border: 1px dashed #3a3222; color: #8a7a60; }
+#regen-candidates:hover:not(:disabled) { background: #1a1610; border-color: #5a4a32; color: #c8b897; }
+.picked-banner { background: #1e1a12; border: 1px solid #3a3222; border-left: 3px solid #c8b897; padding: 14px 18px; border-radius: 4px; margin-bottom: 22px; font-family: system-ui, sans-serif; position: relative; }
+.picked-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #8a7a60; margin-bottom: 4px; }
+.picked-title { font-family: "Iowan Old Style", Palatino, Georgia, serif; font-size: 18px; color: #e8dcc0; margin-bottom: 6px; }
+.picked-synopsis { color: #a59680; font-size: 13px; line-height: 1.5; font-style: italic; }
+.unpick-btn { position: absolute; top: 10px; right: 10px; font-size: 11px; background: transparent; border: 1px solid #3a3222; color: #8a7a60; padding: 4px 10px; margin: 0; }
+.unpick-btn:hover:not(:disabled) { background: #2a241a; color: #c8b897; border-color: #5a4a32; }
+
 /* --- Starter actions (empty quest invitation) --- */
 #starting-actions { margin-top: 20px; padding-top: 18px; border-top: 1px solid #2a241a; font-family: system-ui, sans-serif; }
 .starter-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #8a7a60; margin-bottom: 10px; }

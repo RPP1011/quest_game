@@ -51,12 +51,12 @@ async function selectQuest(qid) {
   document.getElementById('world-toggle').hidden = false;
   document.getElementById('quest-title').textContent = humanizeTitle(qid);
   document.getElementById('header-context').textContent = humanizeTitle(qid);
-  // Seed the set of known trace IDs so live polling ignores them (prior chapters)
   try {
     const traces = await fetchJSON(`/api/quests/${qid}/traces`);
     state.liveTraceSeenTids = new Set(traces.map(t => t.trace_id));
   } catch (_) { state.liveTraceSeenTids = new Set(); }
   await Promise.all([refreshQuests(), refreshConfig(), refreshChapters(), refreshTraces(), refreshScene()]);
+  await refreshCandidatePicker();
   renderHeroOrScene();
   await refreshStartingActions();
 }
@@ -487,6 +487,135 @@ function renderWorldTab(tab) {
     return;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Candidate picker (Phase 1: choose-your-story)
+// ---------------------------------------------------------------------------
+
+async function refreshCandidatePicker() {
+  const picker = document.getElementById('candidate-picker');
+  if (!state.currentQuest) { picker.hidden = true; return; }
+
+  // If a chapter has been committed OR a candidate has been picked,
+  // hide the picker entirely — the story is decided.
+  const hasChapters = state.chapters && state.chapters.length > 0;
+  const pickedFromCfg = state.config && state.config.picked_candidate;
+  if (hasChapters || pickedFromCfg) {
+    picker.hidden = true;
+    renderPickedBanner();
+    return;
+  }
+
+  // No pick yet, no chapters. Show picker.
+  picker.hidden = false;
+  await loadCandidates({autoGenerate: true});
+}
+
+async function loadCandidates({autoGenerate = false} = {}) {
+  const listEl = document.getElementById('candidate-list');
+  const loadingEl = document.getElementById('candidate-loading');
+  const regenBtn = document.getElementById('regen-candidates');
+  listEl.innerHTML = '';
+  let candidates = [];
+  try {
+    candidates = await fetchJSON(`/api/quests/${state.currentQuest}/candidates`);
+  } catch (err) {
+    listEl.innerHTML = `<p class="muted">Failed to load candidates: ${escapeHtml(err.message)}</p>`;
+    return;
+  }
+  if (candidates.length === 0 && autoGenerate) {
+    // Auto-generate on first view
+    loadingEl.hidden = false;
+    regenBtn.hidden = true;
+    try {
+      candidates = await fetchJSON(`/api/quests/${state.currentQuest}/candidates/generate?n=3`, {method: 'POST'});
+    } catch (err) {
+      loadingEl.hidden = true;
+      listEl.innerHTML = `<p class="muted">Candidate generation failed: ${escapeHtml(err.message)}</p>
+        <button id="retry-gen">Retry</button>`;
+      document.getElementById('retry-gen')?.addEventListener('click', () => loadCandidates({autoGenerate: true}));
+      return;
+    }
+    loadingEl.hidden = true;
+  }
+  renderCandidateCards(candidates);
+  regenBtn.hidden = candidates.length === 0;
+}
+
+function renderCandidateCards(candidates) {
+  const listEl = document.getElementById('candidate-list');
+  listEl.innerHTML = '';
+  for (const c of candidates) {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'candidate-card';
+    card.innerHTML = `
+      <div class="cand-title">${escapeHtml(c.title)}</div>
+      <div class="cand-synopsis">${escapeHtml(c.synopsis)}</div>
+      <div class="cand-meta">
+        ${c.primary_thread_ids && c.primary_thread_ids.length ? `
+        <div class="cand-meta-row"><span class="cand-meta-label">Primary threads</span><span class="cand-meta-val">${c.primary_thread_ids.map(escapeHtml).join(', ')}</span></div>` : ''}
+        ${c.protagonist_character_id ? `
+        <div class="cand-meta-row"><span class="cand-meta-label">Protagonist</span><span class="cand-meta-val">${escapeHtml(c.protagonist_character_id)}</span></div>` : ''}
+        ${c.emphasized_theme_ids && c.emphasized_theme_ids.length ? `
+        <div class="cand-meta-row"><span class="cand-meta-label">Theme emphasis</span><span class="cand-meta-val">${c.emphasized_theme_ids.map(escapeHtml).join(', ')}</span></div>` : ''}
+        <div class="cand-meta-row"><span class="cand-meta-label">Expected length</span><span class="cand-meta-val">~${c.expected_chapter_count} chapters</span></div>
+        ${c.climax_description ? `
+        <div class="cand-meta-row"><span class="cand-meta-label">Climax</span><span class="cand-meta-val cand-climax">${escapeHtml(c.climax_description)}</span></div>` : ''}
+      </div>
+    `;
+    card.onclick = () => pickCandidate(c.id);
+    listEl.appendChild(card);
+  }
+}
+
+async function pickCandidate(cid) {
+  try {
+    await fetchJSON(`/api/quests/${state.currentQuest}/candidates/${cid}/pick`, {method: 'POST'});
+  } catch (err) {
+    alert(`Pick failed: ${err.message}`);
+    return;
+  }
+  await refreshConfig();
+  document.getElementById('candidate-picker').hidden = true;
+  renderPickedBanner();
+  renderHeroOrScene();
+  await refreshStartingActions();
+}
+
+function renderPickedBanner() {
+  const banner = document.getElementById('picked-banner');
+  const picked = state.config && state.config.picked_candidate;
+  if (!picked) { banner.hidden = true; return; }
+  document.getElementById('picked-title').textContent = picked.title || '(untitled)';
+  document.getElementById('picked-synopsis').textContent = picked.synopsis || '';
+  banner.hidden = false;
+}
+
+document.getElementById('regen-candidates').onclick = async () => {
+  if (!confirm('Regenerate candidates? Existing drafts will be replaced.')) return;
+  const loadingEl = document.getElementById('candidate-loading');
+  loadingEl.hidden = false;
+  try {
+    await fetchJSON(`/api/quests/${state.currentQuest}/candidates/generate?n=3`, {method: 'POST'});
+  } catch (err) {
+    alert(`Regenerate failed: ${err.message}`);
+  }
+  loadingEl.hidden = true;
+  await loadCandidates({autoGenerate: false});
+};
+
+document.getElementById('unpick-btn').onclick = async () => {
+  if (state.chapters && state.chapters.length > 0) {
+    if (!confirm('Changing stories mid-playthrough may confuse the planners. Continue?')) return;
+  }
+  // Clear picked_candidate in config.json server-side by picking a sentinel?
+  // Simpler: just surface the picker again; keep picked_candidate in config
+  // as a soft pointer. Picking a new candidate overwrites it.
+  document.getElementById('picked-banner').hidden = true;
+  document.getElementById('candidate-picker').hidden = false;
+  await loadCandidates({autoGenerate: false});
+};
 
 document.getElementById('world-toggle').onclick = openWorldDrawer;
 document.getElementById('world-close').onclick = closeWorldDrawer;

@@ -27,7 +27,27 @@
         <h2 id="quest-title"></h2>
         <div id="quest-genre" class="quest-genre"></div>
       </div>
+      <section id="candidate-picker" hidden>
+        <div class="picker-header">
+          <h3>Choose your story</h3>
+          <p class="picker-sub">A seed can hold many stories. Pick the arc you want to play — this becomes the backbone the planners build every chapter around.</p>
+        </div>
+        <div id="candidate-loading" hidden>
+          <div class="gen-spinner"></div>
+          <span>Generating story candidates…</span>
+        </div>
+        <div id="candidate-list"></div>
+        <div id="candidate-actions">
+          <button id="regen-candidates" hidden>Regenerate (discards current candidates)</button>
+        </div>
+      </section>
       <section id="hero-panel" hidden>
+        <div id="picked-banner" class="picked-banner" hidden>
+          <div class="picked-label">Playing</div>
+          <div class="picked-title" id="picked-title"></div>
+          <div class="picked-synopsis" id="picked-synopsis"></div>
+          <button id="unpick-btn" class="unpick-btn" type="button">Change story</button>
+        </div>
         <div id="hero-premise"></div>
         <div id="hero-meta">
           <div class="hero-field" id="hero-themes-field" hidden>

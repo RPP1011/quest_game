@@ -201,6 +201,23 @@ CREATE TABLE IF NOT EXISTS dimension_scores (
 );
 
 CREATE INDEX IF NOT EXISTS idx_scorecards_quest ON scorecards(quest_id, update_number);
+
+CREATE TABLE IF NOT EXISTS story_candidates (
+    id TEXT PRIMARY KEY,
+    quest_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    synopsis TEXT NOT NULL DEFAULT '',
+    primary_thread_ids TEXT NOT NULL DEFAULT '[]',
+    secondary_thread_ids TEXT NOT NULL DEFAULT '[]',
+    protagonist_character_id TEXT,
+    emphasized_theme_ids TEXT NOT NULL DEFAULT '[]',
+    climax_description TEXT NOT NULL DEFAULT '',
+    expected_chapter_count INTEGER NOT NULL DEFAULT 15,
+    status TEXT NOT NULL DEFAULT 'draft',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_story_candidates_quest ON story_candidates(quest_id);
 """
 
 

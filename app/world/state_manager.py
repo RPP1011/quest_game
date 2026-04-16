@@ -22,6 +22,8 @@ from .schema import (
     QuestArcState,
     ReaderState,
     Relationship,
+    StoryCandidate,
+    StoryCandidateStatus,
     ThreadStatus,
     TimelineEvent,
     WorldRule,
@@ -160,6 +162,22 @@ def _row_to_thread(row: sqlite3.Row) -> PlotThread:
         involved_entities=json.loads(row["involved_entities"]),
         arc_position=row["arc_position"],
         priority=row["priority"],
+    )
+
+
+def _row_to_story_candidate(row: sqlite3.Row) -> StoryCandidate:
+    return StoryCandidate(
+        id=row["id"],
+        quest_id=row["quest_id"],
+        title=row["title"],
+        synopsis=row["synopsis"],
+        primary_thread_ids=json.loads(row["primary_thread_ids"]),
+        secondary_thread_ids=json.loads(row["secondary_thread_ids"]),
+        protagonist_character_id=row["protagonist_character_id"],
+        emphasized_theme_ids=json.loads(row["emphasized_theme_ids"]),
+        climax_description=row["climax_description"],
+        expected_chapter_count=row["expected_chapter_count"],
+        status=row["status"],
     )
 
 
@@ -1410,6 +1428,84 @@ class WorldStateManager:
                 # Partial / legacy row — skip rather than fail the listing.
                 continue
         return out
+
+    # ---- story candidates (Phase 1: story-rollout architecture) ----
+    def add_story_candidate(self, cand: StoryCandidate) -> None:
+        self._conn.execute(
+            "INSERT INTO story_candidates(id, quest_id, title, synopsis, "
+            "primary_thread_ids, secondary_thread_ids, protagonist_character_id, "
+            "emphasized_theme_ids, climax_description, expected_chapter_count, "
+            "status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                cand.id, cand.quest_id, cand.title, cand.synopsis,
+                json.dumps(cand.primary_thread_ids),
+                json.dumps(cand.secondary_thread_ids),
+                cand.protagonist_character_id,
+                json.dumps(cand.emphasized_theme_ids),
+                cand.climax_description, cand.expected_chapter_count,
+                cand.status.value if hasattr(cand.status, "value") else cand.status,
+            ),
+        )
+        self._conn.commit()
+
+    def list_story_candidates(self, quest_id: str) -> list[StoryCandidate]:
+        rows = self._conn.execute(
+            "SELECT * FROM story_candidates WHERE quest_id=? ORDER BY id",
+            (quest_id,),
+        ).fetchall()
+        return [_row_to_story_candidate(r) for r in rows]
+
+    def get_story_candidate(self, candidate_id: str) -> StoryCandidate:
+        row = self._conn.execute(
+            "SELECT * FROM story_candidates WHERE id=?", (candidate_id,)
+        ).fetchone()
+        if row is None:
+            raise WorldStateError(f"no story candidate {candidate_id!r}")
+        return _row_to_story_candidate(row)
+
+    def set_candidate_status(
+        self, candidate_id: str, status: StoryCandidateStatus,
+    ) -> None:
+        cur = self._conn.execute(
+            "UPDATE story_candidates SET status=? WHERE id=?",
+            (status.value if hasattr(status, "value") else status, candidate_id),
+        )
+        if cur.rowcount == 0:
+            raise WorldStateError(f"no story candidate {candidate_id!r}")
+        self._conn.commit()
+
+    def pick_story_candidate(
+        self, quest_id: str, candidate_id: str,
+    ) -> StoryCandidate:
+        """Mark one candidate as PICKED and all others as REJECTED.
+
+        Returns the picked candidate. Idempotent: picking an already-picked
+        candidate is a no-op; picking a different one swaps the pick.
+        """
+        target = self.get_story_candidate(candidate_id)
+        if target.quest_id != quest_id:
+            raise WorldStateError(
+                f"candidate {candidate_id!r} belongs to quest "
+                f"{target.quest_id!r}, not {quest_id!r}"
+            )
+        self._conn.execute(
+            "UPDATE story_candidates SET status=? WHERE quest_id=? AND status=?",
+            (StoryCandidateStatus.REJECTED.value, quest_id,
+             StoryCandidateStatus.PICKED.value),
+        )
+        self._conn.execute(
+            "UPDATE story_candidates SET status=? WHERE id=?",
+            (StoryCandidateStatus.PICKED.value, candidate_id),
+        )
+        self._conn.commit()
+        return self.get_story_candidate(candidate_id)
+
+    def get_picked_candidate(self, quest_id: str) -> StoryCandidate | None:
+        row = self._conn.execute(
+            "SELECT * FROM story_candidates WHERE quest_id=? AND status=? LIMIT 1",
+            (quest_id, StoryCandidateStatus.PICKED.value),
+        ).fetchone()
+        return _row_to_story_candidate(row) if row else None
 
     def snapshot(self) -> WorldSnapshot:
         return WorldSnapshot(
