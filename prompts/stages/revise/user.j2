@@ -4,9 +4,20 @@
 ## Original Prose
 {{ prose }}
 
-## Issues to Fix
-{% for i in issues %}
-- [{{ i.severity }}/{{ i.category }}] {{ i.message }}{% if i.suggested_fix %} — fix: {{ i.suggested_fix }}{% endif %}
+{% set _critical = issues | selectattr("severity", "equalto", "critical") | list %}
+{% set _errors = issues | selectattr("severity", "equalto", "error") | list %}
+{% set _warnings = issues | selectattr("severity", "equalto", "warning") | list %}
+
+{% if _critical %}## Critical issues — MUST be fixed
+{% for i in _critical %}- [{{ i.category }}] {{ i.message }}{% if i.suggested_fix %} — fix: {{ i.suggested_fix }}{% endif %}
 {% endfor %}
 
-Produce the revised prose now.
+{% endif %}{% if _errors %}## Errors — should be fixed
+{% for i in _errors %}- [{{ i.category }}] {{ i.message }}{% if i.suggested_fix %} — fix: {{ i.suggested_fix }}{% endif %}
+{% endfor %}
+
+{% endif %}{% if _warnings %}## Warnings — address if possible
+{% for i in _warnings %}- [{{ i.category }}] {{ i.message }}{% if i.suggested_fix %} — fix: {{ i.suggested_fix }}{% endif %}
+{% endfor %}
+
+{% endif %}Produce the revised prose now. Output prose only.

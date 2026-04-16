@@ -589,13 +589,21 @@ class Pipeline:
             )
 
         # ---- Hierarchical post-write flow ----
-        recheck_done = False
         check_out = await self._run_check(trace, plan_like_dict, prose)
 
-        # REVISE branch (no replan in hierarchical flow for now)
-        if check_out.has_fixable and not check_out.has_critical and not recheck_done:
-            prose = await self._run_revise(trace, plan_like_dict, prose, check_out.issues)
-            recheck_done = True
+        # REVISE loop (no replan in hierarchical flow for now). Try up to
+        # MAX_REVISE_ATTEMPTS to clear critical/fixable issues. Critical
+        # issues used to be skip-and-commit ('flagged_qm'), which let real
+        # world-rule violations land in committed prose. Now we loop until
+        # the issues clear or we exhaust the budget.
+        MAX_REVISE_ATTEMPTS = 2
+        revise_attempts = 0
+        while (check_out.has_critical or check_out.has_fixable) and \
+                revise_attempts < MAX_REVISE_ATTEMPTS:
+            prose = await self._run_revise(
+                trace, plan_like_dict, prose, check_out.issues,
+            )
+            revise_attempts += 1
             check_out = await self._run_check(trace, plan_like_dict, prose)
 
         if check_out.has_critical:
