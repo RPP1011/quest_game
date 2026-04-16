@@ -320,6 +320,56 @@ class ArcSkeleton(BaseModel):
     hook_schedule: list[HookPlacement] = Field(default_factory=list)
 
 
+class RolloutStatus(str, Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETE = "complete"
+    FAILED = "failed"
+    ABORTED = "aborted"
+
+
+class RolloutRun(BaseModel):
+    """A single virtual-player playthrough of a picked candidate's skeleton.
+
+    One RolloutRun per (candidate, profile, seed_nonce) tuple. Chapters are
+    persisted incrementally; a restart resumes from max(chapter_index)+1.
+    """
+    id: str
+    quest_id: str
+    candidate_id: str
+    skeleton_id: str | None = None
+    profile_id: str
+    seed_nonce: int = 0
+    status: RolloutStatus = RolloutStatus.PENDING
+    chapters_complete: int = 0
+    total_chapters_target: int = 10
+    started_at: str | None = None
+    completed_at: str | None = None
+    error_message: str | None = None
+
+
+class RolloutExtract(BaseModel):
+    """KB row per chapter: what the rollout did with the seeded world."""
+    hooks_planted: list[str] = Field(default_factory=list)
+    hooks_paid_off: list[str] = Field(default_factory=list)
+    entities_introduced: list[str] = Field(default_factory=list)
+    entities_removed: list[str] = Field(default_factory=list)
+    character_state_deltas: dict[str, dict] = Field(default_factory=dict)
+    thread_advances: dict[str, str] = Field(default_factory=dict)
+    themes_emphasized: list[str] = Field(default_factory=list)
+
+
+class RolloutChapter(BaseModel):
+    """One chapter of a rollout's output. Saved incrementally."""
+    rollout_id: str
+    chapter_index: int
+    player_action: str
+    prose: str
+    trace_id: str | None = None
+    judge_scores: dict[str, float] | None = None
+    extract: RolloutExtract = Field(default_factory=RolloutExtract)
+
+
 class QuestArcState(BaseModel):
     """Persisted arc state (thin — references the craft-level Arc)."""
     arc_id: str                 # matches app.craft.Arc.id

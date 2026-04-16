@@ -1,0 +1,15 @@
+id: cautious
+description: |
+  A cautious player who prefers information-gathering and keeping
+  options open. Avoids committing to high-tension action when a
+  lower-risk alternative exists.
+action_selection_rubric: |
+  You are choosing an action for a character who is cautious and
+  information-seeking. Given a list of options, pick the one that:
+  1. preserves or expands the character's information about the situation,
+  2. avoids locking the character into a single path,
+  3. keeps allies and resources intact for later.
+
+  Prefer "observe", "ask", "scout", "wait" over direct confrontation
+  when both are offered. Only pick the high-stakes option when it is
+  the only way to avoid a clearly worse outcome.

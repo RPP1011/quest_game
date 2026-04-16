@@ -231,6 +231,38 @@ CREATE TABLE IF NOT EXISTS arc_skeletons (
 );
 
 CREATE INDEX IF NOT EXISTS idx_arc_skeletons_candidate ON arc_skeletons(candidate_id);
+
+CREATE TABLE IF NOT EXISTS rollout_runs (
+    id TEXT PRIMARY KEY,
+    quest_id TEXT NOT NULL,
+    candidate_id TEXT NOT NULL,
+    skeleton_id TEXT,
+    profile_id TEXT NOT NULL,
+    seed_nonce INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'pending',
+    chapters_complete INTEGER NOT NULL DEFAULT 0,
+    total_chapters_target INTEGER NOT NULL DEFAULT 10,
+    started_at TEXT,
+    completed_at TEXT,
+    error_message TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_rollout_runs_candidate ON rollout_runs(candidate_id);
+CREATE INDEX IF NOT EXISTS idx_rollout_runs_quest ON rollout_runs(quest_id);
+
+CREATE TABLE IF NOT EXISTS rollout_chapters (
+    rollout_id TEXT NOT NULL,
+    chapter_index INTEGER NOT NULL,
+    player_action TEXT NOT NULL,
+    prose TEXT NOT NULL DEFAULT '',
+    trace_id TEXT,
+    judge_scores TEXT,
+    extract TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (rollout_id, chapter_index),
+    FOREIGN KEY (rollout_id) REFERENCES rollout_runs(id) ON DELETE CASCADE
+);
 """
 
 

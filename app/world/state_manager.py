@@ -24,6 +24,10 @@ from .schema import (
     QuestArcState,
     ReaderState,
     Relationship,
+    RolloutChapter,
+    RolloutExtract,
+    RolloutRun,
+    RolloutStatus,
     SkeletonChapter,
     StoryCandidate,
     StoryCandidateStatus,
@@ -166,6 +170,37 @@ def _row_to_thread(row: sqlite3.Row) -> PlotThread:
         involved_entities=json.loads(row["involved_entities"]),
         arc_position=row["arc_position"],
         priority=row["priority"],
+    )
+
+
+def _row_to_rollout(row: sqlite3.Row) -> RolloutRun:
+    return RolloutRun(
+        id=row["id"],
+        quest_id=row["quest_id"],
+        candidate_id=row["candidate_id"],
+        skeleton_id=row["skeleton_id"],
+        profile_id=row["profile_id"],
+        seed_nonce=row["seed_nonce"],
+        status=row["status"],
+        chapters_complete=row["chapters_complete"],
+        total_chapters_target=row["total_chapters_target"],
+        started_at=row["started_at"],
+        completed_at=row["completed_at"],
+        error_message=row["error_message"],
+    )
+
+
+def _row_to_rollout_chapter(row: sqlite3.Row) -> RolloutChapter:
+    scores_raw = row["judge_scores"]
+    extract_raw = row["extract"] or "{}"
+    return RolloutChapter(
+        rollout_id=row["rollout_id"],
+        chapter_index=row["chapter_index"],
+        player_action=row["player_action"],
+        prose=row["prose"],
+        trace_id=row["trace_id"],
+        judge_scores=json.loads(scores_raw) if scores_raw else None,
+        extract=RolloutExtract(**json.loads(extract_raw)),
     )
 
 
@@ -1558,6 +1593,109 @@ class WorldStateManager:
             (candidate_id,),
         ).fetchone()
         return _row_to_arc_skeleton(row) if row else None
+
+    # ---- rollouts (Phase 3: story-rollout architecture) ----
+    def create_rollout(self, run: RolloutRun) -> None:
+        self._conn.execute(
+            "INSERT INTO rollout_runs(id, quest_id, candidate_id, skeleton_id, "
+            "profile_id, seed_nonce, status, chapters_complete, "
+            "total_chapters_target, started_at, completed_at, error_message) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                run.id, run.quest_id, run.candidate_id, run.skeleton_id,
+                run.profile_id, run.seed_nonce,
+                run.status.value if hasattr(run.status, "value") else run.status,
+                run.chapters_complete, run.total_chapters_target,
+                run.started_at, run.completed_at, run.error_message,
+            ),
+        )
+        self._conn.commit()
+
+    def update_rollout(
+        self, rollout_id: str, *,
+        status: RolloutStatus | None = None,
+        chapters_complete: int | None = None,
+        started_at: str | None = None,
+        completed_at: str | None = None,
+        error_message: str | None = None,
+    ) -> None:
+        sets: list[str] = []
+        args: list = []
+        if status is not None:
+            sets.append("status=?")
+            args.append(status.value if hasattr(status, "value") else status)
+        if chapters_complete is not None:
+            sets.append("chapters_complete=?")
+            args.append(chapters_complete)
+        if started_at is not None:
+            sets.append("started_at=?")
+            args.append(started_at)
+        if completed_at is not None:
+            sets.append("completed_at=?")
+            args.append(completed_at)
+        if error_message is not None:
+            sets.append("error_message=?")
+            args.append(error_message)
+        if not sets:
+            return
+        args.append(rollout_id)
+        cur = self._conn.execute(
+            f"UPDATE rollout_runs SET {', '.join(sets)} WHERE id=?", args,
+        )
+        if cur.rowcount == 0:
+            raise WorldStateError(f"no rollout {rollout_id!r}")
+        self._conn.commit()
+
+    def get_rollout(self, rollout_id: str) -> RolloutRun:
+        row = self._conn.execute(
+            "SELECT * FROM rollout_runs WHERE id=?", (rollout_id,),
+        ).fetchone()
+        if row is None:
+            raise WorldStateError(f"no rollout {rollout_id!r}")
+        return _row_to_rollout(row)
+
+    def list_rollouts(
+        self, *, quest_id: str | None = None,
+        candidate_id: str | None = None,
+    ) -> list[RolloutRun]:
+        clauses: list[str] = []
+        args: list = []
+        if quest_id is not None:
+            clauses.append("quest_id=?"); args.append(quest_id)
+        if candidate_id is not None:
+            clauses.append("candidate_id=?"); args.append(candidate_id)
+        where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
+        rows = self._conn.execute(
+            f"SELECT * FROM rollout_runs{where} ORDER BY created_at DESC", args,
+        ).fetchall()
+        return [_row_to_rollout(r) for r in rows]
+
+    def save_rollout_chapter(self, chapter: RolloutChapter) -> None:
+        """Upsert a rollout chapter. Incremental save for resume-safety."""
+        self._conn.execute(
+            "INSERT INTO rollout_chapters(rollout_id, chapter_index, "
+            "player_action, prose, trace_id, judge_scores, extract) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(rollout_id, chapter_index) DO UPDATE SET "
+            "player_action=excluded.player_action, prose=excluded.prose, "
+            "trace_id=excluded.trace_id, judge_scores=excluded.judge_scores, "
+            "extract=excluded.extract",
+            (
+                chapter.rollout_id, chapter.chapter_index,
+                chapter.player_action, chapter.prose, chapter.trace_id,
+                json.dumps(chapter.judge_scores) if chapter.judge_scores else None,
+                json.dumps(chapter.extract.model_dump()),
+            ),
+        )
+        self._conn.commit()
+
+    def list_rollout_chapters(self, rollout_id: str) -> list[RolloutChapter]:
+        rows = self._conn.execute(
+            "SELECT * FROM rollout_chapters WHERE rollout_id=? "
+            "ORDER BY chapter_index",
+            (rollout_id,),
+        ).fetchall()
+        return [_row_to_rollout_chapter(r) for r in rows]
 
     def snapshot(self) -> WorldSnapshot:
         return WorldSnapshot(

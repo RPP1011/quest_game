@@ -165,6 +165,43 @@ def play(
 
 
 @app.command()
+def rollout(
+    quests_dir: Path = typer.Option(Path("data/quests"), help="Root directory for quest DBs."),
+    quest_id: str = typer.Option(..., "--quest", help="Parent quest id."),
+    candidate: str = typer.Option(..., help="Picked candidate id."),
+    profile: str = typer.Option("impulsive", help="Virtual-player profile id."),
+    chapters: int = typer.Option(5, help="Target chapter count for this rollout."),
+    server: str = typer.Option("http://127.0.0.1:8082", help="llama-server base URL."),
+    model: str | None = typer.Option(None),
+    rollout_id: str | None = typer.Option(None, help="Resume this rollout (creates new if omitted)."),
+) -> None:
+    """Run a virtual-player rollout against a picked candidate.
+
+    Creates or resumes a RolloutRun, then executes the pipeline
+    chapter-by-chapter. Each chapter is saved incrementally; SIGTERM
+    or crashes are resumed from the next unfinished chapter on restart.
+    """
+    from app.rollout.harness import create_rollout_row, run_rollout
+
+    rid = rollout_id or create_rollout_row(
+        quests_dir=quests_dir, quest_id=quest_id,
+        candidate_id=candidate, profile_id=profile,
+        total_chapters_target=chapters,
+    )
+    typer.echo(f"Rollout: {rid}")
+    client = InferenceClient(base_url=server, model=model, timeout=600.0, retries=1)
+    try:
+        run = asyncio.run(run_rollout(
+            quests_dir=quests_dir, quest_id=quest_id,
+            rollout_id=rid, client=client,
+        ))
+        typer.echo(f"Done. Status={run.status.value}  chapters={run.chapters_complete}/{run.total_chapters_target}")
+    except Exception as e:
+        typer.echo(f"[error] {e}", err=True)
+        raise typer.Exit(code=1)
+
+
+@app.command()
 def serve(
     quests_dir: Path = typer.Option(Path("data/quests"), help="Root directory for quest DBs + traces."),
     server: str = typer.Option("http://127.0.0.1:8090", help="llama-server base URL."),

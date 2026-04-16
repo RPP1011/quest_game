@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio
 import json
 from pathlib import Path
 from typing import Any
@@ -262,6 +263,64 @@ def create_app(*, quests_dir: Path, server_url: str) -> FastAPI:
         except Exception as e:
             raise HTTPException(500, f"candidate generation failed: {e}")
         return [c.model_dump(mode="json") for c in cands]
+
+    @app.get("/api/quests/{qid}/rollouts")
+    def list_rollouts(qid: str) -> list[dict]:
+        sm, _ = _open(qid)
+        runs = sm.list_rollouts(quest_id=qid)
+        return [r.model_dump(mode="json") for r in runs]
+
+    @app.get("/api/quests/{qid}/rollouts/{rid}")
+    def get_rollout(qid: str, rid: str) -> dict:
+        sm, _ = _open(qid)
+        try:
+            run = sm.get_rollout(rid)
+        except Exception:
+            raise HTTPException(404, f"unknown rollout: {rid}")
+        chapters = [
+            c.model_dump(mode="json") for c in sm.list_rollout_chapters(rid)
+        ]
+        return {**run.model_dump(mode="json"), "chapters": chapters}
+
+    @app.post("/api/quests/{qid}/candidates/{cid}/rollouts/start",
+              status_code=202)
+    async def start_rollout(
+        qid: str, cid: str, profile: str = "impulsive",
+        chapters: int = 5,
+    ) -> dict:
+        """Launch a rollout. Returns immediately with the rollout id;
+        execution runs in the background.
+
+        Progress is polled via ``GET /rollouts/{rid}``.
+        """
+        from app.rollout.harness import create_rollout_row, run_rollout
+        try:
+            rid = create_rollout_row(
+                quests_dir=quests_dir, quest_id=qid,
+                candidate_id=cid, profile_id=profile,
+                total_chapters_target=chapters,
+            )
+        except Exception as e:
+            raise HTTPException(400, f"failed to create rollout: {e}")
+
+        async def _run():
+            try:
+                await run_rollout(
+                    quests_dir=quests_dir, quest_id=qid,
+                    rollout_id=rid, client=client,
+                )
+            except Exception:
+                # harness already records FAILED status; just swallow
+                pass
+
+        asyncio.create_task(_run())
+        return {"rollout_id": rid, "status": "pending"}
+
+    @app.get("/api/rollout-profiles")
+    def list_rollout_profiles() -> list[dict]:
+        """Return the available virtual-player profiles."""
+        from app.rollout.profiles import list_profiles
+        return [p.model_dump() for p in list_profiles()]
 
     @app.get("/api/quests/{qid}/candidates/{cid}/skeleton")
     def get_skeleton(qid: str, cid: str) -> dict:
