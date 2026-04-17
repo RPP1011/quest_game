@@ -594,6 +594,7 @@ class Pipeline:
 
         # ---- Hierarchical post-write flow ----
         check_out = await self._run_check(trace, plan_like_dict, prose)
+        self._inject_heuristic_issues(check_out, prose)
 
         # REVISE loop (no replan in hierarchical flow for now). Try up to
         # MAX_REVISE_ATTEMPTS to clear critical/fixable issues. Critical
@@ -609,6 +610,7 @@ class Pipeline:
             )
             revise_attempts += 1
             check_out = await self._run_check(trace, plan_like_dict, prose)
+            self._inject_heuristic_issues(check_out, prose)
 
         if check_out.has_critical:
             outcome = "flagged_qm"
@@ -1278,6 +1280,24 @@ class Pipeline:
                 except Exception:
                     continue
         return entities
+
+    @staticmethod
+    def _inject_heuristic_issues(check_out: "Any", prose: str) -> None:
+        """Inject heuristic critic issues into the check output.
+
+        Runs metaphor-variety and entity-consistency checks and appends
+        any warnings to the check_out.issues list. These warnings then
+        flow into the revise loop alongside LLM-detected issues.
+        """
+        from app.planning.metaphor_critic import check_metaphor_variety
+        from app.engine.check import CheckIssue
+        for issue in check_metaphor_variety(prose):
+            check_out.issues.append(CheckIssue(
+                severity="warning",
+                category="prose_quality",
+                message=issue["message"],
+                suggested_fix=issue.get("suggested_fix"),
+            ))
 
     def _primary_pov_character_id(self) -> str | None:
         """Choose a representative POV character id for the whole update.
