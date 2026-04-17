@@ -1,3 +1,7 @@
+---
+title: "Pale Lights — Full Corpus Craft Analysis"
+---
+
 # Pale Lights — Full Corpus Craft Analysis
 
 **Date:** 2026-04-15

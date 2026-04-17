@@ -1,3 +1,7 @@
+---
+title: "Phase 1 — Story Candidates — Result"
+---
+
 # Phase 1 — Story Candidates — Result
 
 **Date:** 2026-04-16

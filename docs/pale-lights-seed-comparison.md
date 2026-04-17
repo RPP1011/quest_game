@@ -1,3 +1,7 @@
+---
+title: "Pale Lights — Seed → Generation Comparison"
+---
+
 # Pale Lights — Seed → Generation Comparison
 
 **Date:** 2026-04-14

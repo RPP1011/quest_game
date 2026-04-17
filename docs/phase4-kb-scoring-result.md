@@ -1,3 +1,7 @@
+---
+title: "Phase 4 — Scoring + KB Extraction — Result"
+---
+
 # Phase 4 — Scoring + KB Extraction — Result
 
 **Date:** 2026-04-16

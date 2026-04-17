@@ -1,3 +1,7 @@
+---
+title: "Phase 5 — Refinement — Result"
+---
+
 # Phase 5 — Refinement — Result
 
 **Date:** 2026-04-16
