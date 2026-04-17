@@ -19,9 +19,20 @@ from .schema import (
     Parallel,
     ParallelStatus,
     PlotThread,
+    ArcSkeleton,
+    HookPlacement,
     QuestArcState,
     ReaderState,
+    RefinementAttempt,
     Relationship,
+    RolloutChapter,
+    RolloutExtract,
+    RolloutRun,
+    RolloutStatus,
+    SkeletonChapter,
+    StoryCandidate,
+    StoryCandidateStatus,
+    ThemeBeat,
     ThreadStatus,
     TimelineEvent,
     WorldRule,
@@ -160,6 +171,85 @@ def _row_to_thread(row: sqlite3.Row) -> PlotThread:
         involved_entities=json.loads(row["involved_entities"]),
         arc_position=row["arc_position"],
         priority=row["priority"],
+    )
+
+
+def _row_to_rollout(row: sqlite3.Row) -> RolloutRun:
+    return RolloutRun(
+        id=row["id"],
+        quest_id=row["quest_id"],
+        candidate_id=row["candidate_id"],
+        skeleton_id=row["skeleton_id"],
+        profile_id=row["profile_id"],
+        seed_nonce=row["seed_nonce"],
+        status=row["status"],
+        chapters_complete=row["chapters_complete"],
+        total_chapters_target=row["total_chapters_target"],
+        started_at=row["started_at"],
+        completed_at=row["completed_at"],
+        error_message=row["error_message"],
+    )
+
+
+def _row_to_rollout_chapter(row: sqlite3.Row) -> RolloutChapter:
+    scores_raw = row["judge_scores"]
+    extract_raw = row["extract"] or "{}"
+    return RolloutChapter(
+        rollout_id=row["rollout_id"],
+        chapter_index=row["chapter_index"],
+        player_action=row["player_action"],
+        prose=row["prose"],
+        trace_id=row["trace_id"],
+        judge_scores=json.loads(scores_raw) if scores_raw else None,
+        extract=RolloutExtract(**json.loads(extract_raw)),
+    )
+
+
+def _row_to_refinement_attempt(row: sqlite3.Row) -> RefinementAttempt:
+    return RefinementAttempt(
+        id=row["id"],
+        quest_id=row["quest_id"],
+        rollout_id=row["rollout_id"],
+        chapter_index=row["chapter_index"],
+        strategy=row["strategy"],
+        reason=row["reason"] or "",
+        guidance=row["guidance"] or "",
+        baseline_scores=json.loads(row["baseline_scores"] or "{}"),
+        refined_prose=row["refined_prose"] or "",
+        refined_scores=json.loads(row["refined_scores"] or "{}"),
+        refined_trace_id=row["refined_trace_id"],
+        delta_mean=row["delta_mean"],
+        delta_min=row["delta_min"],
+        accepted=bool(row["accepted"]),
+        rejection_reason=row["rejection_reason"],
+        created_at=row["created_at"],
+    )
+
+
+def _row_to_arc_skeleton(row: sqlite3.Row) -> ArcSkeleton:
+    return ArcSkeleton(
+        id=row["id"],
+        candidate_id=row["candidate_id"],
+        quest_id=row["quest_id"],
+        chapters=[SkeletonChapter(**c) for c in json.loads(row["chapters"])],
+        theme_arc=[ThemeBeat(**t) for t in json.loads(row["theme_arc"])],
+        hook_schedule=[HookPlacement(**h) for h in json.loads(row["hook_schedule"])],
+    )
+
+
+def _row_to_story_candidate(row: sqlite3.Row) -> StoryCandidate:
+    return StoryCandidate(
+        id=row["id"],
+        quest_id=row["quest_id"],
+        title=row["title"],
+        synopsis=row["synopsis"],
+        primary_thread_ids=json.loads(row["primary_thread_ids"]),
+        secondary_thread_ids=json.loads(row["secondary_thread_ids"]),
+        protagonist_character_id=row["protagonist_character_id"],
+        emphasized_theme_ids=json.loads(row["emphasized_theme_ids"]),
+        climax_description=row["climax_description"],
+        expected_chapter_count=row["expected_chapter_count"],
+        status=row["status"],
     )
 
 
@@ -1410,6 +1500,372 @@ class WorldStateManager:
                 # Partial / legacy row — skip rather than fail the listing.
                 continue
         return out
+
+    # ---- story candidates (Phase 1: story-rollout architecture) ----
+    def add_story_candidate(self, cand: StoryCandidate) -> None:
+        self._conn.execute(
+            "INSERT INTO story_candidates(id, quest_id, title, synopsis, "
+            "primary_thread_ids, secondary_thread_ids, protagonist_character_id, "
+            "emphasized_theme_ids, climax_description, expected_chapter_count, "
+            "status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                cand.id, cand.quest_id, cand.title, cand.synopsis,
+                json.dumps(cand.primary_thread_ids),
+                json.dumps(cand.secondary_thread_ids),
+                cand.protagonist_character_id,
+                json.dumps(cand.emphasized_theme_ids),
+                cand.climax_description, cand.expected_chapter_count,
+                cand.status.value if hasattr(cand.status, "value") else cand.status,
+            ),
+        )
+        self._conn.commit()
+
+    def list_story_candidates(self, quest_id: str) -> list[StoryCandidate]:
+        rows = self._conn.execute(
+            "SELECT * FROM story_candidates WHERE quest_id=? ORDER BY id",
+            (quest_id,),
+        ).fetchall()
+        return [_row_to_story_candidate(r) for r in rows]
+
+    def get_story_candidate(self, candidate_id: str) -> StoryCandidate:
+        row = self._conn.execute(
+            "SELECT * FROM story_candidates WHERE id=?", (candidate_id,)
+        ).fetchone()
+        if row is None:
+            raise WorldStateError(f"no story candidate {candidate_id!r}")
+        return _row_to_story_candidate(row)
+
+    def set_candidate_status(
+        self, candidate_id: str, status: StoryCandidateStatus,
+    ) -> None:
+        cur = self._conn.execute(
+            "UPDATE story_candidates SET status=? WHERE id=?",
+            (status.value if hasattr(status, "value") else status, candidate_id),
+        )
+        if cur.rowcount == 0:
+            raise WorldStateError(f"no story candidate {candidate_id!r}")
+        self._conn.commit()
+
+    def pick_story_candidate(
+        self, quest_id: str, candidate_id: str,
+    ) -> StoryCandidate:
+        """Mark one candidate as PICKED and all others as REJECTED.
+
+        Returns the picked candidate. Idempotent: picking an already-picked
+        candidate is a no-op; picking a different one swaps the pick.
+        """
+        target = self.get_story_candidate(candidate_id)
+        if target.quest_id != quest_id:
+            raise WorldStateError(
+                f"candidate {candidate_id!r} belongs to quest "
+                f"{target.quest_id!r}, not {quest_id!r}"
+            )
+        self._conn.execute(
+            "UPDATE story_candidates SET status=? WHERE quest_id=? AND status=?",
+            (StoryCandidateStatus.REJECTED.value, quest_id,
+             StoryCandidateStatus.PICKED.value),
+        )
+        self._conn.execute(
+            "UPDATE story_candidates SET status=? WHERE id=?",
+            (StoryCandidateStatus.PICKED.value, candidate_id),
+        )
+        self._conn.commit()
+        return self.get_story_candidate(candidate_id)
+
+    def get_picked_candidate(self, quest_id: str) -> StoryCandidate | None:
+        row = self._conn.execute(
+            "SELECT * FROM story_candidates WHERE quest_id=? AND status=? LIMIT 1",
+            (quest_id, StoryCandidateStatus.PICKED.value),
+        ).fetchone()
+        return _row_to_story_candidate(row) if row else None
+
+    # ---- arc skeletons (Phase 2: story-rollout architecture) ----
+    def save_arc_skeleton(self, skeleton: ArcSkeleton) -> None:
+        """Upsert a skeleton by id. Used by the planner on (re)generation."""
+        self._conn.execute(
+            "INSERT INTO arc_skeletons(id, candidate_id, quest_id, chapters, "
+            "theme_arc, hook_schedule) VALUES (?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(id) DO UPDATE SET "
+            "chapters=excluded.chapters, theme_arc=excluded.theme_arc, "
+            "hook_schedule=excluded.hook_schedule",
+            (
+                skeleton.id, skeleton.candidate_id, skeleton.quest_id,
+                json.dumps([c.model_dump() for c in skeleton.chapters]),
+                json.dumps([t.model_dump() for t in skeleton.theme_arc]),
+                json.dumps([h.model_dump() for h in skeleton.hook_schedule]),
+            ),
+        )
+        self._conn.commit()
+
+    def get_arc_skeleton(self, skeleton_id: str) -> ArcSkeleton:
+        row = self._conn.execute(
+            "SELECT * FROM arc_skeletons WHERE id=?", (skeleton_id,),
+        ).fetchone()
+        if row is None:
+            raise WorldStateError(f"no arc skeleton {skeleton_id!r}")
+        return _row_to_arc_skeleton(row)
+
+    def get_skeleton_for_candidate(
+        self, candidate_id: str,
+    ) -> ArcSkeleton | None:
+        """Return the most-recent skeleton for a candidate, or None."""
+        row = self._conn.execute(
+            "SELECT * FROM arc_skeletons WHERE candidate_id=? "
+            "ORDER BY created_at DESC LIMIT 1",
+            (candidate_id,),
+        ).fetchone()
+        return _row_to_arc_skeleton(row) if row else None
+
+    # ---- rollouts (Phase 3: story-rollout architecture) ----
+    def create_rollout(self, run: RolloutRun) -> None:
+        self._conn.execute(
+            "INSERT INTO rollout_runs(id, quest_id, candidate_id, skeleton_id, "
+            "profile_id, seed_nonce, status, chapters_complete, "
+            "total_chapters_target, started_at, completed_at, error_message) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                run.id, run.quest_id, run.candidate_id, run.skeleton_id,
+                run.profile_id, run.seed_nonce,
+                run.status.value if hasattr(run.status, "value") else run.status,
+                run.chapters_complete, run.total_chapters_target,
+                run.started_at, run.completed_at, run.error_message,
+            ),
+        )
+        self._conn.commit()
+
+    def update_rollout(
+        self, rollout_id: str, *,
+        status: RolloutStatus | None = None,
+        chapters_complete: int | None = None,
+        started_at: str | None = None,
+        completed_at: str | None = None,
+        error_message: str | None = None,
+    ) -> None:
+        sets: list[str] = []
+        args: list = []
+        if status is not None:
+            sets.append("status=?")
+            args.append(status.value if hasattr(status, "value") else status)
+        if chapters_complete is not None:
+            sets.append("chapters_complete=?")
+            args.append(chapters_complete)
+        if started_at is not None:
+            sets.append("started_at=?")
+            args.append(started_at)
+        if completed_at is not None:
+            sets.append("completed_at=?")
+            args.append(completed_at)
+        if error_message is not None:
+            sets.append("error_message=?")
+            args.append(error_message)
+        if not sets:
+            return
+        args.append(rollout_id)
+        cur = self._conn.execute(
+            f"UPDATE rollout_runs SET {', '.join(sets)} WHERE id=?", args,
+        )
+        if cur.rowcount == 0:
+            raise WorldStateError(f"no rollout {rollout_id!r}")
+        self._conn.commit()
+
+    def get_rollout(self, rollout_id: str) -> RolloutRun:
+        row = self._conn.execute(
+            "SELECT * FROM rollout_runs WHERE id=?", (rollout_id,),
+        ).fetchone()
+        if row is None:
+            raise WorldStateError(f"no rollout {rollout_id!r}")
+        return _row_to_rollout(row)
+
+    def list_rollouts(
+        self, *, quest_id: str | None = None,
+        candidate_id: str | None = None,
+    ) -> list[RolloutRun]:
+        clauses: list[str] = []
+        args: list = []
+        if quest_id is not None:
+            clauses.append("quest_id=?"); args.append(quest_id)
+        if candidate_id is not None:
+            clauses.append("candidate_id=?"); args.append(candidate_id)
+        where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
+        rows = self._conn.execute(
+            f"SELECT * FROM rollout_runs{where} ORDER BY created_at DESC", args,
+        ).fetchall()
+        return [_row_to_rollout(r) for r in rows]
+
+    def save_rollout_chapter(self, chapter: RolloutChapter) -> None:
+        """Upsert a rollout chapter. Incremental save for resume-safety."""
+        self._conn.execute(
+            "INSERT INTO rollout_chapters(rollout_id, chapter_index, "
+            "player_action, prose, trace_id, judge_scores, extract) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(rollout_id, chapter_index) DO UPDATE SET "
+            "player_action=excluded.player_action, prose=excluded.prose, "
+            "trace_id=excluded.trace_id, judge_scores=excluded.judge_scores, "
+            "extract=excluded.extract",
+            (
+                chapter.rollout_id, chapter.chapter_index,
+                chapter.player_action, chapter.prose, chapter.trace_id,
+                json.dumps(chapter.judge_scores) if chapter.judge_scores else None,
+                json.dumps(chapter.extract.model_dump()),
+            ),
+        )
+        self._conn.commit()
+
+    def list_rollout_chapters(self, rollout_id: str) -> list[RolloutChapter]:
+        rows = self._conn.execute(
+            "SELECT * FROM rollout_chapters WHERE rollout_id=? "
+            "ORDER BY chapter_index",
+            (rollout_id,),
+        ).fetchall()
+        return [_row_to_rollout_chapter(r) for r in rows]
+
+    # ---- KB tables (Phase 4: scoring + extraction) ----
+    def save_chapter_scores(
+        self, rollout_id: str, chapter_index: int,
+        scores: dict[str, dict],
+    ) -> None:
+        """Upsert per-dim score rows. ``scores`` is a {dim: {score, rationale}}
+        mapping (the shape returned by the chapter judge)."""
+        for dim, payload in scores.items():
+            score = float(payload.get("score", 0.0))
+            rationale = str(payload.get("rationale", ""))
+            self._conn.execute(
+                "INSERT INTO kb_chapter_scores(rollout_id, chapter_index, dim, "
+                "score, rationale) VALUES (?, ?, ?, ?, ?) "
+                "ON CONFLICT(rollout_id, chapter_index, dim) DO UPDATE SET "
+                "score=excluded.score, rationale=excluded.rationale",
+                (rollout_id, chapter_index, dim, score, rationale),
+            )
+        self._conn.commit()
+
+    def list_chapter_scores(
+        self, rollout_id: str, chapter_index: int | None = None,
+    ) -> list[dict]:
+        if chapter_index is None:
+            rows = self._conn.execute(
+                "SELECT chapter_index, dim, score, rationale "
+                "FROM kb_chapter_scores WHERE rollout_id=? "
+                "ORDER BY chapter_index, dim",
+                (rollout_id,),
+            ).fetchall()
+        else:
+            rows = self._conn.execute(
+                "SELECT chapter_index, dim, score, rationale "
+                "FROM kb_chapter_scores WHERE rollout_id=? AND chapter_index=? "
+                "ORDER BY dim",
+                (rollout_id, chapter_index),
+            ).fetchall()
+        return [
+            {"chapter_index": r["chapter_index"], "dim": r["dim"],
+             "score": r["score"], "rationale": r["rationale"]}
+            for r in rows
+        ]
+
+    def save_hook_payoff(
+        self, *, quest_id: str, rollout_id: str, hook_id: str,
+        planted_at_chapter: int | None = None,
+        paid_off_at_chapter: int | None = None,
+    ) -> None:
+        self._conn.execute(
+            "INSERT INTO kb_hook_payoffs(quest_id, rollout_id, hook_id, "
+            "planted_at_chapter, paid_off_at_chapter) VALUES (?, ?, ?, ?, ?) "
+            "ON CONFLICT(rollout_id, hook_id) DO UPDATE SET "
+            "planted_at_chapter=COALESCE(excluded.planted_at_chapter, planted_at_chapter), "
+            "paid_off_at_chapter=COALESCE(excluded.paid_off_at_chapter, paid_off_at_chapter)",
+            (quest_id, rollout_id, hook_id, planted_at_chapter, paid_off_at_chapter),
+        )
+        self._conn.commit()
+
+    def list_hook_payoffs(self, quest_id: str) -> list[dict]:
+        rows = self._conn.execute(
+            "SELECT rollout_id, hook_id, planted_at_chapter, paid_off_at_chapter "
+            "FROM kb_hook_payoffs WHERE quest_id=? ORDER BY hook_id, rollout_id",
+            (quest_id,),
+        ).fetchall()
+        return [
+            {"rollout_id": r["rollout_id"], "hook_id": r["hook_id"],
+             "planted_at_chapter": r["planted_at_chapter"],
+             "paid_off_at_chapter": r["paid_off_at_chapter"]}
+            for r in rows
+        ]
+
+    def save_entity_usage(
+        self, *, quest_id: str, rollout_id: str, entity_id: str,
+        introduced_at_chapter: int | None = None,
+        mention_chapters: list[int] | None = None,
+    ) -> None:
+        self._conn.execute(
+            "INSERT INTO kb_entity_usage(quest_id, rollout_id, entity_id, "
+            "introduced_at_chapter, mention_chapters) VALUES (?, ?, ?, ?, ?) "
+            "ON CONFLICT(rollout_id, entity_id) DO UPDATE SET "
+            "introduced_at_chapter=COALESCE(excluded.introduced_at_chapter, introduced_at_chapter), "
+            "mention_chapters=excluded.mention_chapters",
+            (quest_id, rollout_id, entity_id,
+             introduced_at_chapter,
+             json.dumps(mention_chapters or [])),
+        )
+        self._conn.commit()
+
+    # ---- refinement attempts (Phase 5) ----
+    def save_refinement_attempt(self, attempt: RefinementAttempt) -> None:
+        self._conn.execute(
+            "INSERT INTO refinement_attempts(id, quest_id, rollout_id, "
+            "chapter_index, strategy, reason, guidance, baseline_scores, "
+            "refined_prose, refined_scores, refined_trace_id, delta_mean, "
+            "delta_min, accepted, rejection_reason) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(id) DO UPDATE SET "
+            "refined_prose=excluded.refined_prose, "
+            "refined_scores=excluded.refined_scores, "
+            "refined_trace_id=excluded.refined_trace_id, "
+            "delta_mean=excluded.delta_mean, "
+            "delta_min=excluded.delta_min, "
+            "accepted=excluded.accepted, "
+            "rejection_reason=excluded.rejection_reason",
+            (
+                attempt.id, attempt.quest_id, attempt.rollout_id,
+                attempt.chapter_index, attempt.strategy, attempt.reason,
+                attempt.guidance, json.dumps(attempt.baseline_scores),
+                attempt.refined_prose,
+                json.dumps(attempt.refined_scores),
+                attempt.refined_trace_id, attempt.delta_mean,
+                attempt.delta_min, 1 if attempt.accepted else 0,
+                attempt.rejection_reason,
+            ),
+        )
+        self._conn.commit()
+
+    def list_refinement_attempts(
+        self, *, quest_id: str | None = None,
+        rollout_id: str | None = None,
+        chapter_index: int | None = None,
+    ) -> list[RefinementAttempt]:
+        clauses, args = [], []
+        if quest_id is not None:
+            clauses.append("quest_id=?"); args.append(quest_id)
+        if rollout_id is not None:
+            clauses.append("rollout_id=?"); args.append(rollout_id)
+        if chapter_index is not None:
+            clauses.append("chapter_index=?"); args.append(chapter_index)
+        where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
+        rows = self._conn.execute(
+            f"SELECT * FROM refinement_attempts{where} ORDER BY created_at",
+            args,
+        ).fetchall()
+        return [_row_to_refinement_attempt(r) for r in rows]
+
+    def list_entity_usage(self, quest_id: str) -> list[dict]:
+        rows = self._conn.execute(
+            "SELECT rollout_id, entity_id, introduced_at_chapter, mention_chapters "
+            "FROM kb_entity_usage WHERE quest_id=? ORDER BY entity_id, rollout_id",
+            (quest_id,),
+        ).fetchall()
+        return [
+            {"rollout_id": r["rollout_id"], "entity_id": r["entity_id"],
+             "introduced_at_chapter": r["introduced_at_chapter"],
+             "mention_chapters": json.loads(r["mention_chapters"] or "[]")}
+            for r in rows
+        ]
 
     def snapshot(self) -> WorldSnapshot:
         return WorldSnapshot(

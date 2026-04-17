@@ -31,6 +31,23 @@
 - **Parallels to schedule:** {{ directive.parallels_to_schedule | join("; ") }}
 {% endif %}
 
+{% if skeleton_chapter %}
+---
+
+## Skeleton Chapter {{ skeleton_chapter.chapter_index }} (committed arc outline)
+
+The arc pre-allocated this chapter's slot. Every scene this update must advance one of the required plot beats below. Do not drift.
+
+**POV** (pin scenes to this): `{{ skeleton_chapter.pov_character_id or "unspecified" }}`
+{% if skeleton_chapter.location_constraint %}**Anchor location**: `{{ skeleton_chapter.location_constraint }}`
+{% endif %}**Dramatic question**: {{ skeleton_chapter.dramatic_question }}
+**Target tension**: {{ "%.2f"|format(skeleton_chapter.target_tension) }}
+**Required plot beats** (each scene should serve one or more):
+{% for b in skeleton_chapter.required_plot_beats %}  - {{ b }}
+{% endfor %}
+{% if skeleton_chapter.entities_to_surface %}**Must surface this chapter** (add to `entities_to_surface` on the plan): {{ skeleton_chapter.entities_to_surface | join(", ") }}
+{% endif %}
+{% endif %}
 ---
 
 {% if themes %}

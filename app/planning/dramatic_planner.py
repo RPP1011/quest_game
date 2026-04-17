@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 
 def _repair_missing_scene_ids(raw: str) -> str:
@@ -81,6 +81,7 @@ class DramaticPlanner:
         scene_retriever: SceneShapeRetriever | None = None,
         foreshadowing_retriever: ForeshadowingRetriever | None = None,
         update_number: int | None = None,
+        skeleton_chapter: "Any | None" = None,
     ) -> DramaticPlan:
         """Generate a ``DramaticPlan`` for the current update.
 
@@ -213,6 +214,7 @@ class DramaticPlanner:
                 "scene_exemplars": scene_exemplars,
                 "ripe_hooks": ripe_hooks,
                 "valid_tool_ids": valid_tool_ids,
+                "skeleton_chapter": skeleton_chapter,
             },
         )
 

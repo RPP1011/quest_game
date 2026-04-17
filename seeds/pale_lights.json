@@ -59,9 +59,9 @@
       "status": "active",
       "data": {
         "role": "pact-god, Tristan's companion voice",
-        "description": "A girl-shaped goddess of long odds, red dress, hair and eyes of molten gold. Visible and audible only to Tristan. Cannot touch the material world; rests her chin on his shoulder, sprawls on rafters, throws tantrums at inanimate objects. Called, aptly, a collection of terrible habits made into a deity.",
+        "description": "A girl-shaped goddess of long odds, red dress, hair and eyes of molten gold. Visible and audible only to Tristan. CANNOT touch matter and CANNOT be touched — her presence is perceptual: Tristan sees and hears her, sometimes feels phantom warmth or pressure where she 'leans', but no force is exerted, no surface is moved, and she leaves no physical trace. Where Erratic writes her chin 'resting' on Tristan's shoulder, the prose makes clear it is illusion convincing enough to outstrip the truth — never actual contact. She sprawls in apparent rafters, gestures at apparent objects, but inanimate things ignore her. Called, aptly, a collection of terrible habits made into a deity.",
         "abilities": ["bends probability by small, costly increments", "sees the truth of hearts and hands"],
-        "constraints": ["cannot leave a room's length from Tristan", "cannot touch matter", "weaker when Tristan is confident, stronger when he is desperate"],
+        "constraints": ["cannot leave a room's length from Tristan", "cannot touch matter — any 'touch' must be described as phantom warmth, pressure-without-mass, perceived contact that exerts no real force", "weaker when Tristan is confident, stronger when he is desperate"],
         "voice": {"vocabulary_level": "vulgar-aristocratic", "directness": 0.9, "emotional_expression": "theatrical",
           "signature_tics": ["bellows", "pouts", "feuds with inanimate objects"]}
       }

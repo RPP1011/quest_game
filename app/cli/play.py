@@ -165,6 +165,112 @@ def play(
 
 
 @app.command()
+def rollout(
+    quests_dir: Path = typer.Option(Path("data/quests"), help="Root directory for quest DBs."),
+    quest_id: str = typer.Option(..., "--quest", help="Parent quest id."),
+    candidate: str = typer.Option(..., help="Picked candidate id."),
+    profile: str = typer.Option("impulsive", help="Virtual-player profile id."),
+    chapters: int = typer.Option(5, help="Target chapter count for this rollout."),
+    server: str = typer.Option("http://127.0.0.1:8082", help="llama-server base URL."),
+    model: str | None = typer.Option(None),
+    rollout_id: str | None = typer.Option(None, help="Resume this rollout (creates new if omitted)."),
+) -> None:
+    """Run a virtual-player rollout against a picked candidate.
+
+    Creates or resumes a RolloutRun, then executes the pipeline
+    chapter-by-chapter. Each chapter is saved incrementally; SIGTERM
+    or crashes are resumed from the next unfinished chapter on restart.
+    """
+    from app.rollout.harness import create_rollout_row, run_rollout
+
+    rid = rollout_id or create_rollout_row(
+        quests_dir=quests_dir, quest_id=quest_id,
+        candidate_id=candidate, profile_id=profile,
+        total_chapters_target=chapters,
+    )
+    typer.echo(f"Rollout: {rid}")
+    client = InferenceClient(base_url=server, model=model, timeout=600.0, retries=1)
+    try:
+        run = asyncio.run(run_rollout(
+            quests_dir=quests_dir, quest_id=quest_id,
+            rollout_id=rid, client=client,
+        ))
+        typer.echo(f"Done. Status={run.status.value}  chapters={run.chapters_complete}/{run.total_chapters_target}")
+    except Exception as e:
+        typer.echo(f"[error] {e}", err=True)
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def refine(
+    quests_dir: Path = typer.Option(Path("data/quests"), help="Root directory for quest DBs."),
+    quest_id: str = typer.Option(..., "--quest", help="Parent quest id."),
+    rollout_id: str | None = typer.Option(None, "--rollout", help="Restrict to this rollout (otherwise all rollouts of the quest)."),
+    strategy: str = typer.Option("weak", help="Selector: weak | hooks | sibling | all"),
+    max_targets: int = typer.Option(3, help="Cap on the number of refinement targets to attempt."),
+    threshold: float = typer.Option(0.55, help="WeakChapterSelector threshold (mean dim score below this triggers refinement)."),
+    server: str = typer.Option("http://127.0.0.1:8082"),
+    model: str | None = typer.Option(None),
+) -> None:
+    """Run a refinement pass over a quest's rollouts.
+
+    Picks targets via the chosen selector(s), regenerates each chapter
+    with strategy-specific guidance, scores the new prose, and accepts
+    only when the result materially beats the baseline.
+    """
+    from app.refinement.framework import run_refinement_pass
+    from app.refinement.selectors import (
+        SiblingOutscoredSelector, UnpaidHookSelector, WeakChapterSelector,
+    )
+    from app.world.db import open_db
+    from app.world.state_manager import WorldStateManager
+
+    main_conn = open_db(quests_dir / quest_id / "quest.db")
+    main_sm = WorldStateManager(main_conn)
+
+    selectors_to_run: list = []
+    if strategy in ("weak", "all"):
+        selectors_to_run.append(WeakChapterSelector(main_sm, threshold=threshold))
+    if strategy in ("hooks", "all"):
+        selectors_to_run.append(UnpaidHookSelector(main_sm))
+    if strategy in ("sibling", "all"):
+        selectors_to_run.append(SiblingOutscoredSelector(main_sm))
+    if not selectors_to_run:
+        typer.echo(f"unknown strategy: {strategy}", err=True)
+        raise typer.Exit(2)
+
+    targets: list = []
+    for sel in selectors_to_run:
+        sel_targets = sel.select(
+            quest_id=quest_id, rollout_id=rollout_id, max_targets=max_targets,
+        )
+        typer.echo(f"selector {sel.name}: {len(sel_targets)} targets")
+        targets.extend(sel_targets)
+
+    if not targets:
+        typer.echo("No refinement targets found.")
+        return
+
+    client = InferenceClient(base_url=server, model=model, timeout=600.0, retries=1)
+    results = asyncio.run(run_refinement_pass(
+        targets=targets, quests_dir=quests_dir,
+        main_world=main_sm, client=client,
+    ))
+
+    n_accepted = sum(1 for r in results if r.accepted)
+    typer.echo(f"\n=== Refinement pass complete: {n_accepted}/{len(results)} accepted ===")
+    for r in results:
+        status = "ACCEPTED" if r.accepted else "REJECTED"
+        typer.echo(
+            f"  {status:>8}  {r.target.strategy:<18}  "
+            f"r={r.target.rollout_id} ch={r.target.chapter_index}  "
+            f"Δmean={r.delta_mean:+.3f}  Δmin={r.delta_min:+.3f}"
+        )
+        if not r.accepted:
+            typer.echo(f"           reason: {r.rejection_reason}")
+
+
+@app.command()
 def serve(
     quests_dir: Path = typer.Option(Path("data/quests"), help="Root directory for quest DBs + traces."),
     server: str = typer.Option("http://127.0.0.1:8090", help="llama-server base URL."),

@@ -23,7 +23,11 @@ from .trace import PipelineTrace
 # 3000 fits ~2200 words — a bit of headroom above the 2000-word target set in
 # the write-stage system prompt.
 WRITE_MAX_TOKENS = 3000
-REVISE_MAX_TOKENS = 3000
+# Revise rewrites the FULL chapter in one call (vs. write which is per-beat),
+# so it needs proportionally more output budget. ~5k tokens covers ~3.5k-word
+# chapters with headroom; truncating revise causes mid-sentence cutoffs and
+# silent shortening of the committed prose.
+REVISE_MAX_TOKENS = 8000
 
 
 _BEAT_KEYS = ("beats", "beat_sheet", "beatsheet", "plan", "outline", "steps", "scenes")
@@ -331,6 +335,7 @@ class Pipeline:
         scene_retriever: "Any | None" = None,
         scorer: "Any | None" = None,
         llm_judge_client: "Any | None" = None,
+        live_trace_save: "Callable[[Any], None] | None" = None,
     ) -> None:
         self._world = world
         self._cb = context_builder
@@ -361,6 +366,7 @@ class Pipeline:
         )
         self._emotional_history_window = emotional_history_window
         self._emotional_monotony_window = emotional_monotony_window
+        self._live_trace_save = live_trace_save
 
         # ---- Gap G2: Generate-N + Rerank ----
         # quest_config takes precedence over ctor default so CLI/server can
@@ -477,6 +483,8 @@ class Pipeline:
 
     async def run(self, *, player_action: str, update_number: int) -> PipelineOutput:
         trace = PipelineTrace(trace_id=uuid.uuid4().hex, trigger=player_action)
+        if self._live_trace_save is not None:
+            trace.set_on_update(self._live_trace_save)
 
         if self.is_hierarchical:
             craft_plan, plan_like_dict = await self._run_hierarchical(
@@ -539,7 +547,7 @@ class Pipeline:
                 pipeline_trace_id=trace.trace_id,
                 pov_character_id=self._primary_pov_character_id(),
             ))
-            trace.outcome = outcome
+            trace.set_outcome(outcome)
 
             # Wave 1c: gated narrative-embedding write. No-op while
             # ``_retrieval_embedder`` is ``None`` (default); Wave 3b activates.
@@ -585,13 +593,21 @@ class Pipeline:
             )
 
         # ---- Hierarchical post-write flow ----
-        recheck_done = False
         check_out = await self._run_check(trace, plan_like_dict, prose)
 
-        # REVISE branch (no replan in hierarchical flow for now)
-        if check_out.has_fixable and not check_out.has_critical and not recheck_done:
-            prose = await self._run_revise(trace, plan_like_dict, prose, check_out.issues)
-            recheck_done = True
+        # REVISE loop (no replan in hierarchical flow for now). Try up to
+        # MAX_REVISE_ATTEMPTS to clear critical/fixable issues. Critical
+        # issues used to be skip-and-commit ('flagged_qm'), which let real
+        # world-rule violations land in committed prose. Now we loop until
+        # the issues clear or we exhaust the budget.
+        MAX_REVISE_ATTEMPTS = 2
+        revise_attempts = 0
+        while (check_out.has_critical or check_out.has_fixable) and \
+                revise_attempts < MAX_REVISE_ATTEMPTS:
+            prose = await self._run_revise(
+                trace, plan_like_dict, prose, check_out.issues,
+            )
+            revise_attempts += 1
             check_out = await self._run_check(trace, plan_like_dict, prose)
 
         if check_out.has_critical:
@@ -606,7 +622,7 @@ class Pipeline:
             pipeline_trace_id=trace.trace_id,
             pov_character_id=self._primary_pov_character_id(),
         ))
-        trace.outcome = outcome
+        trace.set_outcome(outcome)
 
         if (outcome == "committed"
                 and self._quest_id is not None
@@ -727,7 +743,7 @@ class Pipeline:
         from app.planning.schemas import ArcDirective
 
         # ---- ARC layer: load or generate ----
-        directive = await self._load_or_generate_arc(trace)
+        directive = await self._load_or_generate_arc(trace, update_number=update_number)
 
         # ---- DRAMATIC layer ----
         # Day 11: pass scene_retriever + foreshadowing_retriever +
@@ -747,6 +763,7 @@ class Pipeline:
                 scene_retriever=self._scene_retriever,
                 foreshadowing_retriever=self._foreshadowing_retriever,
                 update_number=update_number,
+                skeleton_chapter=self._current_skeleton_chapter(update_number),
             ),
             validator=lambda plan: critics.validate_dramatic(
                 plan,
@@ -1201,6 +1218,29 @@ class Pipeline:
             })
         return callbacks
 
+    def _current_skeleton_chapter(self, update_number: int) -> "Any | None":
+        """Return the SkeletonChapter for the current update_number, or None.
+
+        The pipeline consults this once per tick. If the quest has a picked
+        candidate with a saved skeleton, we look up the chapter by index.
+        Returns None when there's no pick, no skeleton, or no matching
+        chapter (e.g. the player has run past the skeleton's end).
+        """
+        pc = (self._quest_config or {}).get("picked_candidate") or {}
+        cid = pc.get("id")
+        if not cid:
+            return None
+        try:
+            skel = self._world.get_skeleton_for_candidate(cid)
+        except Exception:
+            return None
+        if skel is None:
+            return None
+        for ch in skel.chapters:
+            if ch.chapter_index == update_number:
+                return ch
+        return None
+
     def _resolve_scene_entities(self, scene: "Any") -> list:
         """Look up full Entity objects for a scene's characters_present list.
 
@@ -1364,7 +1404,9 @@ class Pipeline:
             })
         return out
 
-    async def _load_or_generate_arc(self, trace: PipelineTrace) -> "Any":
+    async def _load_or_generate_arc(
+        self, trace: PipelineTrace, update_number: int = 1,
+    ) -> "Any":
         """Load persisted ArcDirective or generate one with arc_planner."""
         from app.planning.schemas import ArcDirective
 
@@ -1398,6 +1440,7 @@ class Pipeline:
                         arc_state=arc_state,
                         world_snapshot=self._world,
                         structure=self._structure,
+                        skeleton_chapter=self._current_skeleton_chapter(update_number),
                     )
                 except Exception as e:
                     directive = _make_minimal_arc_directive()
@@ -1436,6 +1479,7 @@ class Pipeline:
                 arc_state=arc_state,
                 world_snapshot=self._world,
                 structure=self._structure,
+                skeleton_chapter=self._current_skeleton_chapter(update_number),
             )
             trace.add_stage(StageResult(
                 stage_name="arc",
@@ -1615,7 +1659,7 @@ class Pipeline:
                 errors=[StageError(kind="parse_error", message="not a dict")],
                 latency_ms=latency,
             ))
-            trace.outcome = "failed"
+            trace.set_outcome("failed")
             raise ParseError(f"plan not a dict: {parsed!r}")
         normalized = _normalize_beat_sheet(parsed)
         errors: list[StageError] = []
@@ -2646,6 +2690,7 @@ class Pipeline:
             ],
             temperature=0.6,
             max_tokens=REVISE_MAX_TOKENS,
+            thinking=False,  # revise must emit prose only — no chain-of-thought
         )
         latency = int((time.perf_counter() - t0) * 1000)
         revised = OutputParser.parse_prose(raw)

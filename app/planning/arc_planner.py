@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from app.craft.schemas import Structure
 from app.engine.prompt_renderer import PromptRenderer
 from app.planning.schemas import ArcDirective
@@ -29,6 +31,7 @@ class ArcPlanner:
         arc_state: QuestArcState,
         world_snapshot: WorldStateManager,
         structure: Structure,
+        skeleton_chapter: "Any | None" = None,
     ) -> ArcDirective:
         """Generate an ``ArcDirective`` for the current phase.
 
@@ -84,6 +87,7 @@ class ArcPlanner:
                 "narrative_summaries": narrative_summaries,
                 "themes": themes,
                 "active_parallels": active_parallels,
+                "skeleton_chapter": skeleton_chapter,
             },
         )
 

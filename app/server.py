@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio
 import json
 from pathlib import Path
 from typing import Any
@@ -229,6 +230,437 @@ def create_app(*, quests_dir: Path, server_url: str) -> FastAPI:
             ))
         return results
 
+    @app.get("/api/quests/{qid}/candidates")
+    def list_candidates(qid: str) -> list[dict]:
+        """List story candidates for this quest."""
+        sm, _ = _open(qid)
+        return [c.model_dump(mode="json") for c in sm.list_story_candidates(qid)]
+
+    @app.post("/api/quests/{qid}/candidates/generate")
+    async def generate_candidates(qid: str, n: int = 3) -> list[dict]:
+        """Generate N story candidates for this quest.
+
+        Uses the seed's world state as grounding. Persists candidates;
+        returns them. If candidates already exist, this appends — the
+        caller should check ``list_candidates`` first if they want to
+        avoid regeneration.
+        """
+        from app.planning.story_candidate_planner import StoryCandidatePlanner
+        sm, _ = _open(qid)
+        paths = _quest_paths(quests_dir, qid)
+        config_path = paths["root"] / "config.json"
+        quest_config: dict = {}
+        if config_path.is_file():
+            try:
+                quest_config = json.loads(config_path.read_text())
+            except Exception:
+                quest_config = {}
+        planner = StoryCandidatePlanner(client, renderer)
+        try:
+            cands = await planner.generate(
+                world=sm, quest_id=qid, quest_config=quest_config, n=n,
+            )
+        except Exception as e:
+            raise HTTPException(500, f"candidate generation failed: {e}")
+        return [c.model_dump(mode="json") for c in cands]
+
+    @app.get("/api/quests/{qid}/refinements")
+    def list_refinements(qid: str, rollout_id: str | None = None) -> list[dict]:
+        sm, _ = _open(qid)
+        attempts = sm.list_refinement_attempts(
+            quest_id=qid, rollout_id=rollout_id,
+        )
+        return [a.model_dump(mode="json") for a in attempts]
+
+    @app.post("/api/quests/{qid}/rollouts/{rid}/refine", status_code=202)
+    async def start_refinement(
+        qid: str, rid: str, strategy: str = "weak",
+        max_targets: int = 3, threshold: float = 0.55,
+    ) -> dict:
+        """Launch a refinement pass against a rollout in the background.
+
+        Returns immediately with the count of selected targets and a
+        list of attempt ids that will be created. Progress polled via
+        GET /refinements.
+        """
+        from app.refinement.framework import run_refinement_pass
+        from app.refinement.selectors import (
+            SiblingOutscoredSelector, UnpaidHookSelector, WeakChapterSelector,
+        )
+        sm, _ = _open(qid)
+        try:
+            sm.get_rollout(rid)
+        except Exception:
+            raise HTTPException(404, f"unknown rollout: {rid}")
+
+        selectors_to_run: list = []
+        if strategy in ("weak", "all"):
+            selectors_to_run.append(WeakChapterSelector(sm, threshold=threshold))
+        if strategy in ("hooks", "all"):
+            selectors_to_run.append(UnpaidHookSelector(sm))
+        if strategy in ("sibling", "all"):
+            selectors_to_run.append(SiblingOutscoredSelector(sm))
+        if not selectors_to_run:
+            raise HTTPException(400, f"unknown strategy: {strategy}")
+
+        targets: list = []
+        for sel in selectors_to_run:
+            targets.extend(sel.select(
+                quest_id=qid, rollout_id=rid, max_targets=max_targets,
+            ))
+
+        async def _run():
+            try:
+                await run_refinement_pass(
+                    targets=targets, quests_dir=quests_dir,
+                    main_world=sm, client=client,
+                )
+            except Exception:
+                pass
+
+        if targets:
+            asyncio.create_task(_run())
+
+        return {
+            "rollout_id": rid, "strategy": strategy,
+            "n_targets": len(targets),
+            "targets": [
+                {
+                    "rollout_id": t.rollout_id, "chapter_index": t.chapter_index,
+                    "strategy": t.strategy, "reason": t.reason,
+                }
+                for t in targets
+            ],
+        }
+
+    @app.get("/api/quests/{qid}/kb")
+    def get_kb(qid: str) -> dict:
+        """Aggregated KB views across all rollouts for this quest.
+
+        Returns:
+        - hook_payoffs: per-hook list of {planted_at_chapter, paid_off_at_chapter}
+          across rollouts, plus a payoff_rate (paid_off_count / total_rollouts).
+        - entity_usage: per-entity {introduced_at_chapter, mention_chapters}
+          rows, plus a screen_time count.
+        - dim_means_by_chapter: per-chapter-index, per-dim mean scores
+          across all rollouts.
+        """
+        sm, _ = _open(qid)
+        rollouts = sm.list_rollouts(quest_id=qid)
+        n_rollouts = len(rollouts)
+
+        hooks_raw = sm.list_hook_payoffs(qid)
+        # Group by hook_id
+        from collections import defaultdict
+        hooks_by_id: dict[str, list] = defaultdict(list)
+        for r in hooks_raw:
+            hooks_by_id[r["hook_id"]].append(r)
+        hook_payoffs = []
+        for hid, rows in sorted(hooks_by_id.items()):
+            paid = sum(1 for r in rows if r["paid_off_at_chapter"] is not None)
+            hook_payoffs.append({
+                "hook_id": hid,
+                "planted_count": sum(1 for r in rows if r["planted_at_chapter"] is not None),
+                "paid_off_count": paid,
+                "total_rollouts": n_rollouts,
+                "payoff_rate": paid / n_rollouts if n_rollouts > 0 else 0.0,
+                "rows": rows,
+            })
+
+        eu_raw = sm.list_entity_usage(qid)
+        eu_by_id: dict[str, list] = defaultdict(list)
+        for r in eu_raw:
+            eu_by_id[r["entity_id"]].append(r)
+        entity_usage = []
+        for eid, rows in sorted(eu_by_id.items()):
+            total_mentions = sum(len(r["mention_chapters"]) for r in rows)
+            entity_usage.append({
+                "entity_id": eid,
+                "introduced_count": sum(1 for r in rows if r["introduced_at_chapter"] is not None),
+                "total_rollouts": n_rollouts,
+                "screen_time": total_mentions,
+                "rows": rows,
+            })
+
+        # Per-(chapter_index, dim) mean across all rollouts for this quest
+        dim_means: dict[tuple[int, str], list[float]] = defaultdict(list)
+        for r in rollouts:
+            for s in sm.list_chapter_scores(r.id):
+                dim_means[(s["chapter_index"], s["dim"])].append(s["score"])
+        dim_means_by_chapter: list[dict] = []
+        for (ch_idx, dim), scores in sorted(dim_means.items()):
+            dim_means_by_chapter.append({
+                "chapter_index": ch_idx, "dim": dim,
+                "mean": sum(scores) / len(scores),
+                "n_rollouts_scored": len(scores),
+            })
+
+        return {
+            "n_rollouts": n_rollouts,
+            "hook_payoffs": hook_payoffs,
+            "entity_usage": entity_usage,
+            "dim_means_by_chapter": dim_means_by_chapter,
+        }
+
+    @app.get("/api/quests/{qid}/rollouts/{rid}/scores")
+    def get_rollout_scores(qid: str, rid: str) -> dict:
+        """Per-chapter dim breakdown for one rollout."""
+        sm, _ = _open(qid)
+        try:
+            sm.get_rollout(rid)
+        except Exception:
+            raise HTTPException(404, f"unknown rollout: {rid}")
+        rows = sm.list_chapter_scores(rid)
+        # Group by chapter
+        from collections import defaultdict
+        by_chapter: dict[int, dict] = defaultdict(dict)
+        for r in rows:
+            by_chapter[r["chapter_index"]][r["dim"]] = {
+                "score": r["score"], "rationale": r["rationale"],
+            }
+        return {
+            "rollout_id": rid,
+            "chapters": [
+                {"chapter_index": idx, "dims": dims}
+                for idx, dims in sorted(by_chapter.items())
+            ],
+        }
+
+    @app.get("/api/quests/{qid}/rollouts")
+    def list_rollouts(qid: str) -> list[dict]:
+        sm, _ = _open(qid)
+        runs = sm.list_rollouts(quest_id=qid)
+        return [r.model_dump(mode="json") for r in runs]
+
+    @app.get("/api/quests/{qid}/rollouts/{rid}")
+    def get_rollout(qid: str, rid: str) -> dict:
+        sm, _ = _open(qid)
+        try:
+            run = sm.get_rollout(rid)
+        except Exception:
+            raise HTTPException(404, f"unknown rollout: {rid}")
+        chapters = [
+            c.model_dump(mode="json") for c in sm.list_rollout_chapters(rid)
+        ]
+        return {**run.model_dump(mode="json"), "chapters": chapters}
+
+    @app.post("/api/quests/{qid}/candidates/{cid}/rollouts/start",
+              status_code=202)
+    async def start_rollout(
+        qid: str, cid: str, profile: str = "impulsive",
+        chapters: int = 5,
+    ) -> dict:
+        """Launch a rollout. Returns immediately with the rollout id;
+        execution runs in the background.
+
+        Progress is polled via ``GET /rollouts/{rid}``.
+        """
+        from app.rollout.harness import create_rollout_row, run_rollout
+        try:
+            rid = create_rollout_row(
+                quests_dir=quests_dir, quest_id=qid,
+                candidate_id=cid, profile_id=profile,
+                total_chapters_target=chapters,
+            )
+        except Exception as e:
+            raise HTTPException(400, f"failed to create rollout: {e}")
+
+        async def _run():
+            try:
+                await run_rollout(
+                    quests_dir=quests_dir, quest_id=qid,
+                    rollout_id=rid, client=client,
+                )
+            except Exception:
+                # harness already records FAILED status; just swallow
+                pass
+
+        asyncio.create_task(_run())
+        return {"rollout_id": rid, "status": "pending"}
+
+    @app.get("/api/rollout-profiles")
+    def list_rollout_profiles() -> list[dict]:
+        """Return the available virtual-player profiles."""
+        from app.rollout.profiles import list_profiles
+        return [p.model_dump() for p in list_profiles()]
+
+    @app.get("/api/quests/{qid}/candidates/{cid}/skeleton")
+    def get_skeleton(qid: str, cid: str) -> dict:
+        """Return the latest arc skeleton for a candidate, or 404 if none."""
+        sm, _ = _open(qid)
+        # Validate candidate exists
+        try:
+            sm.get_story_candidate(cid)
+        except Exception:
+            raise HTTPException(404, f"unknown candidate: {cid}")
+        skel = sm.get_skeleton_for_candidate(cid)
+        if skel is None:
+            raise HTTPException(404, f"no skeleton for candidate: {cid}")
+        return skel.model_dump(mode="json")
+
+    @app.post("/api/quests/{qid}/candidates/{cid}/skeleton/generate")
+    async def generate_skeleton(qid: str, cid: str) -> dict:
+        """Generate an arc skeleton for a picked candidate.
+
+        Uses the candidate's expected_chapter_count as target length.
+        Overwrites any prior skeleton for this candidate. Blocks for the
+        full LLM call (~1–2 minutes on the current writer). Callers
+        should expect a long request.
+        """
+        from app.planning.arc_skeleton_planner import ArcSkeletonPlanner
+        sm, _ = _open(qid)
+        try:
+            cand = sm.get_story_candidate(cid)
+        except Exception:
+            raise HTTPException(404, f"unknown candidate: {cid}")
+        planner = ArcSkeletonPlanner(client, renderer)
+        try:
+            skel = await planner.generate(world=sm, candidate=cand)
+        except Exception as e:
+            raise HTTPException(500, f"skeleton generation failed: {e}")
+        return skel.model_dump(mode="json")
+
+    @app.post("/api/quests/{qid}/candidates/{cid}/pick")
+    def pick_candidate(qid: str, cid: str) -> dict:
+        """Mark a candidate as picked; persist into config.json so the
+        pipeline's arc planner can read it as directive input."""
+        sm, _ = _open(qid)
+        try:
+            cand = sm.pick_story_candidate(qid, cid)
+        except Exception as e:
+            raise HTTPException(404, str(e))
+        # Persist pick into config.json for pipeline reads
+        paths = _quest_paths(quests_dir, qid)
+        config_path = paths["root"] / "config.json"
+        cfg: dict = {}
+        if config_path.is_file():
+            try:
+                cfg = json.loads(config_path.read_text())
+            except Exception:
+                cfg = {}
+        cfg["picked_candidate"] = cand.model_dump(mode="json")
+        config_path.write_text(json.dumps(cfg, indent=2))
+        return cand.model_dump(mode="json")
+
+    @app.get("/api/quests/{qid}/config")
+    def get_config(qid: str) -> dict:
+        """Quest metadata derived from the seed: genre, premise, themes,
+        protagonist, narrator. Used by the UI to render a hero panel for
+        empty quests. Returns ``{}`` if no config.json was written."""
+        paths = _quest_paths(quests_dir, qid)
+        if not paths["db"].is_file():
+            raise HTTPException(404, f"unknown quest: {qid}")
+        config_path = paths["root"] / "config.json"
+        if not config_path.is_file():
+            return {}
+        try:
+            return json.loads(config_path.read_text())
+        except Exception:
+            return {}
+
+    @app.get("/api/quests/{qid}/world")
+    def get_world(qid: str) -> dict:
+        """Browseable snapshot of the seeded world.
+
+        Groups entities by type (character, location, faction, item,
+        concept), and returns plot threads, foreshadowing hooks, world
+        rules, and motifs. Everything the seed shipped, made discoverable
+        in the UI without the player having to read a JSON file.
+        """
+        from app.world.schema import EntityStatus, EntityType
+        sm, _ = _open(qid)
+        entities = sm.list_entities()
+        non_destroyed = [e for e in entities if e.status != EntityStatus.DESTROYED]
+
+        by_type: dict[str, list] = {
+            t.value: [] for t in EntityType
+        }
+        for e in non_destroyed:
+            by_type[e.entity_type.value].append({
+                "id": e.id, "name": e.name,
+                "status": e.status.value,
+                "description": e.data.get("description", ""),
+                "role": e.data.get("role", ""),
+                "data": e.data,
+            })
+
+        plot_threads = [
+            {
+                "id": t.id, "name": t.name, "description": t.description,
+                "status": t.status.value, "priority": t.priority,
+                "arc_position": t.arc_position.value,
+                "involved_entities": t.involved_entities,
+            }
+            for t in sm.list_plot_threads()
+        ]
+
+        try:
+            hook_rows = sm._conn.execute(
+                "SELECT id, description, status, planted_at_update, payoff_target FROM foreshadowing ORDER BY id"
+            ).fetchall()
+            hooks = [
+                {
+                    "id": r[0], "description": r[1], "status": r[2],
+                    "planted_at_update": r[3], "payoff_target": r[4],
+                }
+                for r in hook_rows
+            ]
+        except Exception:
+            hooks = []
+
+        rules = [
+            {"id": r.id, "category": r.category, "description": r.description}
+            for r in sm.list_rules()
+        ]
+
+        try:
+            motifs = [
+                {
+                    "id": m.id, "name": m.name, "description": m.description,
+                    "semantic_range": m.semantic_range,
+                }
+                for m in sm.list_motifs(qid)
+            ]
+        except Exception:
+            motifs = []
+
+        return {
+            "entities_by_type": by_type,
+            "plot_threads": plot_threads,
+            "foreshadowing": hooks,
+            "rules": rules,
+            "motifs": motifs,
+        }
+
+    @app.get("/api/quests/{qid}/starting-actions")
+    def get_starting_actions(qid: str) -> list[dict]:
+        """Suggested opening actions for chapter 1.
+
+        Derived from the seed's top-priority active plot threads, so the
+        player has concrete invitations into the world without having to
+        invent an action from the premise alone.
+        """
+        from app.world.schema import EntityStatus, ThreadStatus
+        sm, _ = _open(qid)
+        # Only offer suggestions when no chapters have been committed yet
+        records = sm.list_narrative(limit=1)
+        if records:
+            return []
+        threads = sm.list_plot_threads()
+        active = [t for t in threads if t.status == ThreadStatus.ACTIVE]
+        active.sort(key=lambda t: -t.priority)
+        out: list[dict] = []
+        # Build suggestions from top-3 active threads. We use their
+        # description verbatim as the "hook" — the LLM will turn the
+        # suggestion into a first action when submitted.
+        for t in active[:3]:
+            out.append({
+                "title": t.name,
+                "description": t.description,
+                "thread_id": t.id,
+            })
+        return out
+
     @app.get("/api/quests/{qid}/scene")
     def get_scene(qid: str) -> SceneContext:
         from app.world.schema import EntityStatus, EntityType, ThreadStatus
@@ -299,6 +731,7 @@ def create_app(*, quests_dir: Path, server_url: str) -> FastAPI:
             quest_config=quest_config,
             quest_id=qid,
             arc_id="main",
+            live_trace_save=store.save,
         )
         records = sm.list_narrative(limit=10_000)
         update_number = (max((r.update_number for r in records), default=0)) + 1

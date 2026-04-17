@@ -1,0 +1,64 @@
+## Picked candidate: {{ candidate.title }}
+
+{{ candidate.synopsis }}
+
+**Protagonist**: `{{ candidate.protagonist_character_id or "unspecified" }}`
+**Primary threads** (must be delivered): {{ candidate.primary_thread_ids | join(", ") }}
+{% if candidate.secondary_thread_ids %}**Secondary threads** (keep warm): {{ candidate.secondary_thread_ids | join(", ") }}
+{% endif %}{% if candidate.emphasized_theme_ids %}**Emphasized themes**: {{ candidate.emphasized_theme_ids | join(", ") }}
+{% endif %}**Target length**: {{ n_chapters }} chapters
+**Climax**: {{ candidate.climax_description }}
+
+---
+
+## Seeded characters
+
+{% if characters %}
+{% for ch in characters %}
+- `{{ ch.id }}` — **{{ ch.name }}** ({{ ch.status.value }}){% if ch.data.get("role") %}: {{ ch.data.get("role") }}{% endif %}
+{% endfor %}
+{% else %}
+No characters seeded.
+{% endif %}
+
+## Seeded locations
+
+{% if locations %}
+{% for loc in locations %}
+- `{{ loc.id }}` — **{{ loc.name }}** ({{ loc.status.value }})
+{% endfor %}
+{% else %}
+No locations seeded.
+{% endif %}
+
+## Seeded plot threads
+
+{% if plot_threads %}
+{% for pt in plot_threads %}
+- `{{ pt.id }}` — **{{ pt.name }}** ({{ pt.status.value }}, priority {{ pt.priority }}): {{ pt.description }}
+{% endfor %}
+{% else %}
+No plot threads seeded.
+{% endif %}
+
+{% if themes %}
+## Seeded themes
+
+{% for t in themes %}
+- `{{ t.id }}` [{{ t.stance }}]: {{ t.proposition }}
+{% endfor %}
+{% endif %}
+
+{% if foreshadowing %}
+## Seeded foreshadowing (all must be scheduled for payoff)
+
+{% for h in foreshadowing %}
+- `{{ h.id }}`: {{ h.description }}{% if h.payoff_target %} → *{{ h.payoff_target }}*{% endif %}
+{% endfor %}
+{% endif %}
+
+---
+
+Produce the skeleton. Cover the full arc in {{ n_chapters }} chapters. Alternate POV chapter-by-chapter if the seed has multiple protagonists.
+
+Return JSON only.

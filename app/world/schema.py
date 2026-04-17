@@ -245,6 +245,162 @@ class EmotionalBeat(BaseModel):
     source: str
 
 
+class StoryCandidateStatus(str, Enum):
+    DRAFT = "draft"
+    PICKED = "picked"
+    REJECTED = "rejected"
+
+
+class StoryCandidate(BaseModel):
+    """A candidate story arc for a given seed.
+
+    A single seed supports multiple candidates (Phase 1 of the story-rollout
+    architecture). Each candidate commits to a specific arc emphasis —
+    which plot threads are primary, which character is protagonist, which
+    themes drive the emphasis — so the same seed can produce materially
+    different stories. The player picks one; subsequent planning honors
+    the pick.
+    """
+    id: str
+    quest_id: str
+    title: str
+    synopsis: str
+    primary_thread_ids: list[str] = Field(default_factory=list)
+    secondary_thread_ids: list[str] = Field(default_factory=list)
+    protagonist_character_id: str | None = None
+    emphasized_theme_ids: list[str] = Field(default_factory=list)
+    climax_description: str = ""
+    expected_chapter_count: int = 15
+    status: StoryCandidateStatus = StoryCandidateStatus.DRAFT
+
+
+class SkeletonChapter(BaseModel):
+    """One chapter slot in an ArcSkeleton.
+
+    The dramatic planner consults the SkeletonChapter for the current
+    update_number and treats its fields as directive input — not
+    overrides, but strong constraints. See Phase 2 of the story-rollout
+    architecture spec.
+    """
+    chapter_index: int                     # 1..N
+    pov_character_id: str | None = None
+    location_constraint: str | None = None
+    dramatic_question: str
+    required_plot_beats: list[str] = Field(default_factory=list)
+    target_tension: float = 0.5
+    entities_to_surface: list[str] = Field(default_factory=list)
+    theme_emphasis: list[str] = Field(default_factory=list)
+
+
+class HookPlacement(BaseModel):
+    """When a seeded foreshadowing hook is expected to pay off."""
+    hook_id: str
+    planted_by_chapter: int = 1
+    paid_off_by_chapter: int
+
+
+class ThemeBeat(BaseModel):
+    """Chapter index at which a theme hits a crescendo."""
+    theme_id: str
+    peak_chapter: int
+    stance_at_peak: str = "exploring"
+
+
+class ArcSkeleton(BaseModel):
+    """A chapter-by-chapter outline for a picked story candidate.
+
+    One skeleton per candidate (latest generation wins on regenerate).
+    Chapters are numbered 1..N matching the pipeline's update_number.
+    """
+    id: str
+    candidate_id: str
+    quest_id: str
+    chapters: list[SkeletonChapter]
+    theme_arc: list[ThemeBeat] = Field(default_factory=list)
+    hook_schedule: list[HookPlacement] = Field(default_factory=list)
+
+
+class RolloutStatus(str, Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETE = "complete"
+    FAILED = "failed"
+    ABORTED = "aborted"
+
+
+class RolloutRun(BaseModel):
+    """A single virtual-player playthrough of a picked candidate's skeleton.
+
+    One RolloutRun per (candidate, profile, seed_nonce) tuple. Chapters are
+    persisted incrementally; a restart resumes from max(chapter_index)+1.
+    """
+    id: str
+    quest_id: str
+    candidate_id: str
+    skeleton_id: str | None = None
+    profile_id: str
+    seed_nonce: int = 0
+    status: RolloutStatus = RolloutStatus.PENDING
+    chapters_complete: int = 0
+    total_chapters_target: int = 10
+    started_at: str | None = None
+    completed_at: str | None = None
+    error_message: str | None = None
+
+
+class RolloutExtract(BaseModel):
+    """KB row per chapter: what the rollout did with the seeded world."""
+    hooks_planted: list[str] = Field(default_factory=list)
+    hooks_paid_off: list[str] = Field(default_factory=list)
+    entities_introduced: list[str] = Field(default_factory=list)
+    entities_removed: list[str] = Field(default_factory=list)
+    character_state_deltas: dict[str, dict] = Field(default_factory=dict)
+    thread_advances: dict[str, str] = Field(default_factory=dict)
+    themes_emphasized: list[str] = Field(default_factory=list)
+
+
+class RolloutChapter(BaseModel):
+    """One chapter of a rollout's output. Saved incrementally."""
+    rollout_id: str
+    chapter_index: int
+    player_action: str
+    prose: str
+    trace_id: str | None = None
+    judge_scores: dict[str, float] | None = None
+    extract: RolloutExtract = Field(default_factory=RolloutExtract)
+
+
+class RefinementStrategy(str, Enum):
+    WEAK_CHAPTER = "weak_chapter"
+    UNPAID_HOOK = "unpaid_hook"
+    SIBLING_OUTSCORED = "sibling_outscored"
+
+
+class RefinementAttempt(BaseModel):
+    """One attempt to refine a single (rollout_id, chapter_index) pair.
+
+    accepted=True means the rollout_chapters row was updated with this
+    attempt's prose + scores. Rejected attempts persist for audit /
+    cross-strategy learning.
+    """
+    id: str
+    quest_id: str
+    rollout_id: str
+    chapter_index: int
+    strategy: str  # one of RefinementStrategy values
+    reason: str = ""
+    guidance: str = ""
+    baseline_scores: dict[str, float] = Field(default_factory=dict)
+    refined_prose: str = ""
+    refined_scores: dict[str, float] = Field(default_factory=dict)
+    refined_trace_id: str | None = None
+    delta_mean: float | None = None
+    delta_min: float | None = None
+    accepted: bool = False
+    rejection_reason: str | None = None
+    created_at: str | None = None
+
+
 class QuestArcState(BaseModel):
     """Persisted arc state (thin — references the craft-level Arc)."""
     arc_id: str                 # matches app.craft.Arc.id

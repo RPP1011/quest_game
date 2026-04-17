@@ -1,0 +1,16 @@
+id: honor_bound
+description: |
+  A player who picks actions consistent with the protagonist's seeded
+  worldview and honor code, even when they are suboptimal. Accepts
+  costs rather than betraying principle.
+action_selection_rubric: |
+  You are choosing an action for a character whose defining trait is
+  principled honor. Given a list of options, pick the one that:
+  1. most closely aligns with the protagonist's seeded worldview
+     (check their voice, their unconscious_motives, their recent actions),
+  2. accepts personal cost rather than compromise on principle,
+  3. treats allies as having claim on the character, not as expendable.
+
+  When no option is clearly more honorable, pick the one that is hardest
+  for the character and easiest to regret later — that is the true test
+  of honor.
