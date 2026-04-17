@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -10,6 +11,7 @@ import pytest
 
 from app.rollout import harness as harness_mod
 from app.rollout.harness import create_rollout_row, run_rollout
+from app.runtime.client import ChatWithLogprobs, TokenLogprob
 from app.world.db import open_db
 from app.world.schema import (
     ArcPosition, Entity, EntityType, ForeshadowingHook, PlotThread,
@@ -18,28 +20,37 @@ from app.world.schema import (
 from app.world.state_manager import WorldStateManager
 
 
-CANNED_SCORES = json.dumps({
-    "tension_execution": {"score": 0.7, "rationale": "ok"},
-    "emotional_trajectory": {"score": 0.6, "rationale": "ok"},
-    "choice_hook_quality": {"score": 0.5, "rationale": "ok"},
-    "update_self_containment": {"score": 0.7, "rationale": "ok"},
-    "voice_distinctiveness": {"score": 0.8, "rationale": "ok"},
-    "thematic_presence": {"score": 0.7, "rationale": "ok"},
-    "subtext_presence": {"score": 0.6, "rationale": "ok"},
-    "interiority_depth": {"score": 0.7, "rationale": "ok"},
-})
+# Canned scorer response: "prose_execution score: 7\nsubtext score: 7\nhook_quality score: 7"
+_SCORE_CONTENT = (
+    "prose_execution observation: ok\nprose_execution score: 7\n"
+    "subtext observation: ok\nsubtext score: 7\n"
+    "hook_quality observation: ok\nhook_quality score: 7"
+)
 
 
 class FakeClient:
-    """Used as the harness client; the only call it gets is chat_structured
-    from the scorer. action_selector is mocked separately."""
+    """Used as the harness client. Scorer now uses chat_with_logprobs."""
 
     def __init__(self) -> None:
         self.calls: list = []
 
+    async def chat_with_logprobs(self, messages, *, temperature=0.3,
+                                  max_tokens=400, top_logprobs=20,
+                                  thinking=False, **kw):
+        self.calls.append("logprob_call")
+        tokens = []
+        for char in _SCORE_CONTENT:
+            lp = math.log(0.9) if char == "7" else -0.1
+            top = {char: lp}
+            if char == "7":
+                top = {str(d): math.log(0.01) for d in range(1, 11)}
+                top["7"] = math.log(0.9)
+            tokens.append(TokenLogprob(char, lp, top))
+        return ChatWithLogprobs(content=_SCORE_CONTENT, token_logprobs=tokens)
+
     async def chat_structured(self, messages, *, json_schema, schema_name="Output", **kw):
         self.calls.append(schema_name)
-        return CANNED_SCORES
+        return "{}"
 
 
 class FakeTrace:
@@ -158,11 +169,11 @@ async def test_harness_runs_scorer_and_kb_extractor(tmp_path: Path):
         assert len(chs) == 2
         for ch in chs:
             assert ch.judge_scores is not None
-            assert ch.judge_scores["tension_execution"] == 0.7
+            assert "prose_execution" in ch.judge_scores
 
-        # kb_chapter_scores: 8 dims × 2 chapters = 16 rows
+        # kb_chapter_scores: 3 dims × 2 chapters = 6 rows
         all_scores = sm.list_chapter_scores(rid)
-        assert len(all_scores) == 16
+        assert len(all_scores) == 6
 
         # KB extractor: hook fs:1 planted in both chapters; entity char:cozme
         # introduced in both chapters and mentioned (via word match)
@@ -179,7 +190,7 @@ async def test_harness_runs_scorer_and_kb_extractor(tmp_path: Path):
         assert sorted(eu[0]["mention_chapters"]) == [1, 2]
 
         # Scorer was called twice (once per chapter)
-        assert client.calls.count("chapter_scores") == 2
+        assert client.calls.count("logprob_call") == 2
     finally:
         conn.close()
 
