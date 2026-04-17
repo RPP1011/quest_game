@@ -1,3 +1,7 @@
+---
+title: "Phase 2 — Arc Skeleton — Result"
+---
+
 # Phase 2 — Arc Skeleton — Result
 
 **Date:** 2026-04-16

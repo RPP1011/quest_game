@@ -1,3 +1,12 @@
+---
+title: "World Seed Density → Story-Rollout Architecture"
+description: >-
+  From "the world feels thin" to a six-phase story-generation architecture
+  with empirical validation at each layer. Covers writer fidelity, DORMANT
+  activation, strategy sweep, check→revise enforcement, and Phases 1–5 of
+  the story-rollout system.
+---
+
 # Technical Report: World Seed Density → Story-Rollout Architecture
 
 **Dates:** 2026-04-15 to 2026-04-16

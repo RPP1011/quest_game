@@ -1,3 +1,7 @@
+---
+title: "Phase 3 — Rollout Harness — Result"
+---
+
 # Phase 3 — Rollout Harness — Result
 
 **Date:** 2026-04-16
