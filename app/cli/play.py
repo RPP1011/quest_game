@@ -50,7 +50,7 @@ def init(
     # Themes + motifs — previously only written to config.json, not the
     # world DB. Story candidate planner reads themes from DB so they must
     # be persisted here too.
-    quest_id = db.stem
+    quest_id = db.parent.name
     for th in payload.themes:
         sm.add_theme(quest_id, th)
     for mo in payload.motifs:
@@ -64,7 +64,7 @@ def init(
     except Exception:
         raw_seed = {}
     structure_id = raw_seed.get("structure_id", _DEFAULT_STRUCTURE_ID)
-    quest_id = db.stem  # use the DB file's stem as a best-effort quest id
+    quest_id = db.parent.name  # match the server's convention: directory name, not file stem
     arc_state = QuestArcState(
         quest_id=quest_id,
         arc_id="main",
