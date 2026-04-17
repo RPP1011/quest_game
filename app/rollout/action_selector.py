@@ -52,6 +52,7 @@ async def select_action(
     profile: VirtualPlayerProfile,
     choices: list[Any],
     recent_prose_tail: str = "",
+    skeleton_chapter: Any | None = None,
 ) -> tuple[int, str]:
     """Pick an index into ``choices`` that matches the profile.
 
@@ -65,6 +66,11 @@ async def select_action(
         A list of suggested choices (string or dict with title/description).
     recent_prose_tail:
         The last ~500 chars of the chapter's prose, for context.
+    skeleton_chapter:
+        Optional SkeletonChapter for the NEXT chapter. When present,
+        the selector should favor choices that serve the skeleton's
+        required_plot_beats — balancing the profile's bias against
+        the arc's structural needs.
 
     Returns
     -------
@@ -75,19 +81,43 @@ async def select_action(
 
     system_prompt = (
         "You are a synthetic reader simulating a particular player's "
-        "action-selection style. Follow the rubric strictly. Return JSON "
-        "only matching the schema."
+        "action-selection style. Follow the rubric strictly, but also "
+        "consider the story's arc goals when they are provided. "
+        "Return JSON only matching the schema."
     )
     choice_lines = "\n".join(_format_choice(i, c) for i, c in enumerate(choices))
+
+    skeleton_section = ""
+    if skeleton_chapter is not None:
+        beats = getattr(skeleton_chapter, "required_plot_beats", []) or []
+        dq = getattr(skeleton_chapter, "dramatic_question", "") or ""
+        if beats or dq:
+            skeleton_section = (
+                f"\n## Arc goals for the next chapter\n"
+                f"The story's outline says the next chapter should address:\n"
+            )
+            if dq:
+                skeleton_section += f"- Dramatic question: {dq}\n"
+            for b in beats:
+                skeleton_section += f"- Required beat: {b}\n"
+            skeleton_section += (
+                "\nFavor choices that serve these goals. If a choice "
+                "advances a required beat, prefer it over one that "
+                "only satisfies the profile's bias. The profile shapes "
+                "HOW the player engages; the arc goals shape WHAT "
+                "the story needs next.\n\n"
+            )
+
     user_prompt = (
         f"## Player profile: {profile.id}\n"
         f"{profile.description}\n\n"
         f"## Rubric\n{profile.action_selection_rubric}\n\n"
+        + skeleton_section
         + (f"## Recent prose (context)\n...{recent_prose_tail}\n\n"
            if recent_prose_tail else "")
         + f"## Choices\n{choice_lines}\n\n"
         "Pick exactly one. Return `chosen_index` (0-based) and a "
-        "one-sentence `rationale` grounded in the rubric."
+        "one-sentence `rationale` grounded in the rubric and arc goals."
     )
 
     schema = _build_schema(len(choices))

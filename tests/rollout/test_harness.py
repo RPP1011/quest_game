@@ -176,7 +176,7 @@ async def test_run_rollout_happy_path_resume(tmp_path: Path):
                 choices=choices, trace=FakeTrace(update_number),
             )
 
-    async def fake_select_action(*, client, profile, choices, recent_prose_tail=""):
+    async def fake_select_action(*, client, profile, choices, recent_prose_tail="", skeleton_chapter=None):
         return (0, "forced")  # always pick first
 
     with patch.object(harness_mod, "_build_pipeline", lambda *a, **kw: FakePipeline()):
