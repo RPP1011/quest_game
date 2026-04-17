@@ -27,7 +27,7 @@ from typing import Protocol
 from app.engine import (
     ContextBuilder, Pipeline, PromptRenderer, TokenBudget, TraceStore,
 )
-from app.rollout.scorer import score_chapter
+from app.rollout.scorer import compare_chapters_corrected, score_chapter, DEFAULT_DIMS
 from app.runtime.client import InferenceClient
 from app.world.db import open_db
 from app.world.schema import (
@@ -202,27 +202,41 @@ async def refine_one(
         # Close the rollout connection from _build_pipeline_for_rollout
         rollout_sm._conn.close()
 
-    # Score the refined prose
-    score_payload = await score_chapter(
-        client=client, chapter_text=refined_prose,
-    )
-    refined_scores = {dim: payload["score"] for dim, payload in score_payload.items()}
+    # Compare refined vs original using bias-corrected dual rating.
+    # This replaces absolute re-scoring — the dual rating eliminates
+    # quantization and position bias issues. Each dim gets a corrected
+    # delta and per-chapter scores.
+    use_dims = list(DEFAULT_DIMS)
+    refined_scores: dict[str, float] = {}
+    dim_deltas: dict[str, float] = {}
+    for dim in use_dims:
+        cmp = await compare_chapters_corrected(
+            client=client, text_a=refined_prose,
+            text_b=chapter_row.prose, dim=dim,
+        )
+        refined_scores[dim] = cmp["a_score"]
+        dim_deltas[dim] = cmp["delta_corrected"]
 
-    # Compute deltas
-    mean_delta, min_delta = _evaluate_deltas(target.baseline_scores, refined_scores)
+    # Accept/reject from the dual-rating deltas
+    if dim_deltas:
+        mean_delta = sum(dim_deltas.values()) / len(dim_deltas)
+        min_delta = min(dim_deltas.values())
+    else:
+        mean_delta, min_delta = 0.0, 0.0
 
-    # Accept/reject decision
     if mean_delta >= ACCEPT_MEAN_DELTA and min_delta > REJECT_DIM_REGRESSION:
         accepted = True
         rejection_reason = None
-        # Update the canonical chapter row
         chapter_row.prose = refined_prose
         chapter_row.judge_scores = refined_scores
         chapter_row.trace_id = trace_id
         main_world.save_rollout_chapter(chapter_row)
-        # And the per-dim KB rows
+        kb_payload = {
+            dim: {"score": refined_scores[dim], "rationale": f"refined, delta={dim_deltas[dim]:+.3f}"}
+            for dim in use_dims if dim in refined_scores
+        }
         main_world.save_chapter_scores(
-            target.rollout_id, target.chapter_index, score_payload,
+            target.rollout_id, target.chapter_index, kb_payload,
         )
     else:
         accepted = False

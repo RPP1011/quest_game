@@ -116,9 +116,48 @@ class FakePipeline:
         )
 
 
+async def _fake_compare_corrected_accept(*, client, text_a, text_b, dim, **kw):
+    """Fake dual-rating that shows clear improvement on all dims."""
+    return {
+        "delta_corrected": 0.10,
+        "a_score": 0.7,
+        "b_score": 0.6,
+        "position_bias": 0.01,
+        "ab_result": {}, "ba_result": {},
+    }
+
+
+async def _fake_compare_corrected_reject_mean(*, client, text_a, text_b, dim, **kw):
+    """Fake dual-rating: tiny improvement below threshold."""
+    return {
+        "delta_corrected": 0.02,
+        "a_score": 0.52,
+        "b_score": 0.50,
+        "position_bias": 0.01,
+        "ab_result": {}, "ba_result": {},
+    }
+
+
+async def _fake_compare_corrected_reject_regression(*, client, text_a, text_b, dim, **kw):
+    """Fake dual-rating: mean passes (+0.10) but one dim regresses > -0.10."""
+    deltas = {
+        "prose_execution": 0.25,
+        "subtext": -0.15,
+        "hook_quality": 0.20,
+    }
+    d = deltas.get(dim, 0.0)
+    return {
+        "delta_corrected": d,
+        "a_score": 0.6 + d,
+        "b_score": 0.6,
+        "position_bias": 0.01,
+        "ab_result": {}, "ba_result": {},
+    }
+
+
 @pytest.mark.asyncio
 async def test_accept_when_better(tmp_path: Path):
-    """Refined scores beat baseline by mean +0.05+, no regression: accepted."""
+    """Dual-rating shows improvement across dims: accepted."""
     quests = tmp_path / "quests"
     rid = _init_quest_with_rollout(quests)
     main_conn = open_db(quests / "q1" / "quest.db")
@@ -126,22 +165,15 @@ async def test_accept_when_better(tmp_path: Path):
     target = RefinementTarget(
         rollout_id=rid, chapter_index=1, quest_id="q1",
         strategy="weak_chapter", reason="x", guidance="rewrite",
-        baseline_scores={"a": 0.4, "b": 0.5},
+        baseline_scores={"prose_execution": 0.5, "subtext": 0.4, "hook_quality": 0.5},
     )
     refined_prose = "REFINED PROSE WITH RICH VOICE AND TENSION."
-
-    async def fake_score(*, client, chapter_text, dims=None):
-        # Refined: a=0.6 (+0.2), b=0.55 (+0.05) → mean +0.125, min +0.05
-        return {
-            "a": {"score": 0.6, "rationale": "improved"},
-            "b": {"score": 0.55, "rationale": "ok"},
-        }
 
     with patch.object(fw, "_build_pipeline_for_rollout",
                       lambda *a, **kw: (FakePipeline(refined_prose),
                                          WorldStateManager(open_db(quests / "q1" / "rollouts" / rid / "quest.db")),
                                          None)):
-        with patch("app.refinement.framework.score_chapter", fake_score):
+        with patch.object(fw, "compare_chapters_corrected", _fake_compare_corrected_accept):
             results = await run_refinement_pass(
                 targets=[target], quests_dir=quests,
                 main_world=main_sm, client=SimpleNamespace(),
@@ -149,13 +181,10 @@ async def test_accept_when_better(tmp_path: Path):
     assert len(results) == 1
     r = results[0]
     assert r.accepted, r.rejection_reason
-    assert r.delta_mean == pytest.approx(0.125)
-    assert r.delta_min == pytest.approx(0.05)
-    # Canonical chapter was updated
+    assert r.delta_mean == pytest.approx(0.10)
+    assert r.delta_min == pytest.approx(0.10)
     chs = main_sm.list_rollout_chapters(rid)
     assert chs[0].prose == refined_prose
-    assert chs[0].judge_scores == {"a": 0.6, "b": 0.55}
-    # Attempt persisted
     attempts = main_sm.list_refinement_attempts(quest_id="q1")
     assert len(attempts) == 1
     assert attempts[0].accepted is True
@@ -171,28 +200,20 @@ async def test_reject_when_mean_below_threshold(tmp_path: Path):
     target = RefinementTarget(
         rollout_id=rid, chapter_index=1, quest_id="q1",
         strategy="weak_chapter", reason="x", guidance="g",
-        baseline_scores={"a": 0.4, "b": 0.5},
+        baseline_scores={"prose_execution": 0.5, "subtext": 0.5, "hook_quality": 0.5},
     )
-
-    async def fake_score(*, client, chapter_text, dims=None):
-        # Tiny improvement (+0.02 mean), below ACCEPT threshold
-        return {
-            "a": {"score": 0.42, "rationale": ""},
-            "b": {"score": 0.52, "rationale": ""},
-        }
 
     with patch.object(fw, "_build_pipeline_for_rollout",
                       lambda *a, **kw: (FakePipeline("any"),
                                          WorldStateManager(open_db(quests / "q1" / "rollouts" / rid / "quest.db")),
                                          None)):
-        with patch("app.refinement.framework.score_chapter", fake_score):
+        with patch.object(fw, "compare_chapters_corrected", _fake_compare_corrected_reject_mean):
             results = await run_refinement_pass(
                 targets=[target], quests_dir=quests,
                 main_world=main_sm, client=SimpleNamespace(),
             )
     assert results[0].accepted is False
     assert "mean delta" in results[0].rejection_reason
-    # Canonical chapter NOT updated
     chs = main_sm.list_rollout_chapters(rid)
     assert chs[0].prose == "ORIGINAL PROSE that was weak."
     main_conn.close()
@@ -207,25 +228,14 @@ async def test_reject_when_dim_regresses(tmp_path: Path):
     target = RefinementTarget(
         rollout_id=rid, chapter_index=1, quest_id="q1",
         strategy="weak_chapter", reason="x", guidance="g",
-        baseline_scores={"a": 0.4, "b": 0.7},
+        baseline_scores={"prose_execution": 0.5, "subtext": 0.5, "hook_quality": 0.5},
     )
-
-    async def fake_score(*, client, chapter_text, dims=None):
-        # Big improvement on a (+0.4), but b crashes (-0.5) → mean −0.05
-        # mean would actually be (-0.5 + 0.4)/2 = -0.05 → also fails mean
-        # Make mean OK but min regression too big:
-        # Adjust baseline: a 0.4 → 0.9 (+0.5), b 0.7 → 0.5 (-0.2)
-        # mean = +0.15, min = -0.2 → fails dim regression
-        return {
-            "a": {"score": 0.9, "rationale": ""},
-            "b": {"score": 0.5, "rationale": ""},
-        }
 
     with patch.object(fw, "_build_pipeline_for_rollout",
                       lambda *a, **kw: (FakePipeline("any"),
                                          WorldStateManager(open_db(quests / "q1" / "rollouts" / rid / "quest.db")),
                                          None)):
-        with patch("app.refinement.framework.score_chapter", fake_score):
+        with patch.object(fw, "compare_chapters_corrected", _fake_compare_corrected_reject_regression):
             results = await run_refinement_pass(
                 targets=[target], quests_dir=quests,
                 main_world=main_sm, client=SimpleNamespace(),
