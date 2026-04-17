@@ -99,12 +99,21 @@ flowchart TB
 We implemented 5 write-stage strategies sharing the same plan and scored each against the 8-dim chapter judge:
 
 <pre class="mermaid" markdown="0">
-xychart-beta
-    title "Strategy comparison (8-dim mean score)"
-    x-axis ["per_beat", "expand", "one_shot", "scene", "refine"]
-    y-axis "Mean dim score" 0 --> 1
-    bar [0.762, 0.675, 0.525, 0, 0]
-    line [0.75, 0.75, 0.75, 0.75, 0.75]
+graph LR
+    subgraph "8-dim mean score by strategy"
+        PB["per_beat<br/>0.762 ✅"]
+        EX["expand<br/>0.675"]
+        OS["one_shot<br/>0.525"]
+        SC["scene<br/>failed"]
+        RF["refine<br/>failed"]
+        BL["Pale Lights<br/>0.750"]
+    end
+    style PB fill:#2a4a2a,stroke:#5a8a5a,color:#8abc7a
+    style EX fill:#3a3a22,stroke:#5a5a32,color:#c8b897
+    style OS fill:#4a2a2a,stroke:#8a5a5a,color:#c78a7a
+    style SC fill:#4a2a2a,stroke:#8a5a5a,color:#c78a7a
+    style RF fill:#4a2a2a,stroke:#8a5a5a,color:#c78a7a
+    style BL fill:#2a3a4a,stroke:#3a5a7a,color:#8ac8e8
 </pre>
 
 **per_beat is the winner** at 0.762 mean — matching Pale Lights (0.75). one_shot collapsed to 626 words; the 26B model produces summaries when given "write everything at once." The per-beat loop forces commitment to each beat.
@@ -201,13 +210,17 @@ The same seed produces materially different stories:
 
 30-chapter outline with tension curve and hook scheduling:
 
-<pre class="mermaid" markdown="0">
-xychart-beta
-    title "Skeleton tension curve (30 chapters)"
-    x-axis "Chapter" [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]
-    y-axis "Target tension" 0 --> 1
-    line [0.2,0.2,0.3,0.3,0.4,0.4,0.4,0.5,0.5,0.5,0.6,0.6,0.6,0.7,0.7,0.7,0.7,0.8,0.8,0.8,0.8,0.8,0.9,0.9,0.8,0.7,0.5,0.4,0.3,0.2]
-</pre>
+```
+Tension curve (30 chapters):
+
+Ch  1-5:  ▁▁▂▂▃       setup
+Ch  6-10: ▃▃▄▄▄       rising
+Ch 11-15: ▅▅▅▆▆       midpoint
+Ch 16-20: ▆▆▇▇▇       crisis
+Ch 21-24: ▇▇█ █       CLIMAX (ch 24: Red Maw)
+Ch 25-27: ▇▆▄         falling
+Ch 28-30: ▃▂▁         denouement
+```
 
 All 10 seeded foreshadowing hooks scheduled with planted-by / paid-off-by chapter targets. POV alternates Tristan / Angharad per chapter.
 
@@ -226,7 +239,7 @@ flowchart LR
     BOOT --> CH1 --> SEL --> CH2
     CH2 --> SAVE
     SEL -.-> CH2
-    SAVE -.->|resume from<br/>max(ch)+1| CH2
+    SAVE -.->|resume from last chapter| CH2
     
     subgraph Profiles
         IMP["Impulsive<br/>'pick highest stakes'"]
@@ -289,13 +302,16 @@ flowchart TB
 
 ### Scoring progression across the session
 
-<pre class="mermaid" markdown="0">
-xychart-beta
-    title "8-dim mean score progression"
-    x-axis ["V1 (before fixes)", "V2 (after writer fix)", "per_beat sweep", "v5 rollout ch1", "After refinement", "Pale Lights baseline"]
-    y-axis "Mean dim score" 0 --> 1
-    bar [0, 0, 0.762, 0.600, 0.713, 0.750]
-</pre>
+```
+Score progression across the session:
+
+V1 (before fixes)        ░░░░░░░░░░  (Fortuna=cat, 2nd person — not scored)
+V2 (after writer fix)    ░░░░░░░░░░  (5,437 words, 3rd person — not scored)
+per_beat sweep           ████████░░  0.762 — matches Pale Lights
+v5 rollout ch1           ██████░░░░  0.600 — short chapter (revise bug)
+After refinement         ███████░░░  0.713 — subtext doubled, voice+interiority at 0.90
+Pale Lights baseline     ████████░░  0.750 — target
+```
 
 ### Refinement per-dim breakdown
 
@@ -417,11 +433,13 @@ flowchart TB
 ## 11. Test coverage
 
 <pre class="mermaid" markdown="0">
-xychart-beta
-    title "Test count by module (93 new tests)"
-    x-axis ["world", "planning", "server", "engine", "rollout", "refinement"]
-    y-axis "New tests" 0 --> 35
-    bar [26, 8, 13, 3, 29, 14]
+pie title "93 new tests by module"
+    "world (26)" : 26
+    "rollout (29)" : 29
+    "refinement (14)" : 14
+    "server (13)" : 13
+    "planning (8)" : 8
+    "engine (3)" : 3
 </pre>
 
 | Baseline | Final | Delta |
@@ -488,11 +506,17 @@ flowchart LR
   mermaid.initialize({ startOnLoad: false, theme: 'dark' });
   const nodes = document.querySelectorAll('pre.mermaid, div.mermaid');
   for (const n of nodes) {
-    const src = n.textContent.trim();
-    const id = 'm' + Math.random().toString(36).slice(2, 9);
-    const { svg } = await mermaid.render(id, src);
-    const wrap = document.createElement('div');
-    wrap.innerHTML = svg;
-    n.replaceWith(wrap);
+    try {
+      const src = n.textContent.trim();
+      const id = 'm' + Math.random().toString(36).slice(2, 9);
+      const { svg } = await mermaid.render(id, src);
+      const wrap = document.createElement('div');
+      wrap.innerHTML = svg;
+      n.replaceWith(wrap);
+    } catch (e) {
+      console.warn('mermaid render failed:', e.message);
+      n.style.border = '1px dashed #c78a7a';
+      n.style.color = '#c78a7a';
+    }
   }
 </script>
