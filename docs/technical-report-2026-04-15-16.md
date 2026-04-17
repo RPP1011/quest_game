@@ -2,59 +2,22 @@
 title: "Hierarchical Story Planning with Rollout-Based Refinement"
 description: >-
   A six-phase architecture for turning a world seed into a refined
-  multi-chapter story. Each phase is empirically validated against
-  a Pale Lights baseline.
+  multi-chapter story. What works, what's broken, what's next.
 ---
 
 # Hierarchical Story Planning with Rollout-Based Refinement
 
-**Dates:** 2026-04-15 to 2026-04-16  
+**Dates:** 2026-04-15 to 2026-04-17  
 **Model:** Gemma 4 26B A4B (local, llama-server)  
 **Reference corpus:** Pale Lights Book 1 (44 chapters, 341k words, 87 characters, 484 world facts)
 
 ---
 
-## The problem
+## What we built
 
-A quest-game pipeline produces prose chapter-by-chapter. The pipeline has four planning layers (arc → dramatic → emotional → craft) feeding a per-beat writer. Each layer narrows the decision space for the layer below.
+The existing quest-game pipeline has four planning layers (arc → dramatic → emotional → craft) feeding a per-beat writer. Each layer narrows the decision space for the layer below. The pipeline produces structurally correct prose chapter-by-chapter.
 
-The pipeline's prose was structurally correct but narratively thin. Comparing generated output to the reference corpus:
-
-<pre class="mermaid" markdown="0">
-graph LR
-    subgraph "Reference corpus"
-        PL_E["87 characters"]
-        PL_W["484 world facts"]
-        PL_H["198 hooks planted"]
-        PL_D["~11 new proper nouns / chapter"]
-    end
-    subgraph "Generated output"
-        US_E["3 entities in seed"]
-        US_W["0 world facts referenced"]
-        US_H["0 hooks planted"]
-        US_D["0 new nouns / chapter"]
-    end
-    PL_E -.- US_E
-    PL_W -.- US_W
-    PL_H -.- US_H
-    PL_D -.- US_D
-    style PL_E fill:#2a4a2a,stroke:#5a8a5a,color:#8abc7a
-    style PL_W fill:#2a4a2a,stroke:#5a8a5a,color:#8abc7a
-    style PL_H fill:#2a4a2a,stroke:#5a8a5a,color:#8abc7a
-    style PL_D fill:#2a4a2a,stroke:#5a8a5a,color:#8abc7a
-    style US_E fill:#4a2a2a,stroke:#8a5a5a,color:#c78a7a
-    style US_W fill:#4a2a2a,stroke:#8a5a5a,color:#c78a7a
-    style US_H fill:#4a2a2a,stroke:#8a5a5a,color:#c78a7a
-    style US_D fill:#4a2a2a,stroke:#8a5a5a,color:#c78a7a
-</pre>
-
-The initial hypothesis was that the seed was too sparse. The actual finding: **even with a rich seed (49 entities, 10 hooks, 6 threads), the pipeline wasn't reading what was already there.** The writer stage had no access to entity descriptions or narrator config. Fixing that wiring brought generated output to parity with Pale Lights on 7 of 8 quality dimensions. The remaining gap — subtext, emotional trajectory, thematic depth — is structural: a single-pass pipeline can't know whether a chapter's hooks will pay off or whether its tension curve serves the arc.
-
-That structural gap motivated the six-phase architecture below.
-
----
-
-## Architecture
+We wrapped this pipeline with a planning layer above and an evaluation layer below:
 
 <pre class="mermaid" markdown="0">
 flowchart TB
@@ -62,209 +25,113 @@ flowchart TB
 
     P1["Phase 1: Story Candidates<br/>seed → 3-5 candidate arcs<br/>player picks one"]
     P2["Phase 2: Arc Skeleton<br/>picked candidate → 30-chapter outline<br/>hook schedule, POV alternation"]
-    P3["Phase 3: Virtual-Player Rollouts<br/>3 profiles × N chapters<br/>resume-safe, isolated world DBs"]
+    P3["Phase 3: Virtual-Player Rollouts<br/>existing pipeline runs here<br/>3 profiles × N chapters"]
     P4["Phase 4: KB + Scoring<br/>8-dim judge per chapter<br/>hook/entity/thread extraction"]
-    P5["Phase 5: Refinement<br/>3 strategies: weak / hooks / sibling<br/>accept if mean +0.05, no regression"]
-    P6["Phase 6: Presentation<br/>static + scaffolded play<br/>(deferred)"]
+    P5["Phase 5: Refinement<br/>3 strategies: weak / hooks / sibling<br/>accept if judge says improved"]
 
-    SEED --> P1 --> P2 --> P3 --> P4 --> P5 --> P6
+    SEED --> P1 --> P2 --> P3 --> P4 --> P5
 
     P4 -.->|scores + KB| P5
     P5 -.->|refined chapters| P4
 
     style P1 fill:#2a4a2a,stroke:#5a8a5a,color:#8abc7a
     style P2 fill:#2a4a2a,stroke:#5a8a5a,color:#8abc7a
-    style P3 fill:#2a4a2a,stroke:#5a8a5a,color:#8abc7a
+    style P3 fill:#2a3a4a,stroke:#3a5a7a,color:#8ac8e8
     style P4 fill:#2a4a2a,stroke:#5a8a5a,color:#8abc7a
     style P5 fill:#2a4a2a,stroke:#5a8a5a,color:#8abc7a
-    style P6 fill:#3a3222,stroke:#5a4a32,color:#c8b897
 </pre>
 
-Each phase produces a persistent artifact that the next phase consumes. The pipeline's existing four-layer planner (arc → dramatic → emotional → craft → writer) runs inside Phase 3; the architecture wraps it with a planning layer above (candidate + skeleton) and an evaluation layer below (scoring + refinement).
+Phases 1, 2, 4, and 5 are new. Phase 3 is the existing pipeline, unchanged. The architecture is designed so each phase produces a persistent artifact the next phase consumes.
+
+**Phase 1 (Story Candidates):** One LLM call with closed-enum constraints produces 3–5 candidate story arcs from a seed. The player picks one. Without this, the arc planner invents direction per-tick with no commitment to a coherent shape.
+
+**Phase 2 (Arc Skeleton):** One LLM call produces a 30-chapter outline for the picked candidate: POV alternation, tension curve, required plot beats per chapter, pre-scheduled hook payoffs and entity activations. Without this, there's no ground truth for what the story was supposed to do — hooks that "never pay off" are undetectable.
+
+**Phase 3 (Rollouts):** The existing pipeline runs chapter-by-chapter against the skeleton. Virtual-player profiles (impulsive, cautious, honor-bound) drive action selection. Each rollout gets an isolated world DB so mutations don't bleed between playthroughs. Resume-safe: each chapter saves incrementally.
+
+**Phase 4 (Scoring + KB):** Each chapter is scored on 8 dimensions by the same model that generated it. Hook payoffs, entity usage, and thread advances are extracted from traces. Results aggregate across rollouts via SQL.
+
+**Phase 5 (Refinement):** Three selectors identify chapters to retry (weak score, unpaid hook, sibling outscored). The pipeline regenerates with guidance. A gate decides whether to accept the refinement.
 
 ---
 
-## Phase 1: Story candidates
+## What works
 
-**Input:** A seed (entities, threads, hooks, themes, narrator config).  
-**Output:** 3–5 candidate story arcs, each committing to a protagonist, primary plot threads, emphasized themes, a climax, and an expected chapter count.
+**The skeleton shapes output.** When the dramatic planner has a skeleton chapter to consult (required plot beats, target tension, entities to surface), it follows it. Empirically: skeleton ch1 prescribed "Tristan acquires the Rhadamanthine pistol" and "Tristan meets Fortuna" — the dramatic plan's scene 1 was "Can Tristan lift the Rhadamanthine pistol?" with Fortuna as scene 2's focus. POV alternation between Tristan and Angharad emerged from the skeleton without dedicated plumbing.
 
-The same seed supports materially different stories. The player (or the rollout harness) picks one before chapter generation starts.
+**Entity fidelity responds to context.** When entity descriptions are piped to the writer, the writer uses them. Before the fix: Fortuna was rendered as a cat. After: "a golden, weightless presence" that "sprawled across the main beam." The narrator config (POV type, register, voice samples) reached the writer and controlled the output — third-person close instead of second-person CYOA.
 
-**Why this matters:** Without candidates, the arc planner invents direction on the fly each tick — there's no commitment to a specific arc shape. With candidates, the arc planner reads the picked candidate's thread priorities and climax description as directive context, so every chapter serves the same committed shape.
+**Per-beat writer loop outperforms alternatives.** Five strategies tested on the same plan:
 
-**Implementation:** One structured LLM call with closed-enum constraints on thread/character/theme ids (the model can't hallucinate entities outside the seed). Candidates persist in SQLite; the pick writes to `config.json` so the pipeline reads it.
-
----
-
-## Phase 2: Arc skeleton
-
-**Input:** A picked candidate.  
-**Output:** A chapter-by-chapter outline: POV, location, dramatic question, required plot beats, target tension, pre-scheduled DORMANT entity activations, theme emphasis. Plus a hook schedule (when each seeded hook pays off) and a theme arc (when each theme crescendos).
-
-```
-Tension curve (30 chapters):
-
-Ch  1-5:  ▁▁▂▂▃       setup
-Ch  6-10: ▃▃▄▄▄       rising
-Ch 11-15: ▅▅▅▆▆       midpoint
-Ch 16-20: ▆▆▇▇▇       crisis
-Ch 21-24: ▇▇█ █       CLIMAX
-Ch 25-27: ▇▆▄         falling
-Ch 28-30: ▃▂▁         denouement
-```
-
-**Why this matters:** The skeleton is the contract between the arc layer and the chapter-by-chapter pipeline. Without it, the dramatic planner makes local decisions that may never pay off hooks or complete character arcs. With it, every tick consults a pre-committed chapter slot: "this chapter's required plot beats are X; this chapter surfaces entity Y; target tension is 0.7."
-
-**Implementation:** One structured LLM call (larger — 16k max_tokens for 30 chapters). The skeleton is stored in SQLite; `Pipeline._current_skeleton_chapter(update_number)` returns the slot for the current tick, which the arc and dramatic prompts render as pinned directive context.
-
----
-
-## Phase 3: Virtual-player rollouts
-
-**Input:** A skeleton + a virtual-player profile.  
-**Output:** A full chapter-by-chapter playthrough with prose, traces, and world-state mutations — all saved incrementally.
-
-<pre class="mermaid" markdown="0">
-flowchart LR
-    subgraph "Per rollout"
-        BOOT["Bootstrap<br/>isolated quest.db"]
-        CH1["Chapter 1<br/>action from skeleton"]
-        SEL["Action selector<br/>profile rubric × choices"]
-        CH2["Chapter 2..N<br/>pipeline.run per chapter"]
-        SAVE["Incremental save<br/>resume from last chapter"]
-    end
-
-    BOOT --> CH1 --> SEL --> CH2
-    CH2 --> SAVE
-    SEL -.-> CH2
-    SAVE -.->|resume| CH2
-
-    subgraph Profiles
-        IMP["Impulsive<br/>'pick highest stakes'"]
-        CAU["Cautious<br/>'gather info first'"]
-        HON["Honor-bound<br/>'accept the cost'"]
-    end
-
-    Profiles --> SEL
-</pre>
-
-**Why this matters:** A single playthrough is one sample from the story-space the seed defines. Different virtual-player profiles explore different branches (impulsive players escalate; cautious players gather information). Multiple rollouts give us a distribution of outcomes — which hooks paid off, which characters arced, which chapters scored well — that one playthrough can't.
-
-**Key design decision: isolated world DBs.** Each rollout copies the main quest DB and wipes its narrative history. Entity activations and world-state mutations stay in the rollout's copy, so rollouts don't interfere with each other. The main DB holds only metadata (rollout rows, chapter rows, scores).
-
-**Action selection:** For chapter 1, the action comes from the skeleton's required plot beats. For subsequent chapters, a small structured LLM call picks among the suggested choices using the profile's rubric. ~5 seconds per decision.
-
----
-
-## Phase 4: Scoring + KB extraction
-
-**Input:** A rollout's chapters (prose + traces).  
-**Output:** Per-chapter quality scores on 8 dimensions, plus extracted world events (hook payoffs, entity introductions, thread advances).
-
-<pre class="mermaid" markdown="0">
-flowchart TB
-    CH["RolloutChapter<br/>prose + trace"]
-
-    CH --> SCORE["8-dim judge<br/>tension, emotion, voice<br/>theme, subtext, interiority<br/>choice_hook, self_containment"]
-    CH --> KB["KB extractor<br/>hook payoffs<br/>entity mentions<br/>thread advances"]
-
-    SCORE --> KBS["kb_chapter_scores<br/>per-dim per-chapter"]
-    KB --> KBH["kb_hook_payoffs"]
-    KB --> KBE["kb_entity_usage"]
-
-    KBS --> AGG["Aggregated views<br/>payoff rates, screen time<br/>dim means by chapter index"]
-    KBH --> AGG
-    KBE --> AGG
-</pre>
-
-**The 8 dimensions** (rubrics under `prompts/scoring/chapter_dims/`):
-
-| Dimension | What it measures |
-|---|---|
-| tension_execution | Does tension rise, peak, and release within the chapter? |
-| emotional_trajectory | Does the emotional state shift meaningfully? |
-| voice_distinctiveness | Is the narrator's voice consistent and recognizable? |
-| thematic_presence | Do the chapter's events serve a theme? |
-| subtext_presence | Is meaning carried by implication, not statement? |
-| interiority_depth | How deep is the reader's access to the POV character's mind? |
-| choice_hook_quality | Does the chapter end on a hook that makes the reader want to choose? |
-| update_self_containment | Can the chapter stand on its own without prior context? |
-
-**KB extraction** is zero-cost (pure trace parsing): which hooks were planted or paid off, which DORMANT entities were promoted, which threads advanced. Aggregation across rollouts answers questions like "which hook paid off in <50% of rollouts?" and "which chapter index scores lowest on subtext?"
-
----
-
-## Phase 5: Refinement
-
-**Input:** A scored rollout + KB analysis identifying weak points.  
-**Output:** Targeted chapter rewrites that demonstrably improve on the original.
-
-<pre class="mermaid" markdown="0">
-flowchart TB
-    KB["KB scores + analysis"]
-
-    KB --> S1["WeakChapterSelector<br/>mean dim below threshold"]
-    KB --> S2["UnpaidHookSelector<br/>skeleton vs actual payoffs"]
-    KB --> S3["SiblingOutscoredSelector<br/>another rollout scored higher"]
-
-    S1 --> REGEN["Regenerate chapter<br/>with strategy-specific guidance"]
-    S2 --> REGEN
-    S3 --> REGEN
-
-    REGEN --> RESCORE["Score refined prose"]
-
-    RESCORE --> DECIDE{"Improved enough?<br/>mean +0.05, no dim regression"}
-    DECIDE -->|yes| ACCEPT["Accept<br/>update canonical chapter"]
-    DECIDE -->|no| REJECT["Reject<br/>keep original"]
-
-    style ACCEPT fill:#2a4a2a,stroke:#5a8a5a,color:#8abc7a
-    style REJECT fill:#4a2a2a,stroke:#8a5a5a,color:#c78a7a
-</pre>
-
-**Three selectors, one framework:**
-
-- **WeakChapterSelector** — picks chapters whose mean dim score is below a threshold (default 0.55). Guidance names the worst dim and quotes the judge's rationale.
-- **UnpaidHookSelector** — compares the skeleton's hook schedule against actual KB payoffs. If hook X should have paid off by chapter 14 but didn't, target chapter 14 with guidance to land the payoff.
-- **SiblingOutscoredSelector** — if another rollout's same chapter scored ≥0.15 higher on any dim, include that sibling's prose as a reference ("look at how this version handled subtext").
-
-**Accept thresholds:** mean improvement ≥ +0.05 AND no per-dim regression > -0.10. This prevents refinement from trading one quality for another.
-
----
-
-## Empirical results
-
-### Refinement of a weak chapter
-
-| Dim | baseline | refined | Δ | Pale Lights |
-|---|---|---|---|---|
-| subtext_presence | 0.30 | **0.60** | **+0.30** | 0.60 |
-| voice_distinctiveness | 0.60 | **0.90** | **+0.30** | 0.60 |
-| interiority_depth | 0.60 | **0.90** | **+0.30** | 0.70 |
-| tension_execution | 0.70 | 0.70 | 0.00 | 0.90 |
-| emotional_trajectory | 0.60 | 0.60 | 0.00 | 0.90 |
-| thematic_presence | 0.60 | 0.60 | 0.00 | 0.90 |
-| **mean** | **0.60** | **0.713** | **+0.113** | **0.75** |
-
-The targeted dim (subtext, worst at 0.30) doubled. Voice and interiority improved alongside. The refined chapter is within 0.04 of the Pale Lights baseline mean. Zero per-dim regression.
-
-### What the per-beat writer loop buys
-
-We tested 5 write-stage strategies sharing the same plan:
-
-| Strategy | Words | Time | Mean dim |
+| Strategy | Words | Mean dim | Note |
 |---|---|---|---|
-| **per_beat** (1 LLM call per beat, ~15 calls) | 5,588 | 82s | **0.762** |
-| expand (sketch + per-scene expansion) | 3,043 | 50s | 0.675 |
-| one_shot (single call, full chapter) | 626 | 7s | 0.525 |
+| **per_beat** | 5,588 | 0.762 | 15 LLM calls, each writes one beat |
+| expand | 3,043 | 0.675 | sketch + per-scene expansion |
+| one_shot | 626 | 0.525 | single call, full chapter |
 
-**per_beat matches Pale Lights** at 0.762 mean. one_shot collapsed to 626 words — the 26B model produces summaries when given "write everything at once." The per-beat loop forces the writer to commit to each beat in full, preventing compression.
+The 26B model compresses aggressively in one_shot mode (626 words for a 3-scene plan). Per-beat forces commitment.
+
+**DORMANT activation works.** The dramatic planner surfaces 0–3 dormant entities per chapter. The pipeline activates them in the world DB. Verified: Abuela and Cozme promoted from DORMANT → ACTIVE, Abuela appeared in prose with seed-fidelity texture.
+
+**The check→revise loop catches real violations.** The check stage detected Fortuna touching matter (violating a seeded world rule). After fixing the revise loop to fire on critical issues (it previously skipped them), the loop converges in 2 passes on non-contradictory seeds.
+
+---
+
+## What's broken
+
+### The scoring layer is circular
+
+Every empirical claim in this report is "Gemma 4 26B thinks my Gemma 4 26B output is good." The judge is the same model class as the generator, scoring on subjective dimensions (subtext, voice, interiority), with no external validation.
+
+"Within 0.04 of Pale Lights mean" means the judge model finds them comparably good — which is a statement about the judge's discrimination, not about quality. The Pale Lights baseline is scored by the same judge, so the comparison is relative within the judge's taste, not an external quality assessment.
+
+**What needs to happen:** test-retest variance (score the same chapter 5× to measure the SD per dim), cross-model validation (a second judge model on the same chapters), and a small human-rated calibration set (n≥20) to establish that the judge correlates with what we actually care about.
+
+### The scores are quantized below the acceptance threshold
+
+Score values in the refinement table are all multiples of 0.10 (0.30, 0.60, 0.70, 0.90). The +0.05 acceptance threshold for refinement is below the measurement resolution of a single dim. The mean-over-dims smooths this somewhat, but we're calling improvements at finer precision than the instrument provides.
+
+**Fix in progress:** switch to integer 1–10 scoring with logprob-weighted E[score]. The model's actual distribution over tokens is continuous; the quantization is the sampling layer, not the judgment. Extracting logprobs from llama-server and computing E[score] = Σ(digit × prob)/10 gives continuous values with no extra forward passes. This also exposes judge confidence (spiky distribution = confident; flat = uncertain).
+
+### The refinement result is N=1
+
+One chapter, baseline 0.60 → refined 0.713. That's a case study, not evidence. Open questions:
+- What fraction of refinement attempts get accepted?
+- What's the conditional mean improvement given acceptance?
+- Do untargeted dims drift?
+- Is the gate filtering noise into an apparent win?
+
+The overnight 2×2×10 rollout (40 chapters, running) will provide the data for a real distribution.
+
+### The 8 dimensions are probably 3
+
+Subtext, interiority, voice, and thematic presence all read off the same surface properties of prose. An LLM judge will score them as a correlated bundle. The prediction: PCA on scored chapters will show 2–3 components explaining >80% of variance, with tension_execution and choice_hook_quality loading on a different axis than the prose-craft dims. If confirmed, the 8-dim rubric is theater and should be collapsed.
+
+### update_self_containment is miscalibrated
+
+We're building serial fiction modeled on collaborative web narrative. Chapter 14 should leverage setup from chapters 3 and 7 — not stand on its own. Rewarding self-containment pushes the writer toward exposition and recap, which is exactly the AI-fiction failure mode. This dim should be dropped or inverted.
+
+### Comparisons are forced through absolute scoring
+
+Refinement gate, sibling selection, and PL anchoring are all comparison tasks. Absolute scoring is the wrong tool: noisy, quantized, model-taste-dependent. Pairwise comparison ("which is better?") eliminates quantization — the judge just picks — and the literature shows it's more reliable for LLM judges.
+
+**Fix in progress:** pairwise comparisons for refinement gate (refined vs baseline), sibling selection (rollout A vs B), and PL anchoring (our chapter vs Pale Lights excerpt). Logprobs on the A/B token give P(A wins) continuously. Keep absolute scoring only where we need a number across chapters (weak-chapter ranking).
+
+### No cross-chapter evaluation exists
+
+Every dimension is chapter-local. The things readers actually complain about in long-form AI fiction — character drift, plot inconsistency, setups that never pay off, pacing collapse at chapter 20 — the judge can't see any of it, because it never sees two adjacent chapters.
+
+UnpaidHookSelector is the only mechanism touching cross-chapter structure, and it's driven by trace parsing (the planner said it planted a hook), not prose verification (the prose actually contains a legible reference). A hook recorded as "planted" in the trace but not readable in the text would slip through.
+
+**Needed:** A cross-chapter coherence dim scored on chapter pairs. And a prose-level hook verifier: given chapter text and a claimed hook, does an independent read detect the hook reference?
+
+### Rollout diversity is unverified
+
+Three profiles feed choices into the same LLM, which is also generating the choices. Without measuring trajectory divergence (entity-introduction Jaccard across rollouts, hook-payoff overlap, prose n-gram similarity), "different profiles explore different branches" is assumed, not demonstrated. If impulsive and cautious produce 80% identical KB deltas, the 3× cost is buying correlated noise.
 
 ---
 
 ## The seed
-
-The system runs on a hand-authored JSON seed. For Pale Lights:
 
 <pre class="mermaid" markdown="0">
 pie title "49 entities by type"
@@ -281,33 +148,49 @@ pie title "Entity status at seed time"
     "Dormant 29" : 29
 </pre>
 
-Plus: 7 world rules, 6 plot threads, 10 foreshadowing hooks, 4 motifs with semantic ranges, 3 themes, and a narrator config block (POV type, register, worldview, editorial stance, sensory bias, attention bias, voice samples, unreliability axes).
-
-DORMANT entities (29 of 49) exist in the world but haven't appeared on-screen. The dramatic planner sees them in a "Dormant Entities (available to surface)" section and can choose 0–3 per update to introduce. The skeleton pre-schedules which dormant entities surface in which chapters — so the world "opens up" on a planned cadence, not randomly.
+Hand-authored from the Pale Lights Book 1 rollup. 49 entities (20 active, 29 dormant), 7 world rules, 6 plot threads, 10 foreshadowing hooks, 4 motifs, 3 themes, full narrator config with 5 voice samples. DORMANT entities surface on a cadence controlled by the skeleton.
 
 ---
 
 ## Key architectural decisions
 
-**Why candidates before chapters?** Without a candidate pick, the arc planner invents direction per-tick. Two runs of the same seed produce incoherent arcs. With a candidate, every tick serves a committed shape — different seeds, different candidates, but each candidate is a coherent story.
+**Why candidates before chapters?** Without a candidate pick, two runs of the same seed produce incoherent arcs. With a candidate, every tick serves a committed shape.
 
-**Why skeletons before rollouts?** The skeleton is the contract the pipeline can be held to. Hook payoffs that were "planned but never happened" become detectable failures that the refinement loop can fix. Without a skeleton, there's no ground truth for what the story was supposed to do.
+**Why skeletons before rollouts?** The skeleton is the contract the pipeline can be held to. "Planned but never happened" becomes a detectable failure.
 
-**Why isolated world DBs per rollout?** Entity activations, narrative history, and world-state mutations must not bleed between rollouts. Each rollout starts from the same pristine seed state. This means rollouts can run in parallel (GPU-permitting) and the KB aggregation is well-defined: "which hooks paid off in rollout X?" is a query over rollout X's isolated state.
+**Why isolated world DBs per rollout?** Entity activations must not bleed between rollouts. Each starts from pristine seed state.
 
-**Why per-beat writer loop instead of one-shot?** Empirically: per_beat at 0.762 vs one_shot at 0.525 on the same plan. The 26B model compresses aggressively when given a full chapter to write at once. Per-beat forces commitment to each narrative moment. The cost is ~15 LLM calls per chapter instead of 1, but each call is small and fast.
+**Why per-beat writer loop?** Empirically: 0.762 vs 0.525 on the same plan. The model compresses in one-shot; per-beat forces commitment.
 
-**Why score-gated refinement instead of always-accept?** A refinement can improve subtext while regressing voice. The dual threshold (mean must improve by ≥0.05, no dim may regress by >0.10) prevents quality trading. Rejected refinements are still persisted for analysis.
+**Why score-gated refinement?** A refinement can improve subtext while regressing voice. The gate prevents quality trading. (Though the gate itself needs the scoring fixes described above to be trustworthy.)
 
 ---
 
-## What's next
+## Next steps, in priority order
 
-**Remaining gap:** emotional_trajectory and thematic_presence are both 0.30 below the Pale Lights baseline even after refinement. These likely require multi-chapter awareness — a single chapter's emotional arc can't be judged without knowing how it sits relative to the surrounding chapters. The skeleton provides this context; the refinement guidance doesn't yet use it.
+1. **Logprob-weighted scoring.** Integer 1–10, extract E[score] from logprobs, compute confidence. Zero extra forward passes. Makes the +0.05 threshold meaningful.
 
-**Phase 6 (deferred):** Two presentation modes — static (read-only paginated prose) and scaffolded (real player with the skeleton as guardrails and the KB as a quality floor).
+2. **Pairwise comparison.** Refinement gate, sibling selection, PL anchoring all become A/B picks with P(A wins) from logprobs. Drop absolute scoring where a comparison is the actual question.
 
-**Writer LoRA:** The scored rollout chapters are natural training pairs: (plan, prose). A writer LoRA trained on high-scoring rollout chapters could internalize the patterns that currently require the refinement loop to achieve.
+3. **Test-retest variance.** Score the same chapter 5× with the logprob method. Report SD per dim. If SD > 0.05, the acceptance threshold is still in noise.
+
+4. **Cross-judge validation.** Run the same comparisons on a second model (Qwen3, Llama 3.3). If judges disagree on >30% of pairs, the rubric measures model taste.
+
+5. **Refinement distribution.** Run refinement on ≥30 chapters from the overnight rollout. Report acceptance rate, conditional effect size, untargeted-dim drift. Plot (ΔmeanScore, maxDimRegression) colored by selector type.
+
+6. **PCA on dim matrix.** Continuous logprob scores make this clean. Collapse correlated dims.
+
+7. **Drop update_self_containment.** It rewards recap in serial fiction.
+
+8. **Rollout diversity check.** Entity-introduction Jaccard + hook-payoff overlap across profiles. One SQL query over the KB tables.
+
+9. **Cross-chapter coherence dim.** Score on chapter pairs, not individuals.
+
+10. **Prose-level hook verifier.** Does the prose actually contain what the trace claims was planted?
+
+11. **Human calibration set.** n≥20 chapters rated by a human. Compute rank correlation with E[score].
+
+12. **Only then: writer LoRA.** Without the above, fine-tuning Gemma on Gemma's judgments is a reward-hacking recipe.
 
 <script type="module">
   import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
