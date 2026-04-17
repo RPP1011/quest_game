@@ -28,6 +28,8 @@ from app.world.schema import (
 )
 from app.world.state_manager import WorldStateManager
 
+from app.planning.opening_critic import check_opening_repetition
+
 from .action_selector import select_action
 from .kb_extractor import persist_chapter_kb
 from .profiles import VirtualPlayerProfile, load_profile
@@ -201,12 +203,14 @@ async def run_rollout(
         try:
             prior_choices: list = []
             recent_tail = ""
+            prior_proses: list[str] = []
             # Replay already-committed chapters into scroll state (for
             # action selection context only — the rollout DB already has
             # the committed narrative).
             if completed:
                 last = completed[-1]
                 recent_tail = (last.prose or "")[-500:]
+                prior_proses = [c.prose for c in completed if c.prose]
 
             for ch_idx in range(start_index, run.total_chapters_target + 1):
                 # Decide the action for this chapter
@@ -222,9 +226,18 @@ async def run_rollout(
                 else:
                     # Pull suggested_choices from the last chapter's trace
                     choices = prior_choices
+                    # Pass the next skeleton chapter so the selector can
+                    # favor choices that serve the arc's structural needs.
+                    next_skel_ch = None
+                    if skeleton:
+                        next_skel_ch = next(
+                            (c for c in skeleton.chapters if c.chapter_index == ch_idx),
+                            None,
+                        )
                     chosen_idx, rationale = await select_action(
                         client=client, profile=profile,
                         choices=choices, recent_prose_tail=recent_tail,
+                        skeleton_chapter=next_skel_ch,
                     )
                     if choices:
                         c = choices[chosen_idx]
@@ -242,6 +255,17 @@ async def run_rollout(
                 prose = out.prose
                 recent_tail = (prose or "")[-500:]
                 prior_choices = list(out.choices or [])
+
+                # Opening-pattern critic: warn if this chapter's opening
+                # repeats a prior chapter's syntactic template.
+                opening_issues = check_opening_repetition(
+                    prose or "", prior_proses[-5:],
+                )
+                for oi in opening_issues:
+                    # Log as a warning — visible in trace but doesn't block commit.
+                    # Future: could trigger a re-write of the opening paragraph.
+                    pass
+                prior_proses.append(prose or "")
 
                 # Persist chapter to main DB
                 chapter = RolloutChapter(

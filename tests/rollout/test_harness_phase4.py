@@ -148,7 +148,7 @@ async def test_harness_runs_scorer_and_kb_extractor(tmp_path: Path):
     )
     client = FakeClient()
 
-    async def fake_select(*, client, profile, choices, recent_prose_tail=""):
+    async def fake_select(*, client, profile, choices, recent_prose_tail="", skeleton_chapter=None):
         return (0, "test")
 
     with patch.object(harness_mod, "_build_pipeline", lambda *a, **kw: FakePipeline()):
@@ -205,7 +205,7 @@ async def test_harness_skips_scorer_when_disabled(tmp_path: Path):
     )
     client = FakeClient()
 
-    async def fake_select(*, client, profile, choices, recent_prose_tail=""):
+    async def fake_select(*, client, profile, choices, recent_prose_tail="", skeleton_chapter=None):
         return (0, "test")
 
     with patch.object(harness_mod, "_build_pipeline", lambda *a, **kw: FakePipeline()):
