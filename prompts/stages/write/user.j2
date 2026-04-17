@@ -46,7 +46,10 @@ Scene {{ scene.scene_id }}
 {% for vs in voice_samples %}> {{ vs | trim }}
 
 {% endfor %}
-{% endif %}{% if recent_prose_tail is defined and recent_prose_tail %}## Rhythm Continuity (last ~300 chars of prior prose)
+{% endif %}{% if recent_prose_tail is defined and recent_prose_tail %}## Prior Prose (last ~300 chars — DO NOT repeat these events or re-establish this scene)
+
+The story has already reached this point. Continue FORWARD from here — do not rewind, retread, or re-describe what has already happened:
+
 {{ recent_prose_tail }}
 
 {% endif %}{% if anti_patterns is defined and anti_patterns %}## Avoid

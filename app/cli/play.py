@@ -46,6 +46,16 @@ def init(
     for pt in payload.plot_threads:
         sm.add_plot_thread(pt)
     sm.apply_delta(payload.delta, update_number=0)
+
+    # Themes + motifs — previously only written to config.json, not the
+    # world DB. Story candidate planner reads themes from DB so they must
+    # be persisted here too.
+    quest_id = db.stem
+    for th in payload.themes:
+        sm.add_theme(quest_id, th)
+    for mo in payload.motifs:
+        sm.add_motif(quest_id, mo)
+
     typer.echo(f"Seeded {db} with {len(payload.delta.entity_creates)} entities.")
 
     # Bootstrap arc state
