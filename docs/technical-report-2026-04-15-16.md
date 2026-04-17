@@ -13,6 +13,42 @@ description: >-
 
 ---
 
+## Context and terminology
+
+**What this project is.** A locally-hosted engine for playing AI-generated text quests in the style of [Sufficient Velocity](https://forums.sufficientvelocity.com/) forum quests. Single-user, runs on one GPU (RTX 4090), no cloud APIs. The player types an action; the engine returns a chapter of prose and a set of choices.
+
+**Pale Lights.** A web serial by ErraticErrata — our quality reference. We annotated all 44 chapters of Book 1 with a structured schema (scenes, beats, characters, hooks, world facts) to establish craft baselines. When this report says "Pale Lights baseline," it means scores the judge model assigned to actual Pale Lights prose — not a human quality assessment.
+
+### Glossary
+
+| Term | Meaning |
+|---|---|
+| **Seed** | A JSON file defining the starting world: entities (characters, locations, factions, items, concepts), plot threads, foreshadowing hooks, world rules, motifs, themes, and a narrator config. No prose — just structure. |
+| **Entity** | A named thing in the world. Has a type (character/location/faction/item/concept), a status (active/dormant/deceased), and a `data` dict with description, role, voice, abilities, constraints, etc. |
+| **DORMANT** | An entity that exists in the seed but hasn't appeared on-screen yet. The planner can "surface" dormant entities by promoting them to ACTIVE. This is how the world "opens up" over time without runtime invention. |
+| **Plot thread** | A named narrative throughline with a status (active/dormant/resolved), priority, and arc position (rising/climax/falling). The dramatic planner consults active threads when deciding what happens next. |
+| **Foreshadowing hook** | A pre-planted narrative promise: something named early that pays off later. Each hook has a `planted_at_update` and a `payoff_target`. The skeleton schedules when each hook should pay off. |
+| **Narrator config** | Persistent voice definition: POV type (2nd person, 3rd limited, alternating), register, worldview, editorial stance, sensory bias weights, attention bias, voice samples (example prose fragments the writer should match in rhythm). |
+| **Pipeline** | The per-chapter generation system. Four planning layers produce structured JSON; the writer emits prose beat-by-beat. |
+| **Arc planner** | Top-level planner. Reads quest-wide state (phase, tension history, themes) and emits an `ArcDirective`: theme priorities, plot objectives, tension envelope, hooks to plant/pay off. Runs once per chapter. |
+| **Dramatic planner** | Mid-level. Takes the arc directive and the player's action, produces a `DramaticPlan`: scenes with dramatic questions, outcomes, beat lists, characters present, entities to surface. |
+| **Emotional planner** | Per-scene emotional trajectory: entry state, exit state, transition type, emotional source. |
+| **Craft planner** | Prose blueprint: register, sensory density, narrator focus, indirection instructions, voice permeability. The writer's direct input. |
+| **Per-beat writer loop** | The writer stage runs one LLM call per beat (a dramatic plan typically has 10–15 beats across 2–3 scenes). Each call produces prose for that beat only, seeing all prior beats as accumulated context. This prevents the model from compressing a chapter into a summary. |
+| **Check stage** | Post-write consistency pass. Reads the prose against world rules and the plan; flags issues as info/warning/error/critical. Critical issues trigger the revise loop. |
+| **Revise loop** | When check finds issues, the revise stage rewrites the prose to fix them. Loops up to 2× until check returns clean. Only commits prose when issues are resolved (or the budget is exhausted, in which case it flags the chapter). |
+| **Extract stage** | Post-commit. Reads the committed prose and emits structured world-state deltas: entity updates, new relationships, foreshadowing status changes, timeline events. These feed back into subsequent planning. |
+| **Story candidate** | A proposed arc shape for a seed: which threads are primary, who the protagonist is, which themes to emphasize, what the climax looks like, how many chapters. A seed supports multiple candidates; the player picks one. |
+| **Arc skeleton** | A chapter-by-chapter outline for a picked candidate. Each chapter slot specifies: POV character, location, dramatic question, required plot beats, target tension, entities to surface, theme emphasis. Plus a hook schedule (when each hook pays off) and a theme arc (when each theme crescendos). |
+| **Rollout** | A complete synthetic playthrough: the pipeline runs chapter-by-chapter against a skeleton, with a virtual-player profile choosing actions at each turn. Each rollout gets its own isolated world DB so mutations don't bleed between playthroughs. |
+| **Virtual-player profile** | A YAML file defining how a synthetic player chooses among suggested actions. Three bundled: impulsive (pick highest stakes), cautious (gather info), honor-bound (accept the cost). One small LLM call per choice. |
+| **KB (knowledge base)** | Aggregated data from rollouts: per-chapter quality scores on 8 dimensions, hook payoff records (which rollouts paid off which hooks), entity usage (screen time per entity per rollout). Stored in SQLite, queryable via API. |
+| **8-dim judge** | The scoring instrument. Each chapter is scored on: tension_execution, emotional_trajectory, voice_distinctiveness, thematic_presence, subtext_presence, interiority_depth, choice_hook_quality, update_self_containment. Currently all scored by the same Gemma 4 26B model that generates the prose — a known validity problem discussed below. |
+| **Refinement** | Targeted rewrite of weak chapters. Three selectors identify targets (weak chapter, unpaid hook, sibling outscored). The pipeline regenerates with strategy-specific guidance. An accept/reject gate compares the refinement to the original. |
+| **llama-server** | The inference backend. Serves Gemma 4 26B via GGUF quantization with JSON-schema enforcement (xgrammar). All planning, writing, scoring, and action selection calls go through this one server. |
+
+---
+
 ## What we built
 
 The existing quest-game pipeline has four planning layers (arc → dramatic → emotional → craft) feeding a per-beat writer. Each layer narrows the decision space for the layer below. The pipeline produces structurally correct prose chapter-by-chapter.
