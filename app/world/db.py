@@ -334,6 +334,42 @@ CREATE TABLE IF NOT EXISTS refinement_attempts (
 
 CREATE INDEX IF NOT EXISTS idx_refinement_chapter
     ON refinement_attempts(rollout_id, chapter_index);
+
+CREATE TABLE IF NOT EXISTS foreshadow_triples (
+    id TEXT PRIMARY KEY,
+    hook_id TEXT NOT NULL,
+    foreshadow_text TEXT NOT NULL,
+    trigger_pred TEXT NOT NULL,
+    payoff_text TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'planted',
+    planted_chapter INTEGER NOT NULL,
+    deadline_chapter INTEGER,
+    verified_planted REAL,
+    verified_payoff REAL
+);
+
+CREATE TABLE IF NOT EXISTS typed_edits (
+    id TEXT PRIMARY KEY,
+    trace_id TEXT,
+    rollout_id TEXT,
+    chapter_index INTEGER,
+    edit_type TEXT NOT NULL,
+    original_text TEXT NOT NULL,
+    replacement TEXT NOT NULL,
+    span_start INTEGER NOT NULL,
+    span_end INTEGER NOT NULL,
+    reason TEXT
+);
+
+CREATE TABLE IF NOT EXISTS cross_judge_scores (
+    rollout_id TEXT NOT NULL,
+    chapter_index INTEGER NOT NULL,
+    judge_model TEXT NOT NULL,
+    dim TEXT NOT NULL,
+    score REAL NOT NULL,
+    confidence REAL,
+    PRIMARY KEY (rollout_id, chapter_index, judge_model, dim)
+);
 """
 
 
@@ -356,6 +392,11 @@ def _apply_additive_migrations(conn: sqlite3.Connection) -> None:
     migrations are append-only and nullable — existing rows remain valid.
     """
     _ensure_column(conn, "narrative", "pov_character_id", "TEXT")
+    _ensure_column(conn, "rollout_chapters", "syntactic_cr", "REAL")
+    _ensure_column(conn, "rollout_chapters", "mtld", "REAL")
+    _ensure_column(conn, "rollout_chapters", "fw_kl_baseline", "REAL")
+    _ensure_column(conn, "rollout_chapters", "fw_kl_window", "REAL")
+    _ensure_column(conn, "rollout_runs", "rollout_mauve", "REAL")
 
 
 def _ensure_column(

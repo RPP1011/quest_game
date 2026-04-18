@@ -28,6 +28,7 @@ from app.world.schema import (
 )
 from app.world.state_manager import WorldStateManager
 
+from app.planning.foreshadow_pool import scan_and_fire, verify_and_update
 from app.planning.opening_critic import check_opening_repetition
 from app.planning.voice_tracker import CharacterVoiceTracker
 
@@ -287,6 +288,43 @@ async def run_rollout(
                 )
                 prior_proses.append(prose or "")
 
+                # Foreshadow pool: scan triggers and verify plants
+                try:
+                    active_ids = [e.id for e in rollout_sm.list_entities()
+                                  if e.status and e.status.value == "active"]
+                    scene_entities = []
+                    kb_events = []
+                    pool_result = await scan_and_fire(
+                        sm=main_sm, client=client,
+                        current_chapter=ch_idx,
+                        active_entities=active_ids,
+                        present_entities=scene_entities,
+                        events=kb_events,
+                        prose_so_far=prose or "",
+                    )
+                    # Verify plant for any newly planted triples
+                    newly_planted = main_sm.list_foreshadow_triples(status="planted")
+                    for triple in newly_planted:
+                        if triple["planted_chapter"] == ch_idx and triple["verified_planted"] is None:
+                            await verify_and_update(
+                                sm=main_sm, client=client,
+                                triple_id=triple["id"],
+                                field="verified_planted",
+                                element_text=triple["foreshadow_text"],
+                                prose=prose or "",
+                            )
+                    # Verify payoff for triggered triples
+                    for triple in pool_result["triggered"]:
+                        await verify_and_update(
+                            sm=main_sm, client=client,
+                            triple_id=triple["id"],
+                            field="verified_payoff",
+                            element_text=triple["payoff_text"],
+                            prose=prose or "",
+                        )
+                except Exception:
+                    pass  # Foreshadow pool is best-effort
+
                 # Persist chapter to main DB
                 chapter = RolloutChapter(
                     rollout_id=rollout_id, chapter_index=ch_idx,
@@ -298,6 +336,45 @@ async def run_rollout(
                 main_sm.update_rollout(
                     rollout_id, chapters_complete=ch_idx,
                 )
+
+                # Structural metrics (best-effort, no LLM cost)
+                try:
+                    from app.scoring.structural_metrics import (
+                        syntactic_compression_ratio, mtld,
+                    )
+                    scr = syntactic_compression_ratio(prose or "")
+                    mtld_score = mtld(prose or "")
+                    main_conn.execute(
+                        "UPDATE rollout_chapters SET syntactic_cr = ?, mtld = ? "
+                        "WHERE rollout_id = ? AND chapter_index = ?",
+                        (scr, mtld_score, rollout_id, ch_idx),
+                    )
+                    main_conn.commit()
+                except Exception:
+                    pass
+
+                # Voice drift monitor (best-effort)
+                try:
+                    from app.scoring.voice_drift import (
+                        function_word_distribution, kl_divergence,
+                    )
+                    current_dist = function_word_distribution(prose or "")
+                    if ch_idx > 1 and completed:
+                        ch1_prose = completed[0].prose or ""
+                        baseline_dist = function_word_distribution(ch1_prose)
+                        kl_base = kl_divergence(current_dist, baseline_dist)
+                        window_proses = [c.prose or "" for c in completed[-3:]]
+                        window_text = " ".join(window_proses)
+                        window_dist = function_word_distribution(window_text)
+                        kl_window = kl_divergence(current_dist, window_dist)
+                        main_conn.execute(
+                            "UPDATE rollout_chapters SET fw_kl_baseline = ?, fw_kl_window = ? "
+                            "WHERE rollout_id = ? AND chapter_index = ?",
+                            (kl_base, kl_window, rollout_id, ch_idx),
+                        )
+                        main_conn.commit()
+                except Exception:
+                    pass
 
                 # Phase 4: KB extraction (always on, no LLM cost)
                 try:
@@ -325,6 +402,26 @@ async def run_rollout(
                     except Exception:
                         # Same: scoring failures don't break the rollout.
                         pass
+
+                    # Cross-judge scoring (best-effort, needs Prometheus server)
+                    try:
+                        from app.scoring.cross_judge import (
+                            score_with_cross_judge, persist_judge_pair,
+                        )
+                        prometheus_client = InferenceClient(
+                            base_url="http://127.0.0.1:8083",
+                            timeout=120.0, retries=1,
+                        )
+                        pair = await score_with_cross_judge(
+                            gemma_client=client,
+                            prometheus_client=prometheus_client,
+                            chapter_text=prose or "",
+                        )
+                        persist_judge_pair(
+                            main_conn, rollout_id, ch_idx, pair,
+                        )
+                    except Exception:
+                        pass  # Cross-judge is best-effort
         finally:
             rollout_conn.close()
 

@@ -612,6 +612,19 @@ class Pipeline:
             check_out = await self._run_check(trace, plan_like_dict, prose)
             await self._inject_heuristic_issues(check_out, prose)
 
+        # Typed edit pass — surgical prose-quality fixes after the revise loop
+        try:
+            from app.engine.typed_edits import detect_edits, apply_edits, persist_edits
+            edits = await detect_edits(self._client, prose)
+            if edits:
+                prose = apply_edits(prose, edits)
+                persist_edits(
+                    self._world._conn, edits,
+                    trace_id=trace.trace_id,
+                )
+        except Exception:
+            pass  # typed edits are best-effort
+
         if check_out.has_critical:
             outcome = "flagged_qm"
         else:
