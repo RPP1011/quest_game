@@ -281,6 +281,34 @@ def refine(
 
 
 @app.command()
+def summarize(
+    quest_id: str = typer.Argument(..., help="Quest id (e.g. 'pale_lights')."),
+    rollout_ids: list[str] = typer.Argument(None, help="Rollout ids to summarize. If omitted, summarizes all."),
+    quests_dir: Path = typer.Option(Path("data/quests"), help="Root directory for quest DBs."),
+) -> None:
+    """Print extractive chapter summaries for one or more rollouts."""
+    from app.rollout.summarizer import format_comparison, summarize_rollout
+
+    db_path = quests_dir / quest_id / "quest.db"
+    if not db_path.is_file():
+        typer.echo(f"DB not found: {db_path}")
+        raise typer.Exit(1)
+    conn = open_db(db_path)
+    sm = WorldStateManager(conn)
+    try:
+        if not rollout_ids:
+            rows = sm.list_rollouts(quest_id)
+            rollout_ids = [r.id for r in rows if r.chapters_complete and r.chapters_complete > 0]
+        if not rollout_ids:
+            typer.echo("No completed rollouts found.")
+            raise typer.Exit(0)
+        summaries = [summarize_rollout(sm, rid) for rid in rollout_ids]
+        typer.echo(format_comparison(summaries))
+    finally:
+        conn.close()
+
+
+@app.command()
 def serve(
     quests_dir: Path = typer.Option(Path("data/quests"), help="Root directory for quest DBs + traces."),
     server: str = typer.Option("http://127.0.0.1:8090", help="llama-server base URL."),

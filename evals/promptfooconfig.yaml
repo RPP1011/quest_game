@@ -1,0 +1,36 @@
+description: "Writer imagery variety eval — comparing prompt strategies for metaphor control"
+
+prompts:
+  - file://prompts/baseline.txt
+  - file://prompts/imagery_soft.txt
+  - file://prompts/imagery_hard.txt
+
+providers:
+  - id: file://provider.py
+    label: "llama-local"
+    config:
+      base_url: "http://127.0.0.1:8082"
+      temperature: 0.7
+      max_tokens: 4000
+
+tests: file://dataset.json
+
+defaultTest:
+  options:
+    provider:
+      config:
+        base_url: "http://127.0.0.1:8082"
+  assert:
+    - type: python
+      value: file://scorers/metaphor_variety.py:get_score
+    - type: python
+      value: file://scorers/keyword_count.py:get_score
+    - type: javascript
+      value: |
+        // Basic prose quality: not empty, reasonable length
+        const words = output.split(/\s+/).length;
+        return {
+          pass: words >= 200,
+          score: Math.min(1.0, words / 500),
+          reason: `${words} words`
+        };

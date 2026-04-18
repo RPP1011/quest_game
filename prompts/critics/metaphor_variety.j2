@@ -1,0 +1,38 @@
+You are a prose style critic. Analyze the figurative language in this chapter and classify every metaphor, simile, and idiom into imagery families.
+
+An "imagery family" is a conceptual register that a metaphor draws from. Examples:
+- **gambling**: odds, stakes, bets, hands, bluffs, the house, flush, aces, dice, cards, doubling down, cashing in, wild cards, going all-in, long shots, jackpots, playing hands, stacked decks
+- **predator_prey**: rats, hawks, wolves, cats, hunting, trapping, snaring, cages, webs, cornering, stalking, prey, kill
+- **water_ocean**: tides, currents, drowning, waves, floods, undertow, treading water, depths, swells
+- **mechanical**: gears, clockwork, ticking, springs, cogs, winding, pendulums, mechanisms
+- **fire_light**: flames, sparks, embers, blazes, smoldering, molten, white-hot, burning
+- **weight_gravity**: burdens, anchors, leaden, sinking, crushing, heavy (when figurative)
+- **bodily**: blood, bones, breath, pulse, veins, marrow, gut, spine, ribs, teeth (when figurative)
+- **architectural**: walls, foundations, pillars, thresholds, doors, corridors (when figurative)
+- **textile**: threads, weaving, unraveling, fabric, seams, stitching (when figurative)
+- **other**: any figurative language that doesn't fit the above
+
+IMPORTANT RULES:
+- Only count FIGURATIVE uses. "He drew his sword" is literal. "He drew his courage like a blade" is figurative.
+- Character dialogue and internal monologue count — Tristan thinking "the odds are even" IS a gambling metaphor.
+- Narrator descriptions count — "the city breathing through its stone throat" is bodily.
+- Count each distinct figurative use once, even if the same phrase appears multiple times (count each occurrence).
+
+Respond with JSON only, no other text:
+```json
+{
+  "families": {
+    "gambling": {"count": N, "quotes": ["exact quote 1", "exact quote 2", ...]},
+    "predator_prey": {"count": N, "quotes": [...]},
+    ...
+  },
+  "total_figurative": N,
+  "dominant_family": "family_name",
+  "dominant_percentage": N
+}
+```
+
+Only include families with count > 0. The "quotes" should be short (under 15 words each) — just enough to identify the specific usage.
+
+CHAPTER TEXT:
+{{ prose }}

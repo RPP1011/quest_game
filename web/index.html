@@ -10,6 +10,7 @@
   <h1>Quest Game</h1>
   <div id="header-context"></div>
   <div class="header-spacer"></div>
+  <button id="rollouts-toggle" hidden title="Browse rollout playthroughs">Rollouts</button>
   <button id="world-toggle" hidden title="Browse the world (characters, factions, hooks, rules)">World</button>
 </header>
 <main>
@@ -102,6 +103,19 @@
     <div id="trace-detail"></div>
   </aside>
 </main>
+
+<!-- Rollouts drawer -->
+<div id="rollouts-backdrop" hidden></div>
+<aside id="rollouts-drawer" hidden>
+  <header class="drawer-header">
+    <h2>Rollouts</h2>
+    <button id="rollouts-close" title="Close">&#x2715;</button>
+  </header>
+  <nav id="rollouts-nav" class="rollouts-nav"></nav>
+  <div id="rollouts-content" class="drawer-content">
+    <p class="muted">Select a rollout to read.</p>
+  </div>
+</aside>
 
 <!-- World drawer -->
 <div id="world-backdrop" hidden></div>

@@ -594,14 +594,14 @@ class Pipeline:
 
         # ---- Hierarchical post-write flow ----
         check_out = await self._run_check(trace, plan_like_dict, prose)
-        self._inject_heuristic_issues(check_out, prose)
+        await self._inject_heuristic_issues(check_out, prose)
 
         # REVISE loop (no replan in hierarchical flow for now). Try up to
         # MAX_REVISE_ATTEMPTS to clear critical/fixable issues. Critical
         # issues used to be skip-and-commit ('flagged_qm'), which let real
         # world-rule violations land in committed prose. Now we loop until
         # the issues clear or we exhaust the budget.
-        MAX_REVISE_ATTEMPTS = 2
+        MAX_REVISE_ATTEMPTS = 4
         revise_attempts = 0
         while (check_out.has_critical or check_out.has_fixable) and \
                 revise_attempts < MAX_REVISE_ATTEMPTS:
@@ -610,7 +610,7 @@ class Pipeline:
             )
             revise_attempts += 1
             check_out = await self._run_check(trace, plan_like_dict, prose)
-            self._inject_heuristic_issues(check_out, prose)
+            await self._inject_heuristic_issues(check_out, prose)
 
         if check_out.has_critical:
             outcome = "flagged_qm"
@@ -1281,17 +1281,16 @@ class Pipeline:
                     continue
         return entities
 
-    @staticmethod
-    def _inject_heuristic_issues(check_out: "Any", prose: str) -> None:
-        """Inject heuristic critic issues into the check output.
+    async def _inject_heuristic_issues(self, check_out: "Any", prose: str) -> None:
+        """Inject critic issues into the check output.
 
-        Runs metaphor-variety and entity-consistency checks and appends
-        any warnings to the check_out.issues list. These warnings then
-        flow into the revise loop alongside LLM-detected issues.
+        Uses LLM-based metaphor classification (primary) with keyword
+        fallback. Appends warnings to check_out.issues so they flow
+        into the revise loop alongside LLM-detected issues.
         """
-        from app.planning.metaphor_critic import check_metaphor_variety
+        from app.planning.metaphor_critic import check_metaphor_variety_llm
         from app.engine.check import CheckIssue
-        for issue in check_metaphor_variety(prose):
+        for issue in await check_metaphor_variety_llm(self._client, prose):
             check_out.issues.append(CheckIssue(
                 severity="warning",
                 category="prose_quality",
