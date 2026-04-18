@@ -316,6 +316,101 @@ async def compare_chapters_all_dims(
 
 
 # ---------------------------------------------------------------------------
+# Cross-chapter coherence (scored on consecutive pairs)
+# ---------------------------------------------------------------------------
+
+COHERENCE_SYSTEM = (
+    "You are a literary judge evaluating how well two consecutive chapters "
+    "connect. Read Chapter A, then Chapter B. Write a 1-sentence observation "
+    "about the transition quality, then rate the coherence (1-10 integer).\n\n"
+    "Format:\n"
+    "Observation: [1 sentence about the A→B transition]\n"
+    "Coherence score: [integer 1-10]"
+)
+
+
+async def score_chapter_pair_coherence(
+    *,
+    client: InferenceClient,
+    chapter_a_prose: str,
+    chapter_b_prose: str,
+    max_tokens: int = 200,
+    top_logprobs: int = 20,
+) -> dict:
+    """Score the coherence between two consecutive chapters.
+
+    Returns ``{score, sampled, confidence, observation}``.
+    """
+    rubric = _load_rubric("cross_chapter_coherence")
+    # Truncate to keep prompt manageable — last 2k of A, first 2k of B
+    # captures the transition zone
+    a_tail = chapter_a_prose[-2000:] if len(chapter_a_prose) > 2000 else chapter_a_prose
+    b_head = chapter_b_prose[:2000] if len(chapter_b_prose) > 2000 else chapter_b_prose
+
+    user_prompt = (
+        f"{rubric}\n\n"
+        f"CHAPTER A (ending):\n<<<\n{a_tail}\n>>>\n\n"
+        f"CHAPTER B (opening):\n<<<\n{b_head}\n>>>\n\n"
+        f"Observe the transition, then rate coherence (1-10)."
+    )
+    result = await client.chat_with_logprobs(
+        messages=[
+            ChatMessage(role="system", content=COHERENCE_SYSTEM),
+            ChatMessage(role="user", content=user_prompt),
+        ],
+        temperature=0.3, max_tokens=max_tokens,
+        top_logprobs=top_logprobs, thinking=False,
+    )
+    found = _find_score_at_marker(result, "Coherence score:")
+    if found is None:
+        found = _fallback_parse_score(result.content, "Coherence score") or {
+            "score": 0.5, "sampled": 5, "confidence": 0.0,
+        }
+    # Extract observation
+    obs = ""
+    for line in result.content.split("\n"):
+        if line.strip().startswith("Observation:"):
+            obs = line.split(":", 1)[-1].strip()
+            break
+    found["observation"] = obs
+    return found
+
+
+async def score_rollout_coherence(
+    *,
+    client: InferenceClient,
+    chapters: list,
+) -> list[dict]:
+    """Score coherence for all consecutive pairs in a rollout.
+
+    Returns a list of ``{chapter_a, chapter_b, score, sampled,
+    confidence, observation}`` — one per adjacent pair.
+    """
+    results: list[dict] = []
+    sorted_chs = sorted(chapters, key=lambda c: c.chapter_index)
+    for i in range(len(sorted_chs) - 1):
+        a = sorted_chs[i]
+        b = sorted_chs[i + 1]
+        try:
+            r = await score_chapter_pair_coherence(
+                client=client,
+                chapter_a_prose=a.prose,
+                chapter_b_prose=b.prose,
+            )
+            r["chapter_a"] = a.chapter_index
+            r["chapter_b"] = b.chapter_index
+            results.append(r)
+        except Exception as e:
+            results.append({
+                "chapter_a": a.chapter_index,
+                "chapter_b": b.chapter_index,
+                "score": 0.0, "sampled": 0, "confidence": 0.0,
+                "observation": f"scoring failed: {e}",
+            })
+    return results
+
+
+# ---------------------------------------------------------------------------
 # Persistence helpers
 # ---------------------------------------------------------------------------
 
