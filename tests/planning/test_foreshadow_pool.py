@@ -82,3 +82,64 @@ def test_list_overdue_foreshadow_triples(sm):
 
     not_overdue = sm.list_overdue_foreshadow_triples(current_chapter=4)
     assert len(not_overdue) == 0
+
+
+from app.planning.foreshadow_pool import evaluate_predicate
+
+
+def test_chapter_gte_predicate():
+    pred = {"type": "chapter_gte", "value": 5}
+    state = {"current_chapter": 4, "active_entities": [], "present_entities": [], "events": []}
+    assert evaluate_predicate(pred, state) is False
+    state["current_chapter"] = 5
+    assert evaluate_predicate(pred, state) is True
+
+
+def test_entity_active_predicate():
+    pred = {"type": "entity_active", "entity_id": "char:cozme"}
+    state = {"current_chapter": 1, "active_entities": ["char:tristan"], "present_entities": [], "events": []}
+    assert evaluate_predicate(pred, state) is False
+    state["active_entities"].append("char:cozme")
+    assert evaluate_predicate(pred, state) is True
+
+
+def test_entity_present_predicate():
+    pred = {"type": "entity_present", "entity_id": "char:cozme"}
+    state = {"current_chapter": 1, "active_entities": [], "present_entities": ["char:tristan"], "events": []}
+    assert evaluate_predicate(pred, state) is False
+    state["present_entities"].append("char:cozme")
+    assert evaluate_predicate(pred, state) is True
+
+
+def test_event_occurred_predicate():
+    pred = {"type": "event_occurred", "event": "tristan_confronts_cozme"}
+    state = {"current_chapter": 1, "active_entities": [], "present_entities": [], "events": []}
+    assert evaluate_predicate(pred, state) is False
+    state["events"].append("tristan_confronts_cozme")
+    assert evaluate_predicate(pred, state) is True
+
+
+def test_compound_and_predicate():
+    pred = {
+        "type": "and",
+        "children": [
+            {"type": "chapter_gte", "value": 3},
+            {"type": "entity_active", "entity_id": "char:cozme"},
+        ],
+    }
+    state = {"current_chapter": 3, "active_entities": [], "present_entities": [], "events": []}
+    assert evaluate_predicate(pred, state) is False
+    state["active_entities"].append("char:cozme")
+    assert evaluate_predicate(pred, state) is True
+
+
+def test_compound_or_predicate():
+    pred = {
+        "type": "or",
+        "children": [
+            {"type": "chapter_gte", "value": 10},
+            {"type": "entity_active", "entity_id": "char:cozme"},
+        ],
+    }
+    state = {"current_chapter": 3, "active_entities": ["char:cozme"], "present_entities": [], "events": []}
+    assert evaluate_predicate(pred, state) is True
