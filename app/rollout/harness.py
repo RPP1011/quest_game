@@ -28,6 +28,7 @@ from app.world.schema import (
 )
 from app.world.state_manager import WorldStateManager
 
+from app.planning.foreshadow_pool import scan_and_fire, verify_and_update
 from app.planning.opening_critic import check_opening_repetition
 from app.planning.voice_tracker import CharacterVoiceTracker
 
@@ -286,6 +287,43 @@ async def run_rollout(
                     prose or "", prior_proses[-5:],
                 )
                 prior_proses.append(prose or "")
+
+                # Foreshadow pool: scan triggers and verify plants
+                try:
+                    active_ids = [e.id for e in rollout_sm.list_entities()
+                                  if e.status and e.status.value == "active"]
+                    scene_entities = []
+                    kb_events = []
+                    pool_result = await scan_and_fire(
+                        sm=main_sm, client=client,
+                        current_chapter=ch_idx,
+                        active_entities=active_ids,
+                        present_entities=scene_entities,
+                        events=kb_events,
+                        prose_so_far=prose or "",
+                    )
+                    # Verify plant for any newly planted triples
+                    newly_planted = main_sm.list_foreshadow_triples(status="planted")
+                    for triple in newly_planted:
+                        if triple["planted_chapter"] == ch_idx and triple["verified_planted"] is None:
+                            await verify_and_update(
+                                sm=main_sm, client=client,
+                                triple_id=triple["id"],
+                                field="verified_planted",
+                                element_text=triple["foreshadow_text"],
+                                prose=prose or "",
+                            )
+                    # Verify payoff for triggered triples
+                    for triple in pool_result["triggered"]:
+                        await verify_and_update(
+                            sm=main_sm, client=client,
+                            triple_id=triple["id"],
+                            field="verified_payoff",
+                            element_text=triple["payoff_text"],
+                            prose=prose or "",
+                        )
+                except Exception:
+                    pass  # Foreshadow pool is best-effort
 
                 # Persist chapter to main DB
                 chapter = RolloutChapter(

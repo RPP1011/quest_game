@@ -78,3 +78,58 @@ async def verify_prose_reference(
     # Fallback: text match
     content = result.content.strip().upper()
     return 0.9 if content.startswith("YES") else 0.1
+
+
+async def scan_and_fire(
+    *, sm: "WorldStateManager", client: "InferenceClient",
+    current_chapter: int, active_entities: list[str],
+    present_entities: list[str], events: list[str],
+    prose_so_far: str,
+) -> dict:
+    """Before each beat: check triggers, fire payoffs, verify plants, escalate overdue.
+
+    Returns dict with:
+        triggered: list of triples whose triggers just fired
+        overdue: list of triples past deadline
+        unverified_plants: list of triples needing plant re-injection
+    """
+    state = {
+        "current_chapter": current_chapter,
+        "active_entities": active_entities,
+        "present_entities": present_entities,
+        "events": events,
+    }
+
+    result = {"triggered": [], "overdue": [], "unverified_plants": []}
+
+    # Check planted triples for trigger firing
+    planted = sm.list_foreshadow_triples(status="planted")
+    for triple in planted:
+        if evaluate_predicate(triple["trigger_pred"], state):
+            sm.update_foreshadow_triple(triple["id"], status="triggered")
+            result["triggered"].append(triple)
+
+    # Check for unverified plants (verified_planted < 0.6 or None)
+    for triple in planted:
+        vp = triple.get("verified_planted")
+        if vp is not None and vp < 0.6:
+            result["unverified_plants"].append(triple)
+
+    # Check overdue
+    result["overdue"] = sm.list_overdue_foreshadow_triples(current_chapter)
+
+    return result
+
+
+async def verify_and_update(
+    *, sm: "WorldStateManager", client: "InferenceClient",
+    triple_id: str, field: str, element_text: str, prose: str,
+) -> float:
+    """After a beat: verify plant or payoff in prose, update confidence."""
+    confidence = await verify_prose_reference(
+        client=client, element_text=element_text, prose=prose,
+    )
+    sm.update_foreshadow_triple(triple_id, **{field: confidence})
+    if field == "verified_payoff" and confidence >= 0.6:
+        sm.update_foreshadow_triple(triple_id, status="paid_off")
+    return confidence
