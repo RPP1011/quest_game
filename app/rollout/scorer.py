@@ -43,16 +43,23 @@ COLLAPSED_DIMS: tuple[str, ...] = (
     "prose_execution",
     "subtext",
     "hook_quality",
+    "metaphor_variety",
 )
 
 DEFAULT_DIMS = COLLAPSED_DIMS
 
 
-def _load_rubric(dim: str) -> str:
+def _load_rubric(dim: str, **template_vars) -> str:
+    """Load a rubric template. Supports simple Jinja variable injection
+    for cross-chapter context (e.g., prior_chapter_families)."""
     path = RUBRICS_DIR / f"{dim}.j2"
     if not path.is_file():
         raise FileNotFoundError(f"missing rubric: {path}")
-    return path.read_text()
+    text = path.read_text()
+    if template_vars:
+        from jinja2 import Template
+        text = Template(text).render(**template_vars)
+    return text
 
 
 def _find_score_at_marker(

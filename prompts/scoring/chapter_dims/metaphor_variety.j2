@@ -1,0 +1,20 @@
+Rate the chapter's metaphor and imagery variety on a scale of 1–10.
+
+This dimension measures whether the prose draws from multiple imagery registers or relies on a single dominant family. A chapter where every comparison is a gambling metaphor ("the odds," "the house," "roll the die," "the deck," "a bad bet") scores low even if each individual metaphor is well-crafted. A chapter that moves between sensory registers — gambling, bodily, architectural, natural, mechanical, textile — scores high.
+
+IMPORTANT: This is about variety of figurative language, not quantity. A chapter with 3 vivid metaphors from 3 different registers scores higher than a chapter with 12 metaphors all from the same register.
+
+{% if prior_chapter_families is defined and prior_chapter_families %}
+CROSS-CHAPTER CONTEXT: The prior chapters used these imagery families heavily:
+{% for family, count in prior_chapter_families.items() %}
+- {{ family }}: {{ count }} total instances across prior chapters
+{% endfor %}
+Penalize this chapter if it continues to lean on the same dominant families. The story needs to evolve its register, not repeat it.
+{% endif %}
+
+Anchors:
+- 1–2: One imagery family dominates (>80% of figurative language). Every comparison reaches for the same register. Reads as a verbal tic.
+- 3–4: One family dominates but 1–2 alternatives appear. The dominant register is still the chapter's signature; the alternatives feel incidental.
+- 5–6: Two or three families are used, but one still accounts for >50% of the imagery. Some variety exists but doesn't feel intentional.
+- 7–8: Three or more families are used in roughly balanced proportion. The prose shifts registers with the scene — a different comparison for a different moment. The imagery feels chosen, not defaulted to.
+- 9–10: The imagery register is itself a craft tool. Different families are deployed for different effects — mechanical imagery for Tristan's calculation, natural imagery for Angharad's landscape, bodily imagery for combat. The variety is functional, not just decorative.

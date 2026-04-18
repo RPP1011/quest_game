@@ -29,6 +29,7 @@ from app.world.schema import (
 from app.world.state_manager import WorldStateManager
 
 from app.planning.opening_critic import check_opening_repetition
+from app.planning.voice_tracker import CharacterVoiceTracker
 
 from .action_selector import select_action
 from .kb_extractor import persist_chapter_kb
@@ -200,6 +201,11 @@ async def run_rollout(
         rollout_sm = WorldStateManager(rollout_conn)
         pipeline = _build_pipeline(rollout_sm, rollout_dir, client, quest_id)
 
+        # Voice tracker: per-character metaphor ring buffer
+        voice_tracker = CharacterVoiceTracker.from_entities(
+            rollout_sm.list_entities(),
+        )
+
         try:
             prior_choices: list = []
             recent_tail = ""
@@ -211,6 +217,12 @@ async def run_rollout(
                 last = completed[-1]
                 recent_tail = (last.prose or "")[-500:]
                 prior_proses = [c.prose for c in completed if c.prose]
+                # Replay completed chapters into the voice tracker
+                for c in completed:
+                    if c.prose:
+                        voice_tracker.record_chapter(
+                            c.chapter_index, "char:tristan", c.prose,
+                        )
 
             for ch_idx in range(start_index, run.total_chapters_target + 1):
                 # Decide the action for this chapter
@@ -248,23 +260,34 @@ async def run_rollout(
                     else:
                         player_action = "continue"
 
+                # Inject voice guidance into the action so the writer sees it.
+                # The skeleton chapter tells us the POV for this chapter.
+                pov_id = "char:tristan"
+                if skeleton:
+                    skel_ch = next(
+                        (c for c in skeleton.chapters if c.chapter_index == ch_idx),
+                        None,
+                    )
+                    if skel_ch and skel_ch.pov_character_id:
+                        pov_id = skel_ch.pov_character_id
+                voice_guidance = voice_tracker.get_writer_guidance(pov_id)
+                enriched_action = f"{player_action}\n\n{voice_guidance}"
+
                 # Run the pipeline for this chapter
                 out = await pipeline.run(
-                    player_action=player_action, update_number=ch_idx,
+                    player_action=enriched_action, update_number=ch_idx,
                 )
                 prose = out.prose
                 recent_tail = (prose or "")[-500:]
                 prior_choices = list(out.choices or [])
 
-                # Opening-pattern critic: warn if this chapter's opening
-                # repeats a prior chapter's syntactic template.
+                # Record this chapter's imagery in the voice tracker
+                voice_tracker.record_chapter(ch_idx, pov_id, prose or "")
+
+                # Opening-pattern critic
                 opening_issues = check_opening_repetition(
                     prose or "", prior_proses[-5:],
                 )
-                for oi in opening_issues:
-                    # Log as a warning — visible in trace but doesn't block commit.
-                    # Future: could trigger a re-write of the opening paragraph.
-                    pass
                 prior_proses.append(prose or "")
 
                 # Persist chapter to main DB

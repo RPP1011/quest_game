@@ -14,8 +14,8 @@ from app.world.schema import RolloutChapter, RolloutRun, StoryCandidate
 from app.world.state_manager import WorldStateManager
 
 
-# Canned logprob response simulating "prose_execution score: 8\nsubtext score: 7\nhook_quality score: 7"
-CANNED_LOGPROB_CONTENT = "prose_execution observation: good\nprose_execution score: 8\nsubtext observation: ok\nsubtext score: 7\nhook_quality observation: fine\nhook_quality score: 7"
+# Canned logprob response for 4 collapsed dims
+CANNED_LOGPROB_CONTENT = "prose_execution observation: good\nprose_execution score: 8\nsubtext observation: ok\nsubtext score: 7\nhook_quality observation: fine\nhook_quality score: 7\nmetaphor_variety observation: decent\nmetaphor_variety score: 6"
 
 
 class FakeLogprobClient:
@@ -149,9 +149,10 @@ def test_fallback_parse_score():
 # ---------------------------------------------------------------------------
 
 def test_collapsed_dims():
-    """The default dims are the 3 collapsed dims."""
-    assert len(COLLAPSED_DIMS) == 3
+    """The default dims are the 4 collapsed dims."""
+    assert len(COLLAPSED_DIMS) == 4
     assert "prose_execution" in COLLAPSED_DIMS
     assert "subtext" in COLLAPSED_DIMS
     assert "hook_quality" in COLLAPSED_DIMS
+    assert "metaphor_variety" in COLLAPSED_DIMS
     assert "update_self_containment" not in COLLAPSED_DIMS
