@@ -176,6 +176,84 @@ async def score_chapter(
     return out
 
 
+async def score_chapter_independent(
+    *, client: InferenceClient,
+    chapter_text: str,
+    dims: list[str] | None = None,
+    max_tokens: int = 400,
+    top_logprobs: int = 20,
+) -> dict[str, dict]:
+    """Score a chapter with one LLM call per dimension (no anchoring).
+
+    Each dim gets its own prompt containing only that dim's rubric.
+    All dims run in parallel via asyncio.gather.
+    """
+    import asyncio
+    use_dims = dims or list(COLLAPSED_DIMS)
+
+    async def _score_one(dim: str) -> tuple[str, dict]:
+        return dim, await _score_single_dim(
+            client=client, chapter_text=chapter_text,
+            dim=dim, max_tokens=max_tokens, top_logprobs=top_logprobs,
+        )
+
+    results = await asyncio.gather(*[_score_one(d) for d in use_dims])
+    return dict(results)
+
+
+async def _score_single_dim(
+    *, client: InferenceClient, chapter_text: str,
+    dim: str, max_tokens: int = 400, top_logprobs: int = 20,
+) -> dict:
+    """Score a single dimension in isolation."""
+    import re
+
+    rubric = _load_rubric(dim)
+    prompt = (
+        f"{rubric}\n\n"
+        f"CHAPTER:\n{chapter_text}\n\n"
+        f"Write a 1-sentence observation, then rate this chapter on "
+        f"{dim.replace('_', ' ')} (1-10).\n"
+        f"Format: {dim} score: N"
+    )
+
+    result = await client.chat_with_logprobs(
+        messages=[ChatMessage(role="user", content=prompt)],
+        max_tokens=max_tokens,
+        temperature=0.3,
+        top_logprobs=top_logprobs,
+    )
+
+    # Find the score token
+    content = result.content or ""
+    marker = f"{dim} score:"
+    marker_pos = content.lower().find(marker.lower())
+
+    if marker_pos >= 0 and result.token_logprobs:
+        char_count = 0
+        for i, tlp in enumerate(result.token_logprobs):
+            char_count += len(tlp.token)
+            if char_count >= marker_pos + len(marker):
+                for j in range(i + 1, min(i + 4, len(result.token_logprobs))):
+                    tok = result.token_logprobs[j].token.strip()
+                    if tok.isdigit() and 1 <= int(tok) <= 10:
+                        score_val = result.expected_score(j)
+                        return {
+                            "score": score_val[0],
+                            "sampled": int(tok),
+                            "confidence": score_val[1],
+                        }
+                break
+
+    # Fallback: text parse
+    match = re.search(rf"{dim}\s*score:\s*(\d+)", content, re.IGNORECASE)
+    if match:
+        sampled = int(match.group(1))
+        return {"score": (sampled - 1) / 9, "sampled": sampled, "confidence": 0.0}
+
+    return {"score": 0.5, "sampled": 5, "confidence": 0.0}
+
+
 # ---------------------------------------------------------------------------
 # Dual-rating comparison (two chapters rated in one call)
 # ---------------------------------------------------------------------------
@@ -429,7 +507,7 @@ async def score_and_persist_chapter(
     """
     if chapter.judge_scores and not dims:
         return chapter.judge_scores
-    scores = await score_chapter(
+    scores = await score_chapter_independent(
         client=client, chapter_text=chapter.prose, dims=dims,
     )
     # Persist per-dim rows for aggregation (adapting to the KB schema
