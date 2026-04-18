@@ -2447,6 +2447,18 @@ class Pipeline:
                 accumulated = ""
                 for beat_index, beat_text in enumerate(beats):
                     words_so_far = len(accumulated.split())
+
+                    # Count imagery families used so far in this scene
+                    imagery_budget_used: dict[str, int] = {}
+                    if accumulated:
+                        from app.planning.metaphor_critic import (
+                            _count_family, IMAGERY_FAMILIES,
+                        )
+                        for fam_name, phrases in IMAGERY_FAMILIES.items():
+                            c = _count_family(accumulated, phrases)
+                            if c > 0:
+                                imagery_budget_used[fam_name] = c
+
                     beat_ctx = self._cb.build(
                         spec=WRITE_SPEC,
                         stage_name="write",
@@ -2471,6 +2483,7 @@ class Pipeline:
                             "words_so_far": words_so_far,
                             "narrator": self._narrator,
                             "scene_entities": scene_entities,
+                            "imagery_budget_used": imagery_budget_used,
                         },
                     )
                     t0 = time.perf_counter()

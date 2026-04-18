@@ -54,6 +54,13 @@ You have a STRICT budget of 3 uses per imagery family per scene. The families ar
 
 AFTER you use a family 3 times, that family is CLOSED for the rest of the scene. You MUST switch to: bodily sensation, architecture, textile/fabric, weather, spatial/geometry, or sensory (taste/smell/texture).
 
+{% if imagery_budget_used is defined and imagery_budget_used %}
+### Current imagery usage this scene (from prior beats):
+{% for family, count in imagery_budget_used.items() %}
+- {{ family }}: {{ count }}/3{% if count >= 3 %} **CLOSED — do NOT use this family**{% endif %}
+{% endfor %}
+{% endif %}
+
 Tristan's "gambling" voice is a CHARACTER TRAIT — he gets 2-3 gambling metaphors per scene, not 15. The character voice comes from vocabulary and rhythm, not from repeating the same imagery family.
 
 {% set pov_pronoun = "he" if (narrator is defined and narrator and narrator.pov_type is defined and narrator.pov_type and "2nd" not in narrator.pov_type) else "you" -%}
