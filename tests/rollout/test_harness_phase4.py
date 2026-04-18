@@ -171,9 +171,9 @@ async def test_harness_runs_scorer_and_kb_extractor(tmp_path: Path):
             assert ch.judge_scores is not None
             assert "prose_execution" in ch.judge_scores
 
-        # kb_chapter_scores: 3 dims × 2 chapters = 6 rows
+        # kb_chapter_scores: 4 dims × 2 chapters = 8 rows
         all_scores = sm.list_chapter_scores(rid)
-        assert len(all_scores) == 6
+        assert len(all_scores) == 8
 
         # KB extractor: hook fs:1 planted in both chapters; entity char:cozme
         # introduced in both chapters and mentioned (via word match)
@@ -189,8 +189,9 @@ async def test_harness_runs_scorer_and_kb_extractor(tmp_path: Path):
         assert eu[0]["entity_id"] == "char:cozme"
         assert sorted(eu[0]["mention_chapters"]) == [1, 2]
 
-        # Scorer was called twice (once per chapter)
-        assert client.calls.count("logprob_call") == 2
+        # Scorer: 4 dims × 2 chapters = 8 calls (independent per-dim scoring)
+        # Cross-judge adds another 4 dims × 2 chapters = 8 (if Prometheus reachable)
+        assert client.calls.count("logprob_call") >= 8
     finally:
         conn.close()
 
