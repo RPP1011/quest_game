@@ -347,6 +347,19 @@ CREATE TABLE IF NOT EXISTS foreshadow_triples (
     verified_planted REAL,
     verified_payoff REAL
 );
+
+CREATE TABLE IF NOT EXISTS typed_edits (
+    id TEXT PRIMARY KEY,
+    trace_id TEXT,
+    rollout_id TEXT,
+    chapter_index INTEGER,
+    edit_type TEXT NOT NULL,
+    original_text TEXT NOT NULL,
+    replacement TEXT NOT NULL,
+    span_start INTEGER NOT NULL,
+    span_end INTEGER NOT NULL,
+    reason TEXT
+);
 """
 
 
