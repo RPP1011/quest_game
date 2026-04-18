@@ -360,6 +360,16 @@ CREATE TABLE IF NOT EXISTS typed_edits (
     span_end INTEGER NOT NULL,
     reason TEXT
 );
+
+CREATE TABLE IF NOT EXISTS cross_judge_scores (
+    rollout_id TEXT NOT NULL,
+    chapter_index INTEGER NOT NULL,
+    judge_model TEXT NOT NULL,
+    dim TEXT NOT NULL,
+    score REAL NOT NULL,
+    confidence REAL,
+    PRIMARY KEY (rollout_id, chapter_index, judge_model, dim)
+);
 """
 
 

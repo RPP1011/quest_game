@@ -363,6 +363,26 @@ async def run_rollout(
                     except Exception:
                         # Same: scoring failures don't break the rollout.
                         pass
+
+                # Cross-judge scoring (best-effort, needs Prometheus server)
+                try:
+                    from app.scoring.cross_judge import (
+                        score_with_cross_judge, persist_judge_pair,
+                    )
+                    prometheus_client = InferenceClient(
+                        base_url="http://127.0.0.1:8083",
+                        timeout=120.0, retries=1,
+                    )
+                    pair = await score_with_cross_judge(
+                        gemma_client=client,
+                        prometheus_client=prometheus_client,
+                        chapter_text=prose or "",
+                    )
+                    persist_judge_pair(
+                        main_conn, rollout_id, ch_idx, pair,
+                    )
+                except Exception:
+                    pass  # Cross-judge is best-effort
         finally:
             rollout_conn.close()
 
