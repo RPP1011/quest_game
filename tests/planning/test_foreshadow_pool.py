@@ -143,3 +143,57 @@ def test_compound_or_predicate():
     }
     state = {"current_chapter": 3, "active_entities": ["char:cozme"], "present_entities": [], "events": []}
     assert evaluate_predicate(pred, state) is True
+
+
+@pytest.mark.asyncio
+async def test_verify_prose_contains_element():
+    """Test the verification function structure (mocked LLM)."""
+    from app.planning.foreshadow_pool import verify_prose_reference
+    from unittest.mock import AsyncMock, MagicMock
+
+    mock_client = MagicMock()
+    mock_client.chat_with_logprobs = AsyncMock()
+
+    # Simulate high-confidence YES
+    mock_logprob = MagicMock()
+    mock_logprob.token = "YES"
+    mock_logprob.logprob = -0.1  # ~0.90 probability
+    mock_logprob.top_logprobs = {"YES": -0.1, "NO": -2.3}
+    mock_result = MagicMock()
+    mock_result.content = "YES"
+    mock_result.token_logprobs = [mock_logprob]
+    mock_client.chat_with_logprobs.return_value = mock_result
+
+    confidence = await verify_prose_reference(
+        client=mock_client,
+        element_text="Tristan notices the pistol's unusual weight",
+        prose="He hefted the pistol. It was heavier than it should have been.",
+    )
+    assert confidence > 0.8
+    mock_client.chat_with_logprobs.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_verify_prose_low_confidence():
+    """Test low confidence when prose doesn't reference element."""
+    from app.planning.foreshadow_pool import verify_prose_reference
+    from unittest.mock import AsyncMock, MagicMock
+
+    mock_client = MagicMock()
+    mock_client.chat_with_logprobs = AsyncMock()
+
+    mock_logprob = MagicMock()
+    mock_logprob.token = "NO"
+    mock_logprob.logprob = -0.2
+    mock_logprob.top_logprobs = {"YES": -3.0, "NO": -0.2}
+    mock_result = MagicMock()
+    mock_result.content = "NO"
+    mock_result.token_logprobs = [mock_logprob]
+    mock_client.chat_with_logprobs.return_value = mock_result
+
+    confidence = await verify_prose_reference(
+        client=mock_client,
+        element_text="Tristan notices the pistol's unusual weight",
+        prose="The sun was setting over the harbor.",
+    )
+    assert confidence < 0.3
