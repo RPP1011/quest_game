@@ -260,8 +260,7 @@ async def run_rollout(
                     else:
                         player_action = "continue"
 
-                # Inject voice guidance into the action so the writer sees it.
-                # The skeleton chapter tells us the POV for this chapter.
+                # Determine POV for voice tracking
                 pov_id = "char:tristan"
                 if skeleton:
                     skel_ch = next(
@@ -270,12 +269,10 @@ async def run_rollout(
                     )
                     if skel_ch and skel_ch.pov_character_id:
                         pov_id = skel_ch.pov_character_id
-                voice_guidance = voice_tracker.get_writer_guidance(pov_id)
-                enriched_action = f"{player_action}\n\n{voice_guidance}"
 
                 # Run the pipeline for this chapter
                 out = await pipeline.run(
-                    player_action=enriched_action, update_number=ch_idx,
+                    player_action=player_action, update_number=ch_idx,
                 )
                 prose = out.prose
                 recent_tail = (prose or "")[-500:]
