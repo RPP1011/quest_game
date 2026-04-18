@@ -485,6 +485,82 @@ class WorldStateManager:
         )
         self._conn.commit()
 
+    # ---- foreshadow triples ----
+
+    def create_foreshadow_triple(
+        self, *, id: str, hook_id: str, foreshadow_text: str,
+        trigger_pred: dict, payoff_text: str, planted_chapter: int,
+        deadline_chapter: int | None = None,
+    ) -> None:
+        import json as _json
+        self._conn.execute(
+            "INSERT INTO foreshadow_triples "
+            "(id, hook_id, foreshadow_text, trigger_pred, payoff_text, "
+            "planted_chapter, deadline_chapter) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (id, hook_id, foreshadow_text, _json.dumps(trigger_pred),
+             payoff_text, planted_chapter, deadline_chapter),
+        )
+        self._conn.commit()
+
+    def get_foreshadow_triple(self, triple_id: str) -> dict | None:
+        import json as _json
+        row = self._conn.execute(
+            "SELECT * FROM foreshadow_triples WHERE id = ?", (triple_id,),
+        ).fetchone()
+        if not row:
+            return None
+        d = dict(row)
+        d["trigger_pred"] = _json.loads(d["trigger_pred"])
+        return d
+
+    def update_foreshadow_triple(self, triple_id: str, **fields) -> None:
+        import json as _json
+        allowed = {"status", "verified_planted", "verified_payoff"}
+        updates = {k: v for k, v in fields.items() if k in allowed}
+        if not updates:
+            return
+        set_clause = ", ".join(f"{k} = ?" for k in updates)
+        self._conn.execute(
+            f"UPDATE foreshadow_triples SET {set_clause} WHERE id = ?",
+            (*updates.values(), triple_id),
+        )
+        self._conn.commit()
+
+    def list_foreshadow_triples(self, status: str | None = None) -> list[dict]:
+        import json as _json
+        if status:
+            rows = self._conn.execute(
+                "SELECT * FROM foreshadow_triples WHERE status = ? ORDER BY planted_chapter",
+                (status,),
+            ).fetchall()
+        else:
+            rows = self._conn.execute(
+                "SELECT * FROM foreshadow_triples ORDER BY planted_chapter",
+            ).fetchall()
+        result = []
+        for row in rows:
+            d = dict(row)
+            d["trigger_pred"] = _json.loads(d["trigger_pred"])
+            result.append(d)
+        return result
+
+    def list_overdue_foreshadow_triples(self, current_chapter: int) -> list[dict]:
+        import json as _json
+        rows = self._conn.execute(
+            "SELECT * FROM foreshadow_triples "
+            "WHERE status IN ('planted', 'triggered') "
+            "AND deadline_chapter IS NOT NULL "
+            "AND deadline_chapter < ? "
+            "ORDER BY deadline_chapter",
+            (current_chapter,),
+        ).fetchall()
+        result = []
+        for row in rows:
+            d = dict(row)
+            d["trigger_pred"] = _json.loads(d["trigger_pred"])
+            result.append(d)
+        return result
+
     # ---- parallels ----
 
     def add_parallel(self, p: Parallel) -> None:

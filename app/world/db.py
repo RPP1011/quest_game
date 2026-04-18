@@ -334,6 +334,19 @@ CREATE TABLE IF NOT EXISTS refinement_attempts (
 
 CREATE INDEX IF NOT EXISTS idx_refinement_chapter
     ON refinement_attempts(rollout_id, chapter_index);
+
+CREATE TABLE IF NOT EXISTS foreshadow_triples (
+    id TEXT PRIMARY KEY,
+    hook_id TEXT NOT NULL,
+    foreshadow_text TEXT NOT NULL,
+    trigger_pred TEXT NOT NULL,
+    payoff_text TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'planted',
+    planted_chapter INTEGER NOT NULL,
+    deadline_chapter INTEGER,
+    verified_planted REAL,
+    verified_payoff REAL
+);
 """
 
 
