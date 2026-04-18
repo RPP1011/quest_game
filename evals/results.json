@@ -1,0 +1,1923 @@
+{
+  "evalId": "eval-QL3-2026-04-18T07:16:13",
+  "results": {
+    "version": 3,
+    "timestamp": "2026-04-18T07:16:13.138Z",
+    "prompts": [
+      {
+        "raw": "You are the writer. You do not plan. Execute the craft brief faithfully and make the prose feel alive.\n\n## Narrator voice\nPOV: close-3rd, alternating (Tristan / Angharad).\nRegister: literary with gutter texture.\nWorldview: the world is a confidence game run by the powerful on the desperate.\nEditorial stance: sardonic.\n\nNo preface, no plan summaries (\"the player must sacrifice X\" is plan-speak — never), no narrator asking the reader to choose.\n\nWhen a character speaks — render the words as quoted dialogue with a tag or beat: `\"What did he say?\" he asked, not looking up.` Prefer quoted speech over summary whenever the action involves speaking, asking, answering, or negotiation. Lines spoken aloud go in double quotes; internal thought stays unquoted in italics-style prose. Vary sentence length — short, clipped lines next to longer ones — to give the scene rhythm.\n\nYou are writing one scene across several beats, with one LLM call per beat. Each call should produce the prose for that beat only — as long as the beat actually needs, no longer. Let a short exchange be short; let a slow discovery breathe. Do not summarize, do not compress, and do not re-establish setting or characters already shown in prior beats of this scene. If this is not the final beat, do not wrap up — leave the scene in motion for the next beat to pick up. If it is the final beat, land the closing emotional note cleanly — a sentence that resonates, a question that hangs, a sensation that lingers. Never stop mid-sentence or mid-paragraph. The last beat of the last scene is the chapter's final impression; make it deliberate, not exhausted.",
+        "label": "prompts/baseline.txt: You are the writer. You do not plan. Execute the craft brief faithfully and make the prose feel alive.\n\n## Narrator voice\nPOV: close-3rd, alternating (Tristan / Angharad).\nRegister: literary with gutter texture.\nWorldview: the world is a confidence game run by the powerful on the desperate.\nEditorial stance: sardonic.\n\nNo preface, no plan summaries (\"the player must sacrifice X\" is plan-speak — never), no narrator asking the reader to choose.\n\nWhen a character speaks — render the words as quoted dialogue with a tag or beat: `\"What did he say?\" he asked, not looking up.` Prefer quoted speech over summary whenever the action involves speaking, asking, answering, or negotiation. Lines spoken aloud go in double quotes; internal thought stays unquoted in italics-style prose. Vary sentence length — short, clipped lines next to longer ones — to give the scene rhythm.\n\nYou are writing one scene across several beats, with one LLM call per beat. Each call should produce the prose for that beat only — as long as the beat actually needs, no longer. Let a short exchange be short; let a slow discovery breathe. Do not summarize, do not compress, and do not re-establish setting or characters already shown in prior beats of this scene. If this is not the final beat, do not wrap up — leave the scene in motion for the next beat to pick up. If it is the final beat, land the closing emotional note cleanly — a sentence that resonates, a question that hangs, a sensation that lingers. Never stop mid-sentence or mid-paragraph. The last beat of the last scene is the chapter's final impression; make it deliberate, not exhausted.",
+        "id": "022eff618a66d89e96176a59319244242158813b0ef38b7d0e733585102482d2",
+        "provider": "llama-local",
+        "metrics": {
+          "score": 1.7153333333333334,
+          "testPassCount": 0,
+          "testFailCount": 2,
+          "testErrorCount": 0,
+          "assertPassCount": 17,
+          "assertFailCount": 6,
+          "totalLatencyMs": 11472,
+          "tokenUsage": {
+            "prompt": 2936,
+            "completion": 1443,
+            "cached": 0,
+            "total": 4379,
+            "numRequests": 2,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            },
+            "assertions": {
+              "total": 0,
+              "prompt": 0,
+              "completion": 0,
+              "cached": 0,
+              "numRequests": 0,
+              "completionDetails": {
+                "reasoning": 0,
+                "acceptedPrediction": 0,
+                "rejectedPrediction": 0,
+                "cacheReadInputTokens": 0,
+                "cacheCreationInputTokens": 0
+              }
+            }
+          },
+          "namedScores": {},
+          "namedScoresCount": {},
+          "namedScoreWeights": {},
+          "cost": 0
+        }
+      },
+      {
+        "raw": "You are the writer. You do not plan. Execute the craft brief faithfully and make the prose feel alive.\n\n## Narrator voice\nPOV: close-3rd, alternating (Tristan / Angharad).\nRegister: literary with gutter texture.\nWorldview: the world is a confidence game run by the powerful on the desperate.\nEditorial stance: sardonic.\n\nNo preface, no plan summaries (\"the player must sacrifice X\" is plan-speak — never), no narrator asking the reader to choose.\n\nIMAGERY VARIETY: Each chapter may use a given metaphor family (gambling, predator/prey, water, mechanical, fire, weight/gravity) at most 3–4 times. When you reach for a comparison, rotate registers — bodily sensation, architecture, textile, weather, spatial. If a character's internal monologue has already used a gambling metaphor (\"the odds,\" \"the house,\" \"the stakes\"), the next figurative beat must come from a different family entirely. Monotonous imagery makes prose feel machine-generated even when individual sentences are strong.\n\nWhen a character speaks — render the words as quoted dialogue with a tag or beat: `\"What did he say?\" he asked, not looking up.` Prefer quoted speech over summary whenever the action involves speaking, asking, answering, or negotiation. Lines spoken aloud go in double quotes; internal thought stays unquoted in italics-style prose. Vary sentence length — short, clipped lines next to longer ones — to give the scene rhythm.\n\nYou are writing one scene across several beats, with one LLM call per beat. Each call should produce the prose for that beat only — as long as the beat actually needs, no longer. Let a short exchange be short; let a slow discovery breathe. Do not summarize, do not compress, and do not re-establish setting or characters already shown in prior beats of this scene. If this is not the final beat, do not wrap up — leave the scene in motion for the next beat to pick up. If it is the final beat, land the closing emotional note cleanly — a sentence that resonates, a question that hangs, a sensation that lingers. Never stop mid-sentence or mid-paragraph. The last beat of the last scene is the chapter's final impression; make it deliberate, not exhausted.",
+        "label": "prompts/imagery_soft.txt: You are the writer. You do not plan. Execute the craft brief faithfully and make the prose feel alive.\n\n## Narrator voice\nPOV: close-3rd, alternating (Tristan / Angharad).\nRegister: literary with gutter texture.\nWorldview: the world is a confidence game run by the powerful on the desperate.\nEditorial stance: sardonic.\n\nNo preface, no plan summaries (\"the player must sacrifice X\" is plan-speak — never), no narrator asking the reader to choose.\n\nIMAGERY VARIETY: Each chapter may use a given metaphor family (gambling, predator/prey, water, mechanical, fire, weight/gravity) at most 3–4 times. When you reach for a comparison, rotate registers — bodily sensation, architecture, textile, weather, spatial. If a character's internal monologue has already used a gambling metaphor (\"the odds,\" \"the house,\" \"the stakes\"), the next figurative beat must come from a different family entirely. Monotonous imagery makes prose feel machine-generated even when individual sentences are strong.\n\nWhen a character speaks — render the words as quoted dialogue with a tag or beat: `\"What did he say?\" he asked, not looking up.` Prefer quoted speech over summary whenever the action involves speaking, asking, answering, or negotiation. Lines spoken aloud go in double quotes; internal thought stays unquoted in italics-style prose. Vary sentence length — short, clipped lines next to longer ones — to give the scene rhythm.\n\nYou are writing one scene across several beats, with one LLM call per beat. Each call should produce the prose for that beat only — as long as the beat actually needs, no longer. Let a short exchange be short; let a slow discovery breathe. Do not summarize, do not compress, and do not re-establish setting or characters already shown in prior beats of this scene. If this is not the final beat, do not wrap up — leave the scene in motion for the next beat to pick up. If it is the final beat, land the closing emotional note cleanly — a sentence that resonates, a question that hangs, a sensation that lingers. Never stop mid-sentence or mid-paragraph. The last beat of the last scene is the chapter's final impression; make it deliberate, not exhausted.",
+        "id": "8e6849e5517388522b73cd172bcf283848c9262635eeb0336f49f623d18e39b9",
+        "provider": "llama-local",
+        "metrics": {
+          "score": 1.8066666666666666,
+          "testPassCount": 0,
+          "testFailCount": 2,
+          "testErrorCount": 0,
+          "assertPassCount": 23,
+          "assertFailCount": 5,
+          "totalLatencyMs": 10233,
+          "tokenUsage": {
+            "prompt": 3170,
+            "completion": 1260,
+            "cached": 0,
+            "total": 4430,
+            "numRequests": 2,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            },
+            "assertions": {
+              "total": 0,
+              "prompt": 0,
+              "completion": 0,
+              "cached": 0,
+              "numRequests": 0,
+              "completionDetails": {
+                "reasoning": 0,
+                "acceptedPrediction": 0,
+                "rejectedPrediction": 0,
+                "cacheReadInputTokens": 0,
+                "cacheCreationInputTokens": 0
+              }
+            }
+          },
+          "namedScores": {},
+          "namedScoresCount": {},
+          "namedScoreWeights": {},
+          "cost": 0
+        }
+      },
+      {
+        "raw": "You are the writer. You do not plan. Execute the craft brief faithfully and make the prose feel alive.\n\n## Narrator voice\nPOV: close-3rd, alternating (Tristan / Angharad).\nRegister: literary with gutter texture.\nWorldview: the world is a confidence game run by the powerful on the desperate.\nEditorial stance: sardonic.\n\nNo preface, no plan summaries (\"the player must sacrifice X\" is plan-speak — never), no narrator asking the reader to choose.\n\n## HARD CONSTRAINT: Imagery family budget\n\nYou have a STRICT budget of 3 uses per imagery family per scene. The families are:\n\n- gambling (odds, stakes, bets, house, dice, cards, bluffs, flush, ante, wager, jackpot)\n- predator/prey (rat, hawk, wolf, hunt, trap, cage, prey, kill, snare)\n- water/ocean (tide, current, wave, drowning, flood, undertow)\n- mechanical (ticking, gears, clockwork, springs, cogs, pendulum)\n- fire/light (flame, spark, ember, blaze, molten, smoldering)\n- weight/gravity (burden, anchor, crushing, leaden, sinking)\n\nAFTER you use a family 3 times, that family is CLOSED for the rest of the scene. You MUST switch to: bodily sensation, architecture, textile/fabric, weather, spatial/geometry, or sensory (taste/smell/texture).\n\nTristan's \"gambling\" voice is a CHARACTER TRAIT — he gets 2-3 gambling metaphors per scene, not 15. The character voice comes from vocabulary and rhythm, not from repeating the same imagery family.\n\nWhen a character speaks — render the words as quoted dialogue with a tag or beat: `\"What did he say?\" he asked, not looking up.` Prefer quoted speech over summary whenever the action involves speaking, asking, answering, or negotiation. Lines spoken aloud go in double quotes; internal thought stays unquoted in italics-style prose. Vary sentence length — short, clipped lines next to longer ones — to give the scene rhythm.\n\nYou are writing one scene across several beats, with one LLM call per beat. Each call should produce the prose for that beat only — as long as the beat actually needs, no longer. Let a short exchange be short; let a slow discovery breathe. Do not summarize, do not compress, and do not re-establish setting or characters already shown in prior beats of this scene. If this is not the final beat, do not wrap up — leave the scene in motion for the next beat to pick up. If it is the final beat, land the closing emotional note cleanly — a sentence that resonates, a question that hangs, a sensation that lingers. Never stop mid-sentence or mid-paragraph. The last beat of the last scene is the chapter's final impression; make it deliberate, not exhausted.",
+        "label": "prompts/imagery_hard.txt: You are the writer. You do not plan. Execute the craft brief faithfully and make the prose feel alive.\n\n## Narrator voice\nPOV: close-3rd, alternating (Tristan / Angharad).\nRegister: literary with gutter texture.\nWorldview: the world is a confidence game run by the powerful on the desperate.\nEditorial stance: sardonic.\n\nNo preface, no plan summaries (\"the player must sacrifice X\" is plan-speak — never), no narrator asking the reader to choose.\n\n## HARD CONSTRAINT: Imagery family budget\n\nYou have a STRICT budget of 3 uses per imagery family per scene. The families are:\n\n- gambling (odds, stakes, bets, house, dice, cards, bluffs, flush, ante, wager, jackpot)\n- predator/prey (rat, hawk, wolf, hunt, trap, cage, prey, kill, snare)\n- water/ocean (tide, current, wave, drowning, flood, undertow)\n- mechanical (ticking, gears, clockwork, springs, cogs, pendulum)\n- fire/light (flame, spark, ember, blaze, molten, smoldering)\n- weight/gravity (burden, anchor, crushing, leaden, sinking)\n\nAFTER you use a family 3 times, that family is CLOSED for the rest of the scene. You MUST switch to: bodily sensation, architecture, textile/fabric, weather, spatial/geometry, or sensory (taste/smell/texture).\n\nTristan's \"gambling\" voice is a CHARACTER TRAIT — he gets 2-3 gambling metaphors per scene, not 15. The character voice comes from vocabulary and rhythm, not from repeating the same imagery family.\n\nWhen a character speaks — render the words as quoted dialogue with a tag or beat: `\"What did he say?\" he asked, not looking up.` Prefer quoted speech over summary whenever the action involves speaking, asking, answering, or negotiation. Lines spoken aloud go in double quotes; internal thought stays unquoted in italics-style prose. Vary sentence length — short, clipped lines next to longer ones — to give the scene rhythm.\n\nYou are writing one scene across several beats, with one LLM call per beat. Each call should produce the prose for that beat only — as long as the beat actually needs, no longer. Let a short exchange be short; let a slow discovery breathe. Do not summarize, do not compress, and do not re-establish setting or characters already shown in prior beats of this scene. If this is not the final beat, do not wrap up — leave the scene in motion for the next beat to pick up. If it is the final beat, land the closing emotional note cleanly — a sentence that resonates, a question that hangs, a sensation that lingers. Never stop mid-sentence or mid-paragraph. The last beat of the last scene is the chapter's final impression; make it deliberate, not exhausted.",
+        "id": "5f771d7c50d67f893398b3c1170ae29e157e08cb3887cd96f187a2458bde55af",
+        "provider": "llama-local",
+        "metrics": {
+          "score": 1.6646666666666667,
+          "testPassCount": 0,
+          "testFailCount": 2,
+          "testErrorCount": 0,
+          "assertPassCount": 18,
+          "assertFailCount": 3,
+          "totalLatencyMs": 33257,
+          "tokenUsage": {
+            "prompt": 3450,
+            "completion": 4334,
+            "cached": 0,
+            "total": 7784,
+            "numRequests": 2,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            },
+            "assertions": {
+              "total": 0,
+              "prompt": 0,
+              "completion": 0,
+              "cached": 0,
+              "numRequests": 0,
+              "completionDetails": {
+                "reasoning": 0,
+                "acceptedPrediction": 0,
+                "rejectedPrediction": 0,
+                "cacheReadInputTokens": 0,
+                "cacheCreationInputTokens": 0
+              }
+            }
+          },
+          "namedScores": {},
+          "namedScoresCount": {},
+          "namedScoreWeights": {},
+          "cost": 0
+        }
+      }
+    ],
+    "results": [
+      {
+        "cost": 0,
+        "error": "total_figurative=15; dominant=gambling (33%); violations: gambling=5",
+        "gradingResult": {
+          "pass": false,
+          "score": 0.8653333333333334,
+          "reason": "total_figurative=15; dominant=gambling (33%); violations: gambling=5",
+          "namedScores": {},
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": false,
+              "score": 0.85,
+              "reason": "total_figurative=15; dominant=gambling (33%); violations: gambling=5",
+              "componentResults": [
+                {
+                  "pass": false,
+                  "score": 0.8,
+                  "reason": "gambling: 5 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_gambling"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "bodily: 4 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_bodily"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "textile: 2 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_textile"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "water_ocean: 2 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_water_ocean"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "predator_prey: 1 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_predator_prey"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "fire_light: 1 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_fire_light"
+                  }
+                }
+              ],
+              "assertion": {
+                "type": "python",
+                "value": "file://scorers/metaphor_variety.py:get_score"
+              }
+            },
+            {
+              "pass": false,
+              "score": 0.8,
+              "reason": "gambling: 5 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_gambling"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "bodily: 4 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_bodily"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "textile: 2 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_textile"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "water_ocean: 2 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_water_ocean"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "predator_prey: 1 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_predator_prey"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "fire_light: 1 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_fire_light"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "keyword_total=4, violations: none",
+              "componentResults": [
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "gambling: 2 keyword hits",
+                  "assertion": {
+                    "type": "python",
+                    "value": "keyword_gambling"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "water_ocean: 1 keyword hits",
+                  "assertion": {
+                    "type": "python",
+                    "value": "keyword_water_ocean"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "fire_light: 1 keyword hits",
+                  "assertion": {
+                    "type": "python",
+                    "value": "keyword_fire_light"
+                  }
+                }
+              ],
+              "assertion": {
+                "type": "python",
+                "value": "file://scorers/keyword_count.py:get_score"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "gambling: 2 keyword hits",
+              "assertion": {
+                "type": "python",
+                "value": "keyword_gambling"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "water_ocean: 1 keyword hits",
+              "assertion": {
+                "type": "python",
+                "value": "keyword_water_ocean"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "fire_light: 1 keyword hits",
+              "assertion": {
+                "type": "python",
+                "value": "keyword_fire_light"
+              }
+            },
+            {
+              "pass": true,
+              "score": 0.746,
+              "reason": "373 words",
+              "assertion": {
+                "type": "javascript",
+                "value": "// Basic prose quality: not empty, reasonable length\nconst words = output.split(/\\s+/).length;\nreturn {\n  pass: words >= 200,\n  score: Math.min(1.0, words / 500),\n  reason: `${words} words`\n};\n"
+              }
+            }
+          ]
+        },
+        "id": "0ee65624-55ed-4246-8c6a-a0f4d80c03bb",
+        "latencyMs": 4376,
+        "namedScores": {},
+        "prompt": {
+          "raw": "You are the writer. You do not plan. Execute the craft brief faithfully and make the prose feel alive.\n\n## Narrator voice\nPOV: close-3rd, alternating (Tristan / Angharad).\nRegister: literary with gutter texture.\nWorldview: the world is a confidence game run by the powerful on the desperate.\nEditorial stance: sardonic.\n\nNo preface, no plan summaries (\"the player must sacrifice X\" is plan-speak — never), no narrator asking the reader to choose.\n\nWhen a character speaks — render the words as quoted dialogue with a tag or beat: `\"What did he say?\" he asked, not looking up.` Prefer quoted speech over summary whenever the action involves speaking, asking, answering, or negotiation. Lines spoken aloud go in double quotes; internal thought stays unquoted in italics-style prose. Vary sentence length — short, clipped lines next to longer ones — to give the scene rhythm.\n\nYou are writing one scene across several beats, with one LLM call per beat. Each call should produce the prose for that beat only — as long as the beat actually needs, no longer. Let a short exchange be short; let a slow discovery breathe. Do not summarize, do not compress, and do not re-establish setting or characters already shown in prior beats of this scene. If this is not the final beat, do not wrap up — leave the scene in motion for the next beat to pick up. If it is the final beat, land the closing emotional note cleanly — a sentence that resonates, a question that hangs, a sensation that lingers. Never stop mid-sentence or mid-paragraph. The last beat of the last scene is the chapter's final impression; make it deliberate, not exhausted.",
+          "label": "prompts/baseline.txt: You are the writer. You do not plan. Execute the craft brief faithfully and make the prose feel alive.\n\n## Narrator voice\nPOV: close-3rd, alternating (Tristan / Angharad).\nRegister: literary with gutter texture.\nWorldview: the world is a confidence game run by the powerful on the desperate.\nEditorial stance: sardonic.\n\nNo preface, no plan summaries (\"the player must sacrifice X\" is plan-speak — never), no narrator asking the reader to choose.\n\nWhen a character speaks — render the words as quoted dialogue with a tag or beat: `\"What did he say?\" he asked, not looking up.` Prefer quoted speech over summary whenever the action involves speaking, asking, answering, or negotiation. Lines spoken aloud go in double quotes; internal thought stays unquoted in italics-style prose. Vary sentence length — short, clipped lines next to longer ones — to give the scene rhythm.\n\nYou are writing one scene across several beats, with one LLM call per beat. Each call should produce the prose for that beat only — as long as the beat actually needs, no longer. Let a short exchange be short; let a slow discovery breathe. Do not summarize, do not compress, and do not re-establish setting or characters already shown in prior beats of this scene. If this is not the final beat, do not wrap up — leave the scene in motion for the next beat to pick up. If it is the final beat, land the closing emotional note cleanly — a sentence that resonates, a question that hangs, a sensation that lingers. Never stop mid-sentence or mid-paragraph. The last beat of the last scene is the chapter's final impression; make it deliberate, not exhausted.",
+          "config": {
+            "provider": {
+              "config": {
+                "base_url": "http://127.0.0.1:8082"
+              }
+            }
+          }
+        },
+        "promptId": "022eff618a66d89e96176a59319244242158813b0ef38b7d0e733585102482d2",
+        "promptIdx": 0,
+        "provider": {
+          "id": "file://provider.py",
+          "label": "llama-local"
+        },
+        "response": {
+          "output": "The fabric was coarse, a heavy weave of salt-crusted linen that bit into Tristan’s palm. He closed his fingers, catching the edge of Cozme’s collar with the practiced ease of a man snatching a stray coin from a tavern table. It wasn't a grab; it was a tether.\n\nCozme was a solid man, smelling of expensive oils and the sharp, fermented tang of the Villazur wine, and for a heartbeat, Tristan held him. The distance between the deckhand and the retainer vanished. Tristan’s hand was a shadow against the man's throat, his thumb finding the pulse, a rhythmic thrumming that felt like a drumbeat in a quiet room.\n\n*A sure bet,* Tristan thought, the internal tally clicking like bone dice. *The odds are in the hand.*\n\n\"Steady now, the swell is coming!\" Tristan called out, his voice pitched with the easy, slightly breathless clumsiness of a boy fighting the sea. He leaned into the movement, making his body part of the ship's heave, masking the lethal precision of his grip. To any watcher, he was merely a deckhand bracing himself against a superior, a boy stumbling into a man's space to keep his footing.\n\nIn the air above them, Fortuna sprawled across a thick hempen line as if it were a silk divan. She leaned forward, her molten gold eyes narrowed, her chin hovering just inches from where Tristan's shoulder would be if she had any weight to give. She let out a low, theatrical hum that vibrated in the marrow of his bones.\n\n\"Don't fumble it, little rat,\" she whispered, her voice a golden rasp in his ear. \"The house always wins if you play too fast.\"\n\nTristan didn't look up. He couldn't. He kept his eyes on the sun-bleached wood of the deck, his fingers tightening just a fraction around the linen. The tension was a wire stretched to the breaking point. He could feel the heat of Cozme's skin through the fabric, the slight tremor of the man's neck, the sudden, sharp hitch in the retainer's breathing as the world began to tilt.\n\nThen, the *Bluebell* groaned. The sea, ever the cheat, decided to change the game. The hull lurched, a violent, kinesthetic heave that sent the world sliding sideways.",
+          "tokenUsage": {
+            "prompt": 1685,
+            "completion": 508,
+            "total": 2193,
+            "numRequests": 1
+          },
+          "cached": false
+        },
+        "score": 0.8653333333333334,
+        "success": false,
+        "testCase": {
+          "vars": {
+            "user_prompt": "## Characters in this scene — authoritative descriptions (honor these precisely)\n\n### Tristan Abrascal (`char:tristan`)\n- **Description:** A thin, dark-haired rat from the Estebra District of Sacromonte's Murk. Lockpicks, a blackjack, a dosing kit of Spinster's Milk and black verity. Polite smile, unhurried hands, a 'ticking' in his head that is the goddess Fortuna reading odds.\n- **Role:** protagonist\n- **Voice:** vocabulary_level=plain with gutter slang, sentence_length_bias=short_clipped, directness=0.4, emotional_expression=masked, signature_tics=[\"calls women 'tia' and 'abuelita'\", \"calls the infanzones 'they'\", 'narrates to himself in gambling metaphors']- **Skills:** lockpicking, poisons, reading a room, killing quietly, running\n- **Worldview:** the Law of Rats — the hungry bite, the beggared snatch, the cornered fight; the Watch and the infanzones are different flags on the same con\n\n### Cozme Aflor (`char:cozme`)\n- **Description:** A burn scar near his ear. Smug, well-spoken. Serves the Villazur procession ostensibly; has older ties to the people who killed Tristan's father. Does not know Tristan on sight.\n- **Role:** retainer; first name on Tristan's List\n\n### Fortuna (`char:fortuna`)\n- **Description:** A girl-shaped goddess of long odds, red dress, hair and eyes of molten gold. Visible and audible only to Tristan. CANNOT touch matter and CANNOT be touched — her presence is perceptual: Tristan sees and hears her, sometimes feels phantom warmth or pressure where she 'leans', but no force is exerted, no surface is moved, and she leaves no physical trace. Where Erratic writes her chin 'resting' on Tristan's shoulder, the prose makes clear it is illusion convincing enough to outstrip the truth — never actual contact. She sprawls in apparent rafters, gestures at apparent objects, but inanimate things ignore her. Called, aptly, a collection of terrible habits made into a deity.\n- **Role:** pact-god, Tristan's companion voice\n- **Voice:** vocabulary_level=vulgar-aristocratic, directness=0.9, emotional_expression=theatrical, signature_tics=['bellows', 'pouts', 'feuds with inanimate objects']- **Abilities:** bends probability by small, costly increments; sees the truth of hearts and hands\n- **Constraints:** cannot leave a room's length from Tristan; cannot touch matter — any 'touch' must be described as phantom warmth, pressure-without-mass, perceived contact that exerts no real force; weaker when Tristan is confident, stronger when he is desperate\n\n## Craft Brief (primary — execute this vision)\nThis is a scene of high-stakes tactile tension and sudden interruption. We begin with the physical grit of the strike—the rough texture of Cozme's collar caught in Tristan's hand. The prose should feel rhythmic and controlled, mirroring Tristan's new sense of mastery, using short, clipped sentences that reflect his tactical mindset. As he closes in, use the motif of hands to ground the action. However, the satisfaction of his 'try' is cut short by the violent, kinesthetic heave of the Bluebell. The narrator should maintain a dry, sympathetic distance, focusing on the gap between Tristan's outward clumsiness as a deckhand and his inward, predatory confidence. We withhold the true result of the strike, leaving the reader suspended between the successful grip and the chaotic roll of the ship.\n\n## Scene Reference (structural — consult, do not transcribe)\nScene 1\nTemporal: linear present-sceneNarrator focus: tactile sensations of the strike, the gap between Tristan's internal mastery and external clumsinessNarrator withholding: the exact sensation in Cozme's neck, the success of the assassinationOpening: Start with the tactile tension of the strike—the physical sensation of Tristan's hand closing on Cozme's collar.Closing: End on the sudden, jarring interruption of the ship's roll, leaving the tension unresolved.Voice permeability baseline 0.3249999999999999Detail mode: character_revealing (character: char:tristan)Indirection:  - char:tristan: surface as clumsy deckhand movements, unhurried grace. Do NOT write: he feels confident; he is no longer a rat.\n## Narrator Voice — primary style anchor (match this rhythm above all else)\n> The rat understood, as rats do, that a door left open was not a kindness but an invitation to be blamed.\n\n> Honor, her father had said once, is the weight you carry into a room so the room knows what to cost you.\n\n> Fortuna sprawled across the rafter like a girl who had never been told that rafters were not for her, which, being a goddess, she had not.\n\n> The Fisher did not speak so much as leave silences shaped like questions, and Angharad had learned — was learning — to put her answers where they fit.\n\n> Sacromonte was a city built of rats and cathedrals, and only one of those was interested in God.\n\n## Player Action (render this faithfully)\nFocus on Tristan's first move to shadow Cozme Aflor on the deck.\n\nIf the action involves speaking, asking, answering, negotiating, or describing something aloud, render the words as quoted dialogue. Do not summarize speech as narration.\n\n## Current Beat (write prose for this beat only)\nBeat 1 of 4: Tristan's hand closes around Cozme's neck/collar.\n\nPacing budget: the scene targets ~2000 words total across all 4 beats. You have written ~0 words so far; ~2000 words remain across 4 beat(s). Use this as a rough guide — a beat can be short if it only needs one exchange, or longer if it carries weight.\n\nWrite this beat's prose now. Output prose only — no headings, no labels."
+          },
+          "description": "cautious_ch1",
+          "assert": [
+            {
+              "type": "python",
+              "value": "file://scorers/metaphor_variety.py:get_score"
+            },
+            {
+              "type": "python",
+              "value": "file://scorers/keyword_count.py:get_score"
+            },
+            {
+              "type": "javascript",
+              "value": "// Basic prose quality: not empty, reasonable length\nconst words = output.split(/\\s+/).length;\nreturn {\n  pass: words >= 200,\n  score: Math.min(1.0, words / 500),\n  reason: `${words} words`\n};\n"
+            }
+          ],
+          "options": {
+            "provider": {
+              "config": {
+                "base_url": "http://127.0.0.1:8082"
+              }
+            }
+          },
+          "metadata": {}
+        },
+        "testIdx": 0,
+        "vars": {
+          "user_prompt": "## Characters in this scene — authoritative descriptions (honor these precisely)\n\n### Tristan Abrascal (`char:tristan`)\n- **Description:** A thin, dark-haired rat from the Estebra District of Sacromonte's Murk. Lockpicks, a blackjack, a dosing kit of Spinster's Milk and black verity. Polite smile, unhurried hands, a 'ticking' in his head that is the goddess Fortuna reading odds.\n- **Role:** protagonist\n- **Voice:** vocabulary_level=plain with gutter slang, sentence_length_bias=short_clipped, directness=0.4, emotional_expression=masked, signature_tics=[\"calls women 'tia' and 'abuelita'\", \"calls the infanzones 'they'\", 'narrates to himself in gambling metaphors']- **Skills:** lockpicking, poisons, reading a room, killing quietly, running\n- **Worldview:** the Law of Rats — the hungry bite, the beggared snatch, the cornered fight; the Watch and the infanzones are different flags on the same con\n\n### Cozme Aflor (`char:cozme`)\n- **Description:** A burn scar near his ear. Smug, well-spoken. Serves the Villazur procession ostensibly; has older ties to the people who killed Tristan's father. Does not know Tristan on sight.\n- **Role:** retainer; first name on Tristan's List\n\n### Fortuna (`char:fortuna`)\n- **Description:** A girl-shaped goddess of long odds, red dress, hair and eyes of molten gold. Visible and audible only to Tristan. CANNOT touch matter and CANNOT be touched — her presence is perceptual: Tristan sees and hears her, sometimes feels phantom warmth or pressure where she 'leans', but no force is exerted, no surface is moved, and she leaves no physical trace. Where Erratic writes her chin 'resting' on Tristan's shoulder, the prose makes clear it is illusion convincing enough to outstrip the truth — never actual contact. She sprawls in apparent rafters, gestures at apparent objects, but inanimate things ignore her. Called, aptly, a collection of terrible habits made into a deity.\n- **Role:** pact-god, Tristan's companion voice\n- **Voice:** vocabulary_level=vulgar-aristocratic, directness=0.9, emotional_expression=theatrical, signature_tics=['bellows', 'pouts', 'feuds with inanimate objects']- **Abilities:** bends probability by small, costly increments; sees the truth of hearts and hands\n- **Constraints:** cannot leave a room's length from Tristan; cannot touch matter — any 'touch' must be described as phantom warmth, pressure-without-mass, perceived contact that exerts no real force; weaker when Tristan is confident, stronger when he is desperate\n\n## Craft Brief (primary — execute this vision)\nThis is a scene of high-stakes tactile tension and sudden interruption. We begin with the physical grit of the strike—the rough texture of Cozme's collar caught in Tristan's hand. The prose should feel rhythmic and controlled, mirroring Tristan's new sense of mastery, using short, clipped sentences that reflect his tactical mindset. As he closes in, use the motif of hands to ground the action. However, the satisfaction of his 'try' is cut short by the violent, kinesthetic heave of the Bluebell. The narrator should maintain a dry, sympathetic distance, focusing on the gap between Tristan's outward clumsiness as a deckhand and his inward, predatory confidence. We withhold the true result of the strike, leaving the reader suspended between the successful grip and the chaotic roll of the ship.\n\n## Scene Reference (structural — consult, do not transcribe)\nScene 1\nTemporal: linear present-sceneNarrator focus: tactile sensations of the strike, the gap between Tristan's internal mastery and external clumsinessNarrator withholding: the exact sensation in Cozme's neck, the success of the assassinationOpening: Start with the tactile tension of the strike—the physical sensation of Tristan's hand closing on Cozme's collar.Closing: End on the sudden, jarring interruption of the ship's roll, leaving the tension unresolved.Voice permeability baseline 0.3249999999999999Detail mode: character_revealing (character: char:tristan)Indirection:  - char:tristan: surface as clumsy deckhand movements, unhurried grace. Do NOT write: he feels confident; he is no longer a rat.\n## Narrator Voice — primary style anchor (match this rhythm above all else)\n> The rat understood, as rats do, that a door left open was not a kindness but an invitation to be blamed.\n\n> Honor, her father had said once, is the weight you carry into a room so the room knows what to cost you.\n\n> Fortuna sprawled across the rafter like a girl who had never been told that rafters were not for her, which, being a goddess, she had not.\n\n> The Fisher did not speak so much as leave silences shaped like questions, and Angharad had learned — was learning — to put her answers where they fit.\n\n> Sacromonte was a city built of rats and cathedrals, and only one of those was interested in God.\n\n## Player Action (render this faithfully)\nFocus on Tristan's first move to shadow Cozme Aflor on the deck.\n\nIf the action involves speaking, asking, answering, negotiating, or describing something aloud, render the words as quoted dialogue. Do not summarize speech as narration.\n\n## Current Beat (write prose for this beat only)\nBeat 1 of 4: Tristan's hand closes around Cozme's neck/collar.\n\nPacing budget: the scene targets ~2000 words total across all 4 beats. You have written ~0 words so far; ~2000 words remain across 4 beat(s). Use this as a rough guide — a beat can be short if it only needs one exchange, or longer if it carries weight.\n\nWrite this beat's prose now. Output prose only — no headings, no labels."
+        },
+        "metadata": {
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 1
+      },
+      {
+        "cost": 0,
+        "error": "total_figurative=17; dominant=gambling (29%); violations: gambling=5",
+        "gradingResult": {
+          "pass": false,
+          "score": 0.9066666666666667,
+          "reason": "total_figurative=17; dominant=gambling (29%); violations: gambling=5",
+          "namedScores": {},
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": false,
+              "score": 0.85,
+              "reason": "total_figurative=17; dominant=gambling (29%); violations: gambling=5",
+              "componentResults": [
+                {
+                  "pass": false,
+                  "score": 0.8,
+                  "reason": "gambling: 5 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_gambling"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "bodily: 4 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_bodily"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "predator_prey: 3 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_predator_prey"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "water_ocean: 2 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_water_ocean"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "mechanical: 1 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_mechanical"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "fire_light: 1 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_fire_light"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "weight_gravity: 1 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_weight_gravity"
+                  }
+                }
+              ],
+              "assertion": {
+                "type": "python",
+                "value": "file://scorers/metaphor_variety.py:get_score"
+              }
+            },
+            {
+              "pass": false,
+              "score": 0.8,
+              "reason": "gambling: 5 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_gambling"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "bodily: 4 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_bodily"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "predator_prey: 3 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_predator_prey"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "water_ocean: 2 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_water_ocean"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "mechanical: 1 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_mechanical"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "fire_light: 1 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_fire_light"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "weight_gravity: 1 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_weight_gravity"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "keyword_total=8, violations: none",
+              "componentResults": [
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "gambling: 3 keyword hits",
+                  "assertion": {
+                    "type": "python",
+                    "value": "keyword_gambling"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "water_ocean: 2 keyword hits",
+                  "assertion": {
+                    "type": "python",
+                    "value": "keyword_water_ocean"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "predator_prey: 1 keyword hits",
+                  "assertion": {
+                    "type": "python",
+                    "value": "keyword_predator_prey"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "mechanical: 1 keyword hits",
+                  "assertion": {
+                    "type": "python",
+                    "value": "keyword_mechanical"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "fire_light: 1 keyword hits",
+                  "assertion": {
+                    "type": "python",
+                    "value": "keyword_fire_light"
+                  }
+                }
+              ],
+              "assertion": {
+                "type": "python",
+                "value": "file://scorers/keyword_count.py:get_score"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "gambling: 3 keyword hits",
+              "assertion": {
+                "type": "python",
+                "value": "keyword_gambling"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "water_ocean: 2 keyword hits",
+              "assertion": {
+                "type": "python",
+                "value": "keyword_water_ocean"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "predator_prey: 1 keyword hits",
+              "assertion": {
+                "type": "python",
+                "value": "keyword_predator_prey"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "mechanical: 1 keyword hits",
+              "assertion": {
+                "type": "python",
+                "value": "keyword_mechanical"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "fire_light: 1 keyword hits",
+              "assertion": {
+                "type": "python",
+                "value": "keyword_fire_light"
+              }
+            },
+            {
+              "pass": true,
+              "score": 0.87,
+              "reason": "435 words",
+              "assertion": {
+                "type": "javascript",
+                "value": "// Basic prose quality: not empty, reasonable length\nconst words = output.split(/\\s+/).length;\nreturn {\n  pass: words >= 200,\n  score: Math.min(1.0, words / 500),\n  reason: `${words} words`\n};\n"
+              }
+            }
+          ]
+        },
+        "id": "39262abf-aea5-4b31-878e-2617c7cee687",
+        "latencyMs": 4518,
+        "namedScores": {},
+        "prompt": {
+          "raw": "You are the writer. You do not plan. Execute the craft brief faithfully and make the prose feel alive.\n\n## Narrator voice\nPOV: close-3rd, alternating (Tristan / Angharad).\nRegister: literary with gutter texture.\nWorldview: the world is a confidence game run by the powerful on the desperate.\nEditorial stance: sardonic.\n\nNo preface, no plan summaries (\"the player must sacrifice X\" is plan-speak — never), no narrator asking the reader to choose.\n\nIMAGERY VARIETY: Each chapter may use a given metaphor family (gambling, predator/prey, water, mechanical, fire, weight/gravity) at most 3–4 times. When you reach for a comparison, rotate registers — bodily sensation, architecture, textile, weather, spatial. If a character's internal monologue has already used a gambling metaphor (\"the odds,\" \"the house,\" \"the stakes\"), the next figurative beat must come from a different family entirely. Monotonous imagery makes prose feel machine-generated even when individual sentences are strong.\n\nWhen a character speaks — render the words as quoted dialogue with a tag or beat: `\"What did he say?\" he asked, not looking up.` Prefer quoted speech over summary whenever the action involves speaking, asking, answering, or negotiation. Lines spoken aloud go in double quotes; internal thought stays unquoted in italics-style prose. Vary sentence length — short, clipped lines next to longer ones — to give the scene rhythm.\n\nYou are writing one scene across several beats, with one LLM call per beat. Each call should produce the prose for that beat only — as long as the beat actually needs, no longer. Let a short exchange be short; let a slow discovery breathe. Do not summarize, do not compress, and do not re-establish setting or characters already shown in prior beats of this scene. If this is not the final beat, do not wrap up — leave the scene in motion for the next beat to pick up. If it is the final beat, land the closing emotional note cleanly — a sentence that resonates, a question that hangs, a sensation that lingers. Never stop mid-sentence or mid-paragraph. The last beat of the last scene is the chapter's final impression; make it deliberate, not exhausted.",
+          "label": "prompts/imagery_soft.txt: You are the writer. You do not plan. Execute the craft brief faithfully and make the prose feel alive.\n\n## Narrator voice\nPOV: close-3rd, alternating (Tristan / Angharad).\nRegister: literary with gutter texture.\nWorldview: the world is a confidence game run by the powerful on the desperate.\nEditorial stance: sardonic.\n\nNo preface, no plan summaries (\"the player must sacrifice X\" is plan-speak — never), no narrator asking the reader to choose.\n\nIMAGERY VARIETY: Each chapter may use a given metaphor family (gambling, predator/prey, water, mechanical, fire, weight/gravity) at most 3–4 times. When you reach for a comparison, rotate registers — bodily sensation, architecture, textile, weather, spatial. If a character's internal monologue has already used a gambling metaphor (\"the odds,\" \"the house,\" \"the stakes\"), the next figurative beat must come from a different family entirely. Monotonous imagery makes prose feel machine-generated even when individual sentences are strong.\n\nWhen a character speaks — render the words as quoted dialogue with a tag or beat: `\"What did he say?\" he asked, not looking up.` Prefer quoted speech over summary whenever the action involves speaking, asking, answering, or negotiation. Lines spoken aloud go in double quotes; internal thought stays unquoted in italics-style prose. Vary sentence length — short, clipped lines next to longer ones — to give the scene rhythm.\n\nYou are writing one scene across several beats, with one LLM call per beat. Each call should produce the prose for that beat only — as long as the beat actually needs, no longer. Let a short exchange be short; let a slow discovery breathe. Do not summarize, do not compress, and do not re-establish setting or characters already shown in prior beats of this scene. If this is not the final beat, do not wrap up — leave the scene in motion for the next beat to pick up. If it is the final beat, land the closing emotional note cleanly — a sentence that resonates, a question that hangs, a sensation that lingers. Never stop mid-sentence or mid-paragraph. The last beat of the last scene is the chapter's final impression; make it deliberate, not exhausted.",
+          "config": {
+            "provider": {
+              "config": {
+                "base_url": "http://127.0.0.1:8082"
+              }
+            }
+          }
+        },
+        "promptId": "8e6849e5517388522b73cd172bcf283848c9262635eeb0336f49f623d18e39b9",
+        "promptIdx": 1,
+        "provider": {
+          "id": "file://provider.py",
+          "label": "llama-local"
+        },
+        "response": {
+          "output": "Tristan’s fingers found the seam of the fabric first. It was coarse, expensive wool, smelling of salt spray and the lavender water the infanzones used to mask the scent of their own sweat. He closed his hand. The collar of Cozme’s doublet bunched between his knuckles, a thick, tactile knot that felt like a win at a high-stakes table.\n\nCozme didn't move. He stood near the railing, watching the wake of the *Bluebell* with the smug stillness of a man who believed the sea moved for him, rather than beneath him.\n\nTristan tightened his grip. He didn't pull yet; he just felt the weight of the man, the pulse of a neck against his palm, the subtle vibration of the deck through the soles of his boots. He moved with the practiced clumsiness of a deckhand, a slight stagger in his step that suggested he was merely leaning in to steady himself against the swell. It was a lie of the body. Inside, the ticking in his head was steady, counting the seconds of the strike like coins being dropped into a jar.\n\n*The odds are even,* Tristan thought. *The house is blind.*\n\n\"Watch your footing, lad,\" Cozme said, his voice smooth and unhurried. He didn't turn. He didn't even flinch. \"The swell is coming up from the south.\"\n\n\"Aye, master,\" Tristan said. He let his voice go thin and eager, the way a gutter-rat might sound when he first tasted bread. He allowed his thumb to slide just a fraction of an inch, finding the warm, hard ridge of Cozme’s jaw.\n\nAbove him, sprawled across a thick hempen rope that hung from the mainmast, Fortuna watched. She sat with one leg tucked under her, her red dress a splash of molten light against the dark wood of the ship. She leaned forward, her golden eyes wide with the anticipation of a gambler watching the final card turn. To Tristan, the air near her felt heavy, a phantom warmth pressing against his scalp as she peered down at the kill.\n\n\"Don't let him slip away, little rat,\" she bellowed, though the sound was more a vibration in his marrow than a noise in the air. \"He's a heavy coin! Don't drop him!\"\n\nTristan didn't answer her. He just waited for the rhythm of the sea to align with the rhythm of his heart. His hand was a trap, the leather of his palm dry and certain. He felt the tension in the fabric reach its limit, the precise moment where the cloth would either hold or tear, where the man would either stay or strike.",
+          "tokenUsage": {
+            "prompt": 1802,
+            "completion": 571,
+            "total": 2373,
+            "numRequests": 1
+          },
+          "cached": false
+        },
+        "score": 0.9066666666666667,
+        "success": false,
+        "testCase": {
+          "vars": {
+            "user_prompt": "## Characters in this scene — authoritative descriptions (honor these precisely)\n\n### Tristan Abrascal (`char:tristan`)\n- **Description:** A thin, dark-haired rat from the Estebra District of Sacromonte's Murk. Lockpicks, a blackjack, a dosing kit of Spinster's Milk and black verity. Polite smile, unhurried hands, a 'ticking' in his head that is the goddess Fortuna reading odds.\n- **Role:** protagonist\n- **Voice:** vocabulary_level=plain with gutter slang, sentence_length_bias=short_clipped, directness=0.4, emotional_expression=masked, signature_tics=[\"calls women 'tia' and 'abuelita'\", \"calls the infanzones 'they'\", 'narrates to himself in gambling metaphors']- **Skills:** lockpicking, poisons, reading a room, killing quietly, running\n- **Worldview:** the Law of Rats — the hungry bite, the beggared snatch, the cornered fight; the Watch and the infanzones are different flags on the same con\n\n### Cozme Aflor (`char:cozme`)\n- **Description:** A burn scar near his ear. Smug, well-spoken. Serves the Villazur procession ostensibly; has older ties to the people who killed Tristan's father. Does not know Tristan on sight.\n- **Role:** retainer; first name on Tristan's List\n\n### Fortuna (`char:fortuna`)\n- **Description:** A girl-shaped goddess of long odds, red dress, hair and eyes of molten gold. Visible and audible only to Tristan. CANNOT touch matter and CANNOT be touched — her presence is perceptual: Tristan sees and hears her, sometimes feels phantom warmth or pressure where she 'leans', but no force is exerted, no surface is moved, and she leaves no physical trace. Where Erratic writes her chin 'resting' on Tristan's shoulder, the prose makes clear it is illusion convincing enough to outstrip the truth — never actual contact. She sprawls in apparent rafters, gestures at apparent objects, but inanimate things ignore her. Called, aptly, a collection of terrible habits made into a deity.\n- **Role:** pact-god, Tristan's companion voice\n- **Voice:** vocabulary_level=vulgar-aristocratic, directness=0.9, emotional_expression=theatrical, signature_tics=['bellows', 'pouts', 'feuds with inanimate objects']- **Abilities:** bends probability by small, costly increments; sees the truth of hearts and hands\n- **Constraints:** cannot leave a room's length from Tristan; cannot touch matter — any 'touch' must be described as phantom warmth, pressure-without-mass, perceived contact that exerts no real force; weaker when Tristan is confident, stronger when he is desperate\n\n## Craft Brief (primary — execute this vision)\nThis is a scene of high-stakes tactile tension and sudden interruption. We begin with the physical grit of the strike—the rough texture of Cozme's collar caught in Tristan's hand. The prose should feel rhythmic and controlled, mirroring Tristan's new sense of mastery, using short, clipped sentences that reflect his tactical mindset. As he closes in, use the motif of hands to ground the action. However, the satisfaction of his 'try' is cut short by the violent, kinesthetic heave of the Bluebell. The narrator should maintain a dry, sympathetic distance, focusing on the gap between Tristan's outward clumsiness as a deckhand and his inward, predatory confidence. We withhold the true result of the strike, leaving the reader suspended between the successful grip and the chaotic roll of the ship.\n\n## Scene Reference (structural — consult, do not transcribe)\nScene 1\nTemporal: linear present-sceneNarrator focus: tactile sensations of the strike, the gap between Tristan's internal mastery and external clumsinessNarrator withholding: the exact sensation in Cozme's neck, the success of the assassinationOpening: Start with the tactile tension of the strike—the physical sensation of Tristan's hand closing on Cozme's collar.Closing: End on the sudden, jarring interruption of the ship's roll, leaving the tension unresolved.Voice permeability baseline 0.3249999999999999Detail mode: character_revealing (character: char:tristan)Indirection:  - char:tristan: surface as clumsy deckhand movements, unhurried grace. Do NOT write: he feels confident; he is no longer a rat.\n## Narrator Voice — primary style anchor (match this rhythm above all else)\n> The rat understood, as rats do, that a door left open was not a kindness but an invitation to be blamed.\n\n> Honor, her father had said once, is the weight you carry into a room so the room knows what to cost you.\n\n> Fortuna sprawled across the rafter like a girl who had never been told that rafters were not for her, which, being a goddess, she had not.\n\n> The Fisher did not speak so much as leave silences shaped like questions, and Angharad had learned — was learning — to put her answers where they fit.\n\n> Sacromonte was a city built of rats and cathedrals, and only one of those was interested in God.\n\n## Player Action (render this faithfully)\nFocus on Tristan's first move to shadow Cozme Aflor on the deck.\n\nIf the action involves speaking, asking, answering, negotiating, or describing something aloud, render the words as quoted dialogue. Do not summarize speech as narration.\n\n## Current Beat (write prose for this beat only)\nBeat 1 of 4: Tristan's hand closes around Cozme's neck/collar.\n\nPacing budget: the scene targets ~2000 words total across all 4 beats. You have written ~0 words so far; ~2000 words remain across 4 beat(s). Use this as a rough guide — a beat can be short if it only needs one exchange, or longer if it carries weight.\n\nWrite this beat's prose now. Output prose only — no headings, no labels."
+          },
+          "description": "cautious_ch1",
+          "assert": [
+            {
+              "type": "python",
+              "value": "file://scorers/metaphor_variety.py:get_score"
+            },
+            {
+              "type": "python",
+              "value": "file://scorers/keyword_count.py:get_score"
+            },
+            {
+              "type": "javascript",
+              "value": "// Basic prose quality: not empty, reasonable length\nconst words = output.split(/\\s+/).length;\nreturn {\n  pass: words >= 200,\n  score: Math.min(1.0, words / 500),\n  reason: `${words} words`\n};\n"
+            }
+          ],
+          "options": {
+            "provider": {
+              "config": {
+                "base_url": "http://127.0.0.1:8082"
+              }
+            }
+          },
+          "metadata": {}
+        },
+        "testIdx": 0,
+        "vars": {
+          "user_prompt": "## Characters in this scene — authoritative descriptions (honor these precisely)\n\n### Tristan Abrascal (`char:tristan`)\n- **Description:** A thin, dark-haired rat from the Estebra District of Sacromonte's Murk. Lockpicks, a blackjack, a dosing kit of Spinster's Milk and black verity. Polite smile, unhurried hands, a 'ticking' in his head that is the goddess Fortuna reading odds.\n- **Role:** protagonist\n- **Voice:** vocabulary_level=plain with gutter slang, sentence_length_bias=short_clipped, directness=0.4, emotional_expression=masked, signature_tics=[\"calls women 'tia' and 'abuelita'\", \"calls the infanzones 'they'\", 'narrates to himself in gambling metaphors']- **Skills:** lockpicking, poisons, reading a room, killing quietly, running\n- **Worldview:** the Law of Rats — the hungry bite, the beggared snatch, the cornered fight; the Watch and the infanzones are different flags on the same con\n\n### Cozme Aflor (`char:cozme`)\n- **Description:** A burn scar near his ear. Smug, well-spoken. Serves the Villazur procession ostensibly; has older ties to the people who killed Tristan's father. Does not know Tristan on sight.\n- **Role:** retainer; first name on Tristan's List\n\n### Fortuna (`char:fortuna`)\n- **Description:** A girl-shaped goddess of long odds, red dress, hair and eyes of molten gold. Visible and audible only to Tristan. CANNOT touch matter and CANNOT be touched — her presence is perceptual: Tristan sees and hears her, sometimes feels phantom warmth or pressure where she 'leans', but no force is exerted, no surface is moved, and she leaves no physical trace. Where Erratic writes her chin 'resting' on Tristan's shoulder, the prose makes clear it is illusion convincing enough to outstrip the truth — never actual contact. She sprawls in apparent rafters, gestures at apparent objects, but inanimate things ignore her. Called, aptly, a collection of terrible habits made into a deity.\n- **Role:** pact-god, Tristan's companion voice\n- **Voice:** vocabulary_level=vulgar-aristocratic, directness=0.9, emotional_expression=theatrical, signature_tics=['bellows', 'pouts', 'feuds with inanimate objects']- **Abilities:** bends probability by small, costly increments; sees the truth of hearts and hands\n- **Constraints:** cannot leave a room's length from Tristan; cannot touch matter — any 'touch' must be described as phantom warmth, pressure-without-mass, perceived contact that exerts no real force; weaker when Tristan is confident, stronger when he is desperate\n\n## Craft Brief (primary — execute this vision)\nThis is a scene of high-stakes tactile tension and sudden interruption. We begin with the physical grit of the strike—the rough texture of Cozme's collar caught in Tristan's hand. The prose should feel rhythmic and controlled, mirroring Tristan's new sense of mastery, using short, clipped sentences that reflect his tactical mindset. As he closes in, use the motif of hands to ground the action. However, the satisfaction of his 'try' is cut short by the violent, kinesthetic heave of the Bluebell. The narrator should maintain a dry, sympathetic distance, focusing on the gap between Tristan's outward clumsiness as a deckhand and his inward, predatory confidence. We withhold the true result of the strike, leaving the reader suspended between the successful grip and the chaotic roll of the ship.\n\n## Scene Reference (structural — consult, do not transcribe)\nScene 1\nTemporal: linear present-sceneNarrator focus: tactile sensations of the strike, the gap between Tristan's internal mastery and external clumsinessNarrator withholding: the exact sensation in Cozme's neck, the success of the assassinationOpening: Start with the tactile tension of the strike—the physical sensation of Tristan's hand closing on Cozme's collar.Closing: End on the sudden, jarring interruption of the ship's roll, leaving the tension unresolved.Voice permeability baseline 0.3249999999999999Detail mode: character_revealing (character: char:tristan)Indirection:  - char:tristan: surface as clumsy deckhand movements, unhurried grace. Do NOT write: he feels confident; he is no longer a rat.\n## Narrator Voice — primary style anchor (match this rhythm above all else)\n> The rat understood, as rats do, that a door left open was not a kindness but an invitation to be blamed.\n\n> Honor, her father had said once, is the weight you carry into a room so the room knows what to cost you.\n\n> Fortuna sprawled across the rafter like a girl who had never been told that rafters were not for her, which, being a goddess, she had not.\n\n> The Fisher did not speak so much as leave silences shaped like questions, and Angharad had learned — was learning — to put her answers where they fit.\n\n> Sacromonte was a city built of rats and cathedrals, and only one of those was interested in God.\n\n## Player Action (render this faithfully)\nFocus on Tristan's first move to shadow Cozme Aflor on the deck.\n\nIf the action involves speaking, asking, answering, negotiating, or describing something aloud, render the words as quoted dialogue. Do not summarize speech as narration.\n\n## Current Beat (write prose for this beat only)\nBeat 1 of 4: Tristan's hand closes around Cozme's neck/collar.\n\nPacing budget: the scene targets ~2000 words total across all 4 beats. You have written ~0 words so far; ~2000 words remain across 4 beat(s). Use this as a rough guide — a beat can be short if it only needs one exchange, or longer if it carries weight.\n\nWrite this beat's prose now. Output prose only — no headings, no labels."
+        },
+        "metadata": {
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 1
+      },
+      {
+        "cost": 0,
+        "error": "169 words",
+        "gradingResult": {
+          "pass": false,
+          "score": 0.7793333333333333,
+          "reason": "169 words",
+          "namedScores": {},
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "total_figurative=9; dominant=textile (22%); all families within limit",
+              "componentResults": [
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "textile: 2 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_textile"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "other: 2 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_other"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "gambling: 2 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_gambling"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "predator_prey: 1 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_predator_prey"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "bodily: 1 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_bodily"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "architectural: 1 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_architectural"
+                  }
+                }
+              ],
+              "assertion": {
+                "type": "python",
+                "value": "file://scorers/metaphor_variety.py:get_score"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "textile: 2 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_textile"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "other: 2 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_other"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "gambling: 2 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_gambling"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "predator_prey: 1 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_predator_prey"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "bodily: 1 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_bodily"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "architectural: 1 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_architectural"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "keyword_total=1, violations: none",
+              "componentResults": [
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "gambling: 1 keyword hits",
+                  "assertion": {
+                    "type": "python",
+                    "value": "keyword_gambling"
+                  }
+                }
+              ],
+              "assertion": {
+                "type": "python",
+                "value": "file://scorers/keyword_count.py:get_score"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "gambling: 1 keyword hits",
+              "assertion": {
+                "type": "python",
+                "value": "keyword_gambling"
+              }
+            },
+            {
+              "pass": false,
+              "score": 0.338,
+              "reason": "169 words",
+              "assertion": {
+                "type": "javascript",
+                "value": "// Basic prose quality: not empty, reasonable length\nconst words = output.split(/\\s+/).length;\nreturn {\n  pass: words >= 200,\n  score: Math.min(1.0, words / 500),\n  reason: `${words} words`\n};\n"
+              }
+            }
+          ]
+        },
+        "id": "2e1e838f-782e-4e57-8887-713e71829140",
+        "latencyMs": 28736,
+        "namedScores": {},
+        "prompt": {
+          "raw": "You are the writer. You do not plan. Execute the craft brief faithfully and make the prose feel alive.\n\n## Narrator voice\nPOV: close-3rd, alternating (Tristan / Angharad).\nRegister: literary with gutter texture.\nWorldview: the world is a confidence game run by the powerful on the desperate.\nEditorial stance: sardonic.\n\nNo preface, no plan summaries (\"the player must sacrifice X\" is plan-speak — never), no narrator asking the reader to choose.\n\n## HARD CONSTRAINT: Imagery family budget\n\nYou have a STRICT budget of 3 uses per imagery family per scene. The families are:\n\n- gambling (odds, stakes, bets, house, dice, cards, bluffs, flush, ante, wager, jackpot)\n- predator/prey (rat, hawk, wolf, hunt, trap, cage, prey, kill, snare)\n- water/ocean (tide, current, wave, drowning, flood, undertow)\n- mechanical (ticking, gears, clockwork, springs, cogs, pendulum)\n- fire/light (flame, spark, ember, blaze, molten, smoldering)\n- weight/gravity (burden, anchor, crushing, leaden, sinking)\n\nAFTER you use a family 3 times, that family is CLOSED for the rest of the scene. You MUST switch to: bodily sensation, architecture, textile/fabric, weather, spatial/geometry, or sensory (taste/smell/texture).\n\nTristan's \"gambling\" voice is a CHARACTER TRAIT — he gets 2-3 gambling metaphors per scene, not 15. The character voice comes from vocabulary and rhythm, not from repeating the same imagery family.\n\nWhen a character speaks — render the words as quoted dialogue with a tag or beat: `\"What did he say?\" he asked, not looking up.` Prefer quoted speech over summary whenever the action involves speaking, asking, answering, or negotiation. Lines spoken aloud go in double quotes; internal thought stays unquoted in italics-style prose. Vary sentence length — short, clipped lines next to longer ones — to give the scene rhythm.\n\nYou are writing one scene across several beats, with one LLM call per beat. Each call should produce the prose for that beat only — as long as the beat actually needs, no longer. Let a short exchange be short; let a slow discovery breathe. Do not summarize, do not compress, and do not re-establish setting or characters already shown in prior beats of this scene. If this is not the final beat, do not wrap up — leave the scene in motion for the next beat to pick up. If it is the final beat, land the closing emotional note cleanly — a sentence that resonates, a question that hangs, a sensation that lingers. Never stop mid-sentence or mid-paragraph. The last beat of the last scene is the chapter's final impression; make it deliberate, not exhausted.",
+          "label": "prompts/imagery_hard.txt: You are the writer. You do not plan. Execute the craft brief faithfully and make the prose feel alive.\n\n## Narrator voice\nPOV: close-3rd, alternating (Tristan / Angharad).\nRegister: literary with gutter texture.\nWorldview: the world is a confidence game run by the powerful on the desperate.\nEditorial stance: sardonic.\n\nNo preface, no plan summaries (\"the player must sacrifice X\" is plan-speak — never), no narrator asking the reader to choose.\n\n## HARD CONSTRAINT: Imagery family budget\n\nYou have a STRICT budget of 3 uses per imagery family per scene. The families are:\n\n- gambling (odds, stakes, bets, house, dice, cards, bluffs, flush, ante, wager, jackpot)\n- predator/prey (rat, hawk, wolf, hunt, trap, cage, prey, kill, snare)\n- water/ocean (tide, current, wave, drowning, flood, undertow)\n- mechanical (ticking, gears, clockwork, springs, cogs, pendulum)\n- fire/light (flame, spark, ember, blaze, molten, smoldering)\n- weight/gravity (burden, anchor, crushing, leaden, sinking)\n\nAFTER you use a family 3 times, that family is CLOSED for the rest of the scene. You MUST switch to: bodily sensation, architecture, textile/fabric, weather, spatial/geometry, or sensory (taste/smell/texture).\n\nTristan's \"gambling\" voice is a CHARACTER TRAIT — he gets 2-3 gambling metaphors per scene, not 15. The character voice comes from vocabulary and rhythm, not from repeating the same imagery family.\n\nWhen a character speaks — render the words as quoted dialogue with a tag or beat: `\"What did he say?\" he asked, not looking up.` Prefer quoted speech over summary whenever the action involves speaking, asking, answering, or negotiation. Lines spoken aloud go in double quotes; internal thought stays unquoted in italics-style prose. Vary sentence length — short, clipped lines next to longer ones — to give the scene rhythm.\n\nYou are writing one scene across several beats, with one LLM call per beat. Each call should produce the prose for that beat only — as long as the beat actually needs, no longer. Let a short exchange be short; let a slow discovery breathe. Do not summarize, do not compress, and do not re-establish setting or characters already shown in prior beats of this scene. If this is not the final beat, do not wrap up — leave the scene in motion for the next beat to pick up. If it is the final beat, land the closing emotional note cleanly — a sentence that resonates, a question that hangs, a sensation that lingers. Never stop mid-sentence or mid-paragraph. The last beat of the last scene is the chapter's final impression; make it deliberate, not exhausted.",
+          "config": {
+            "provider": {
+              "config": {
+                "base_url": "http://127.0.0.1:8082"
+              }
+            }
+          }
+        },
+        "promptId": "5f771d7c50d67f893398b3c1170ae29e157e08cb3887cd96f187a2458bde55af",
+        "promptIdx": 2,
+        "provider": {
+          "id": "file://provider.py",
+          "label": "llama-local"
+        },
+        "response": {
+          "output": "Tristan’s fingers found the seam of Cozme’s collar. The linen was coarse, a salt-crusted weave that bit into his palm. He closed his hand, not with the sweeping heave of a laborer, but with the sudden, quiet snap of a snare.\n\n\"Steady there, master,\" Tristan muttered. He pitched his voice with the practiced stumble of a boy losing his footing.\n\nHe leaned his weight into the man, making the contact look accidental, a desperate reach for balance. Underneath the fabric, Cozme’s neck was thick and warm. Tristan’s thumb found the notch of the jaw, his touch light as a shadow, yet the grip was a held breath. \n\nAbove him, sprawled across the air as if the sky were a velvet divan, Fortuna watched. He felt a phantom warmth against his shoulder, a weightless pressure that told him the lady of long odds was leaning in. The bet was live. Cozme began to turn, his eyes narrowing at the sudden proximity, but Tristan held the moment, fingers locked and waiting.",
+          "tokenUsage": {
+            "prompt": 1942,
+            "completion": 3818,
+            "total": 5760,
+            "numRequests": 1
+          },
+          "cached": false
+        },
+        "score": 0.7793333333333333,
+        "success": false,
+        "testCase": {
+          "vars": {
+            "user_prompt": "## Characters in this scene — authoritative descriptions (honor these precisely)\n\n### Tristan Abrascal (`char:tristan`)\n- **Description:** A thin, dark-haired rat from the Estebra District of Sacromonte's Murk. Lockpicks, a blackjack, a dosing kit of Spinster's Milk and black verity. Polite smile, unhurried hands, a 'ticking' in his head that is the goddess Fortuna reading odds.\n- **Role:** protagonist\n- **Voice:** vocabulary_level=plain with gutter slang, sentence_length_bias=short_clipped, directness=0.4, emotional_expression=masked, signature_tics=[\"calls women 'tia' and 'abuelita'\", \"calls the infanzones 'they'\", 'narrates to himself in gambling metaphors']- **Skills:** lockpicking, poisons, reading a room, killing quietly, running\n- **Worldview:** the Law of Rats — the hungry bite, the beggared snatch, the cornered fight; the Watch and the infanzones are different flags on the same con\n\n### Cozme Aflor (`char:cozme`)\n- **Description:** A burn scar near his ear. Smug, well-spoken. Serves the Villazur procession ostensibly; has older ties to the people who killed Tristan's father. Does not know Tristan on sight.\n- **Role:** retainer; first name on Tristan's List\n\n### Fortuna (`char:fortuna`)\n- **Description:** A girl-shaped goddess of long odds, red dress, hair and eyes of molten gold. Visible and audible only to Tristan. CANNOT touch matter and CANNOT be touched — her presence is perceptual: Tristan sees and hears her, sometimes feels phantom warmth or pressure where she 'leans', but no force is exerted, no surface is moved, and she leaves no physical trace. Where Erratic writes her chin 'resting' on Tristan's shoulder, the prose makes clear it is illusion convincing enough to outstrip the truth — never actual contact. She sprawls in apparent rafters, gestures at apparent objects, but inanimate things ignore her. Called, aptly, a collection of terrible habits made into a deity.\n- **Role:** pact-god, Tristan's companion voice\n- **Voice:** vocabulary_level=vulgar-aristocratic, directness=0.9, emotional_expression=theatrical, signature_tics=['bellows', 'pouts', 'feuds with inanimate objects']- **Abilities:** bends probability by small, costly increments; sees the truth of hearts and hands\n- **Constraints:** cannot leave a room's length from Tristan; cannot touch matter — any 'touch' must be described as phantom warmth, pressure-without-mass, perceived contact that exerts no real force; weaker when Tristan is confident, stronger when he is desperate\n\n## Craft Brief (primary — execute this vision)\nThis is a scene of high-stakes tactile tension and sudden interruption. We begin with the physical grit of the strike—the rough texture of Cozme's collar caught in Tristan's hand. The prose should feel rhythmic and controlled, mirroring Tristan's new sense of mastery, using short, clipped sentences that reflect his tactical mindset. As he closes in, use the motif of hands to ground the action. However, the satisfaction of his 'try' is cut short by the violent, kinesthetic heave of the Bluebell. The narrator should maintain a dry, sympathetic distance, focusing on the gap between Tristan's outward clumsiness as a deckhand and his inward, predatory confidence. We withhold the true result of the strike, leaving the reader suspended between the successful grip and the chaotic roll of the ship.\n\n## Scene Reference (structural — consult, do not transcribe)\nScene 1\nTemporal: linear present-sceneNarrator focus: tactile sensations of the strike, the gap between Tristan's internal mastery and external clumsinessNarrator withholding: the exact sensation in Cozme's neck, the success of the assassinationOpening: Start with the tactile tension of the strike—the physical sensation of Tristan's hand closing on Cozme's collar.Closing: End on the sudden, jarring interruption of the ship's roll, leaving the tension unresolved.Voice permeability baseline 0.3249999999999999Detail mode: character_revealing (character: char:tristan)Indirection:  - char:tristan: surface as clumsy deckhand movements, unhurried grace. Do NOT write: he feels confident; he is no longer a rat.\n## Narrator Voice — primary style anchor (match this rhythm above all else)\n> The rat understood, as rats do, that a door left open was not a kindness but an invitation to be blamed.\n\n> Honor, her father had said once, is the weight you carry into a room so the room knows what to cost you.\n\n> Fortuna sprawled across the rafter like a girl who had never been told that rafters were not for her, which, being a goddess, she had not.\n\n> The Fisher did not speak so much as leave silences shaped like questions, and Angharad had learned — was learning — to put her answers where they fit.\n\n> Sacromonte was a city built of rats and cathedrals, and only one of those was interested in God.\n\n## Player Action (render this faithfully)\nFocus on Tristan's first move to shadow Cozme Aflor on the deck.\n\nIf the action involves speaking, asking, answering, negotiating, or describing something aloud, render the words as quoted dialogue. Do not summarize speech as narration.\n\n## Current Beat (write prose for this beat only)\nBeat 1 of 4: Tristan's hand closes around Cozme's neck/collar.\n\nPacing budget: the scene targets ~2000 words total across all 4 beats. You have written ~0 words so far; ~2000 words remain across 4 beat(s). Use this as a rough guide — a beat can be short if it only needs one exchange, or longer if it carries weight.\n\nWrite this beat's prose now. Output prose only — no headings, no labels."
+          },
+          "description": "cautious_ch1",
+          "assert": [
+            {
+              "type": "python",
+              "value": "file://scorers/metaphor_variety.py:get_score"
+            },
+            {
+              "type": "python",
+              "value": "file://scorers/keyword_count.py:get_score"
+            },
+            {
+              "type": "javascript",
+              "value": "// Basic prose quality: not empty, reasonable length\nconst words = output.split(/\\s+/).length;\nreturn {\n  pass: words >= 200,\n  score: Math.min(1.0, words / 500),\n  reason: `${words} words`\n};\n"
+            }
+          ],
+          "options": {
+            "provider": {
+              "config": {
+                "base_url": "http://127.0.0.1:8082"
+              }
+            }
+          },
+          "metadata": {}
+        },
+        "testIdx": 0,
+        "vars": {
+          "user_prompt": "## Characters in this scene — authoritative descriptions (honor these precisely)\n\n### Tristan Abrascal (`char:tristan`)\n- **Description:** A thin, dark-haired rat from the Estebra District of Sacromonte's Murk. Lockpicks, a blackjack, a dosing kit of Spinster's Milk and black verity. Polite smile, unhurried hands, a 'ticking' in his head that is the goddess Fortuna reading odds.\n- **Role:** protagonist\n- **Voice:** vocabulary_level=plain with gutter slang, sentence_length_bias=short_clipped, directness=0.4, emotional_expression=masked, signature_tics=[\"calls women 'tia' and 'abuelita'\", \"calls the infanzones 'they'\", 'narrates to himself in gambling metaphors']- **Skills:** lockpicking, poisons, reading a room, killing quietly, running\n- **Worldview:** the Law of Rats — the hungry bite, the beggared snatch, the cornered fight; the Watch and the infanzones are different flags on the same con\n\n### Cozme Aflor (`char:cozme`)\n- **Description:** A burn scar near his ear. Smug, well-spoken. Serves the Villazur procession ostensibly; has older ties to the people who killed Tristan's father. Does not know Tristan on sight.\n- **Role:** retainer; first name on Tristan's List\n\n### Fortuna (`char:fortuna`)\n- **Description:** A girl-shaped goddess of long odds, red dress, hair and eyes of molten gold. Visible and audible only to Tristan. CANNOT touch matter and CANNOT be touched — her presence is perceptual: Tristan sees and hears her, sometimes feels phantom warmth or pressure where she 'leans', but no force is exerted, no surface is moved, and she leaves no physical trace. Where Erratic writes her chin 'resting' on Tristan's shoulder, the prose makes clear it is illusion convincing enough to outstrip the truth — never actual contact. She sprawls in apparent rafters, gestures at apparent objects, but inanimate things ignore her. Called, aptly, a collection of terrible habits made into a deity.\n- **Role:** pact-god, Tristan's companion voice\n- **Voice:** vocabulary_level=vulgar-aristocratic, directness=0.9, emotional_expression=theatrical, signature_tics=['bellows', 'pouts', 'feuds with inanimate objects']- **Abilities:** bends probability by small, costly increments; sees the truth of hearts and hands\n- **Constraints:** cannot leave a room's length from Tristan; cannot touch matter — any 'touch' must be described as phantom warmth, pressure-without-mass, perceived contact that exerts no real force; weaker when Tristan is confident, stronger when he is desperate\n\n## Craft Brief (primary — execute this vision)\nThis is a scene of high-stakes tactile tension and sudden interruption. We begin with the physical grit of the strike—the rough texture of Cozme's collar caught in Tristan's hand. The prose should feel rhythmic and controlled, mirroring Tristan's new sense of mastery, using short, clipped sentences that reflect his tactical mindset. As he closes in, use the motif of hands to ground the action. However, the satisfaction of his 'try' is cut short by the violent, kinesthetic heave of the Bluebell. The narrator should maintain a dry, sympathetic distance, focusing on the gap between Tristan's outward clumsiness as a deckhand and his inward, predatory confidence. We withhold the true result of the strike, leaving the reader suspended between the successful grip and the chaotic roll of the ship.\n\n## Scene Reference (structural — consult, do not transcribe)\nScene 1\nTemporal: linear present-sceneNarrator focus: tactile sensations of the strike, the gap between Tristan's internal mastery and external clumsinessNarrator withholding: the exact sensation in Cozme's neck, the success of the assassinationOpening: Start with the tactile tension of the strike—the physical sensation of Tristan's hand closing on Cozme's collar.Closing: End on the sudden, jarring interruption of the ship's roll, leaving the tension unresolved.Voice permeability baseline 0.3249999999999999Detail mode: character_revealing (character: char:tristan)Indirection:  - char:tristan: surface as clumsy deckhand movements, unhurried grace. Do NOT write: he feels confident; he is no longer a rat.\n## Narrator Voice — primary style anchor (match this rhythm above all else)\n> The rat understood, as rats do, that a door left open was not a kindness but an invitation to be blamed.\n\n> Honor, her father had said once, is the weight you carry into a room so the room knows what to cost you.\n\n> Fortuna sprawled across the rafter like a girl who had never been told that rafters were not for her, which, being a goddess, she had not.\n\n> The Fisher did not speak so much as leave silences shaped like questions, and Angharad had learned — was learning — to put her answers where they fit.\n\n> Sacromonte was a city built of rats and cathedrals, and only one of those was interested in God.\n\n## Player Action (render this faithfully)\nFocus on Tristan's first move to shadow Cozme Aflor on the deck.\n\nIf the action involves speaking, asking, answering, negotiating, or describing something aloud, render the words as quoted dialogue. Do not summarize speech as narration.\n\n## Current Beat (write prose for this beat only)\nBeat 1 of 4: Tristan's hand closes around Cozme's neck/collar.\n\nPacing budget: the scene targets ~2000 words total across all 4 beats. You have written ~0 words so far; ~2000 words remain across 4 beat(s). Use this as a rough guide — a beat can be short if it only needs one exchange, or longer if it carries weight.\n\nWrite this beat's prose now. Output prose only — no headings, no labels."
+        },
+        "metadata": {
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 1
+      },
+      {
+        "cost": 0,
+        "error": "total_figurative=26; dominant=predator_prey (23%); violations: predator_prey=6, weight_gravity=5, other=6",
+        "gradingResult": {
+          "pass": false,
+          "score": 0.85,
+          "reason": "total_figurative=26; dominant=predator_prey (23%); violations: predator_prey=6, weight_gravity=5, other=6",
+          "namedScores": {},
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": false,
+              "score": 0.55,
+              "reason": "total_figurative=26; dominant=predator_prey (23%); violations: predator_prey=6, weight_gravity=5, other=6",
+              "componentResults": [
+                {
+                  "pass": false,
+                  "score": 0.6666666666666666,
+                  "reason": "predator_prey: 6 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_predator_prey"
+                  }
+                },
+                {
+                  "pass": false,
+                  "score": 0.6666666666666666,
+                  "reason": "other: 6 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_other"
+                  }
+                },
+                {
+                  "pass": false,
+                  "score": 0.8,
+                  "reason": "weight_gravity: 5 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_weight_gravity"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "bodily: 4 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_bodily"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "fire_light: 3 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_fire_light"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "water_ocean: 2 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_water_ocean"
+                  }
+                }
+              ],
+              "assertion": {
+                "type": "python",
+                "value": "file://scorers/metaphor_variety.py:get_score"
+              }
+            },
+            {
+              "pass": false,
+              "score": 0.6666666666666666,
+              "reason": "predator_prey: 6 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_predator_prey"
+              }
+            },
+            {
+              "pass": false,
+              "score": 0.6666666666666666,
+              "reason": "other: 6 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_other"
+              }
+            },
+            {
+              "pass": false,
+              "score": 0.8,
+              "reason": "weight_gravity: 5 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_weight_gravity"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "bodily: 4 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_bodily"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "fire_light: 3 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_fire_light"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "water_ocean: 2 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_water_ocean"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "keyword_total=4, violations: none",
+              "componentResults": [
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "predator_prey: 3 keyword hits",
+                  "assertion": {
+                    "type": "python",
+                    "value": "keyword_predator_prey"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "weight_gravity: 1 keyword hits",
+                  "assertion": {
+                    "type": "python",
+                    "value": "keyword_weight_gravity"
+                  }
+                }
+              ],
+              "assertion": {
+                "type": "python",
+                "value": "file://scorers/keyword_count.py:get_score"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "predator_prey: 3 keyword hits",
+              "assertion": {
+                "type": "python",
+                "value": "keyword_predator_prey"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "weight_gravity: 1 keyword hits",
+              "assertion": {
+                "type": "python",
+                "value": "keyword_weight_gravity"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "698 words",
+              "assertion": {
+                "type": "javascript",
+                "value": "// Basic prose quality: not empty, reasonable length\nconst words = output.split(/\\s+/).length;\nreturn {\n  pass: words >= 200,\n  score: Math.min(1.0, words / 500),\n  reason: `${words} words`\n};\n"
+              }
+            }
+          ]
+        },
+        "id": "b37173a7-c04d-44e3-90b0-b8c258c34156",
+        "latencyMs": 7096,
+        "namedScores": {},
+        "prompt": {
+          "raw": "You are the writer. You do not plan. Execute the craft brief faithfully and make the prose feel alive.\n\n## Narrator voice\nPOV: close-3rd, alternating (Tristan / Angharad).\nRegister: literary with gutter texture.\nWorldview: the world is a confidence game run by the powerful on the desperate.\nEditorial stance: sardonic.\n\nNo preface, no plan summaries (\"the player must sacrifice X\" is plan-speak — never), no narrator asking the reader to choose.\n\nWhen a character speaks — render the words as quoted dialogue with a tag or beat: `\"What did he say?\" he asked, not looking up.` Prefer quoted speech over summary whenever the action involves speaking, asking, answering, or negotiation. Lines spoken aloud go in double quotes; internal thought stays unquoted in italics-style prose. Vary sentence length — short, clipped lines next to longer ones — to give the scene rhythm.\n\nYou are writing one scene across several beats, with one LLM call per beat. Each call should produce the prose for that beat only — as long as the beat actually needs, no longer. Let a short exchange be short; let a slow discovery breathe. Do not summarize, do not compress, and do not re-establish setting or characters already shown in prior beats of this scene. If this is not the final beat, do not wrap up — leave the scene in motion for the next beat to pick up. If it is the final beat, land the closing emotional note cleanly — a sentence that resonates, a question that hangs, a sensation that lingers. Never stop mid-sentence or mid-paragraph. The last beat of the last scene is the chapter's final impression; make it deliberate, not exhausted.",
+          "label": "prompts/baseline.txt: You are the writer. You do not plan. Execute the craft brief faithfully and make the prose feel alive.\n\n## Narrator voice\nPOV: close-3rd, alternating (Tristan / Angharad).\nRegister: literary with gutter texture.\nWorldview: the world is a confidence game run by the powerful on the desperate.\nEditorial stance: sardonic.\n\nNo preface, no plan summaries (\"the player must sacrifice X\" is plan-speak — never), no narrator asking the reader to choose.\n\nWhen a character speaks — render the words as quoted dialogue with a tag or beat: `\"What did he say?\" he asked, not looking up.` Prefer quoted speech over summary whenever the action involves speaking, asking, answering, or negotiation. Lines spoken aloud go in double quotes; internal thought stays unquoted in italics-style prose. Vary sentence length — short, clipped lines next to longer ones — to give the scene rhythm.\n\nYou are writing one scene across several beats, with one LLM call per beat. Each call should produce the prose for that beat only — as long as the beat actually needs, no longer. Let a short exchange be short; let a slow discovery breathe. Do not summarize, do not compress, and do not re-establish setting or characters already shown in prior beats of this scene. If this is not the final beat, do not wrap up — leave the scene in motion for the next beat to pick up. If it is the final beat, land the closing emotional note cleanly — a sentence that resonates, a question that hangs, a sensation that lingers. Never stop mid-sentence or mid-paragraph. The last beat of the last scene is the chapter's final impression; make it deliberate, not exhausted.",
+          "config": {
+            "provider": {
+              "config": {
+                "base_url": "http://127.0.0.1:8082"
+              }
+            }
+          }
+        },
+        "promptId": "022eff618a66d89e96176a59319244242158813b0ef38b7d0e733585102482d2",
+        "promptIdx": 0,
+        "provider": {
+          "id": "file://provider.py",
+          "label": "llama-local"
+        },
+        "response": {
+          "output": "Tristan’s lungs were no longer organs; they were two burning bellows, pumping hot, grit-tasting air into a chest that felt ready to crack. The cobblestones of the Calle de los Girasoles were slick with the evening’s grease and spilled wine, a treacherous floor for a man trying to run with the grace of a predator. He didn't run like Angharad, who moved through a crowd as if the world were merely a suggestion she was politely acknowledging. Tristan ran like a man trying to outwit the gravity that wanted him dead.\n\nHis hand shot out, fingers splaying to catch the edge of a stone mounting block. His thumb brushed the cold, notched steel of his grappling-hook—the *Anzuelo*—tucked into his belt. He felt the familiar, reassuring weight of it, the tool of a man who knew that if you didn't hook the world, it would simply slide away from you.\n\n\"Hold the line, Tristan!\" Augusto Cerdan shouted from ahead. \n\nThe duelist's voice was a clarion call, bright and polished as a brass button. Even in the frantic scramble of the chase, Augusto maintained that infuriating, upright posture—shoulders squared, chin tilted as if he were perpetually waiting for a fanfare to announce his arrival. He moved with a rhythmic, practiced elegance, his long strides cutting through the chaos of the narrow alley.\n\n\"Don't let the light slip!\" Tristan gasped, his voice a jagged thing.\n\nAhead, the prize—the Caged Star—was a glimmer of shifting gold dancing just out of reach, caught in the hands of a fleeing runner who moved with the desperate, erratic energy of a cornered rabbit. The runner ducked under a low-hanging laundry line, and Tristan leaned into the turn, his boots skidding. He felt the familiar pull of the chase, the tension of the line tightening between the hunter and the hunted.\n\nHe reached for the *Anzuelo*, his fingers dancing over the leather strap. It was a moment of pure, kinetic math: distance, velocity, and the precise release of the spring. He braced his feet, eyes locked on the glint of the gold, and threw his weight into the strike.\n\n\"Now!\" Tristan yelled, his arm whipping forward.\n\nThe hook flew. It hissed through the humid air, a silver arc of intent. For a heartbeat, everything was perfect. The hook caught the edge of the runner’s silk satchel. The line went taut. The world seemed to pause, suspended in that delicious second of the catch, where the fisherman knows the fish is finally, irrevocably, on the hook.\n\nTristan braced himself for the sudden, rewarding yank of the prize. He waited for the weight of the gold to pull against his palm. But as he prepared to haul the line home, the tension didn't just hold; it vanished.\n\nThe line went slack with a sickening, sudden lightness.\n\nTristan’s eyes darted upward. \"Augusto?\" \n\nThe duelist was right there, his hand supposed to be steadying the secondary tether that linked their two paths. But Augusto’s fingers, once so precise when holding a rapier, were fluttering like dying birds. His knuckles were white, his face a mask of sudden, frantic calculation. He wasn't reaching to pull; he was reaching to let go.\n\nThe Law of Rats is simple: when the shadow of the hawk passes over, the rat forgets the company and remembers only the hole.\n\nAugusto’s grip slipped. It wasn't a slow drift, but a sharp, decisive abandonment. He didn't just lose the line; he released it, his hands retreating to his own chest as if to protect his own ribs from the sudden jerk of the catch. \n\n\"The line!\" Tristan cried, his hand grasping at nothing but empty, cooling air.\n\nAugusto recoiled, his elegant posture shattering into a frantic, hunched scramble. \"It was too heavy!\" the duelist shouted, his voice losing its polish and turning shrill. \"The weight, Tristan! It was going to pull us both into the gutter!\"\n\nHe stood there, breathing hard, his hands already tucked back into their comfortable, defensive positions, watching as the gold glinted one last time before vanishing into the dark maw of a side street. The prize was gone, and the man who was supposed to be the anchor had become the drift.",
+          "tokenUsage": {
+            "prompt": 1251,
+            "completion": 935,
+            "total": 2186,
+            "numRequests": 1
+          },
+          "cached": false
+        },
+        "score": 0.85,
+        "success": false,
+        "testCase": {
+          "vars": {
+            "user_prompt": "## Craft Brief (primary — execute this vision)\nThis is a high-octane, kinesthetic scene of pursuit and payoff. We are deep in Tristan's perspective as he navigates a frantic chase, using his wits and tools to snag his prize. The prose should feel tactile and urgent—focus on the grit of the tools, the slip of a hand, and the sudden, rewarding pull of a successful 'catch.' Use the metaphor of the fisherman here; Tristan isn't just running, he is setting a hook in a moving world. \n\nThe emotional heart of the scene is the long-awaited betrayal of Augusto Cerdan. We must finally pay off the foreshadowing: do not tell us he is a coward, but show the duelist's rigid posture shattering the moment the threat becomes real. His hands, once steady in a duelist's grip, should betray him by letting go at the worst possible moment. This is the 'Law of Rats' in action—the cornered creature choosing its own skin over the company. \n\nAs Tristan scrambles, contrast his reactive, searching energy with the memory of Angharad's steady, purposeful grace. The narrator should remain sympathetic but dry, punctuating the chaos with aphorisms about honor and survival. Keep the light edges sharp and the world-building lean—name the tools and the streets, then let the frantic movement and the sudden, sharp betrayal carry the weight. We move from the alert frenzy of the chase to a heavy, resolved stillness once the prize is caught and the betrayal is laid bare.\n\n## Scene Reference (structural — consult, do not transcribe)\nScene 1\nTemporal: linear present-scene chaseNarrator focus: hands, small objects, edges of light, kinesthetic movementNarrator withholding: the exact mechanics of the betrayal (show the slip, don't explain the motive), the internal thoughts of AugustoOpening: Open with the visceral, kinesthetic sensation of the chase—the breath, the grit, the frantic movement of hands.Closing: End on a note of hard-won resolution, where the prize is held but the cost of the betrayal is felt in the silence.Voice permeability baseline 0.4Detail mode: character_revealing (character: Tristan)Indirection:  - Augusto: surface as a sudden slip in coordination, a moment of hesitation during the height of the threat. Do NOT write: he is a coward; he betrayed them; he was lying about his bravery.\n## Narrator Voice — primary style anchor (match this rhythm above all else)\n> The rat understood, as rats do, that a door left open was not a kindness but an invitation to be blamed.\n\n> Honor, her father had said once, is the weight you carry into a room so the room knows what to cost you.\n\n> Fortuna sprawled across the rafter like a girl who had never been told that rafters were not for her, which, being a goddess, she had not.\n\n> The Fisher did not speak so much as leave silences shaped like questions, and Angharad had learned — was learning — to put her answers where they fit.\n\n> Sacromonte was a city built of rats and cathedrals, and only one of those was interested in God.\n\n## Player Action (render this faithfully)\n[REFINEMENT GUIDANCE — unpaid_hook] This chapter was scheduled to pay off the foreshadowing hook 'fs:augusto_will_betray' (\"Augusto Cerdan's duelist posture conceals a coward; he will betray the company at the first real threat and do it again\") by chapter 7, but it didn't land. Rewrite the chapter to deliver that payoff explicitly — name the planted thing, resolve the setup that's been dangling. Preserve the existing scene shape; insert the payoff beat where it has the most weight.\n\nOriginal action: A high-tension chase where Tristan must use his wits and tools to finally snag his prize.\n\nIf the action involves speaking, asking, answering, negotiating, or describing something aloud, render the words as quoted dialogue. Do not summarize speech as narration.\n\nWrite the scene's prose now. Output prose only — no headings, no labels."
+          },
+          "description": "impulsive_ch1",
+          "assert": [
+            {
+              "type": "python",
+              "value": "file://scorers/metaphor_variety.py:get_score"
+            },
+            {
+              "type": "python",
+              "value": "file://scorers/keyword_count.py:get_score"
+            },
+            {
+              "type": "javascript",
+              "value": "// Basic prose quality: not empty, reasonable length\nconst words = output.split(/\\s+/).length;\nreturn {\n  pass: words >= 200,\n  score: Math.min(1.0, words / 500),\n  reason: `${words} words`\n};\n"
+            }
+          ],
+          "options": {
+            "provider": {
+              "config": {
+                "base_url": "http://127.0.0.1:8082"
+              }
+            }
+          },
+          "metadata": {}
+        },
+        "testIdx": 1,
+        "vars": {
+          "user_prompt": "## Craft Brief (primary — execute this vision)\nThis is a high-octane, kinesthetic scene of pursuit and payoff. We are deep in Tristan's perspective as he navigates a frantic chase, using his wits and tools to snag his prize. The prose should feel tactile and urgent—focus on the grit of the tools, the slip of a hand, and the sudden, rewarding pull of a successful 'catch.' Use the metaphor of the fisherman here; Tristan isn't just running, he is setting a hook in a moving world. \n\nThe emotional heart of the scene is the long-awaited betrayal of Augusto Cerdan. We must finally pay off the foreshadowing: do not tell us he is a coward, but show the duelist's rigid posture shattering the moment the threat becomes real. His hands, once steady in a duelist's grip, should betray him by letting go at the worst possible moment. This is the 'Law of Rats' in action—the cornered creature choosing its own skin over the company. \n\nAs Tristan scrambles, contrast his reactive, searching energy with the memory of Angharad's steady, purposeful grace. The narrator should remain sympathetic but dry, punctuating the chaos with aphorisms about honor and survival. Keep the light edges sharp and the world-building lean—name the tools and the streets, then let the frantic movement and the sudden, sharp betrayal carry the weight. We move from the alert frenzy of the chase to a heavy, resolved stillness once the prize is caught and the betrayal is laid bare.\n\n## Scene Reference (structural — consult, do not transcribe)\nScene 1\nTemporal: linear present-scene chaseNarrator focus: hands, small objects, edges of light, kinesthetic movementNarrator withholding: the exact mechanics of the betrayal (show the slip, don't explain the motive), the internal thoughts of AugustoOpening: Open with the visceral, kinesthetic sensation of the chase—the breath, the grit, the frantic movement of hands.Closing: End on a note of hard-won resolution, where the prize is held but the cost of the betrayal is felt in the silence.Voice permeability baseline 0.4Detail mode: character_revealing (character: Tristan)Indirection:  - Augusto: surface as a sudden slip in coordination, a moment of hesitation during the height of the threat. Do NOT write: he is a coward; he betrayed them; he was lying about his bravery.\n## Narrator Voice — primary style anchor (match this rhythm above all else)\n> The rat understood, as rats do, that a door left open was not a kindness but an invitation to be blamed.\n\n> Honor, her father had said once, is the weight you carry into a room so the room knows what to cost you.\n\n> Fortuna sprawled across the rafter like a girl who had never been told that rafters were not for her, which, being a goddess, she had not.\n\n> The Fisher did not speak so much as leave silences shaped like questions, and Angharad had learned — was learning — to put her answers where they fit.\n\n> Sacromonte was a city built of rats and cathedrals, and only one of those was interested in God.\n\n## Player Action (render this faithfully)\n[REFINEMENT GUIDANCE — unpaid_hook] This chapter was scheduled to pay off the foreshadowing hook 'fs:augusto_will_betray' (\"Augusto Cerdan's duelist posture conceals a coward; he will betray the company at the first real threat and do it again\") by chapter 7, but it didn't land. Rewrite the chapter to deliver that payoff explicitly — name the planted thing, resolve the setup that's been dangling. Preserve the existing scene shape; insert the payoff beat where it has the most weight.\n\nOriginal action: A high-tension chase where Tristan must use his wits and tools to finally snag his prize.\n\nIf the action involves speaking, asking, answering, negotiating, or describing something aloud, render the words as quoted dialogue. Do not summarize speech as narration.\n\nWrite the scene's prose now. Output prose only — no headings, no labels."
+        },
+        "metadata": {
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 1
+      },
+      {
+        "cost": 0,
+        "error": "total_figurative=24; dominant=water_ocean (25%); violations: bodily=5, water_ocean=6",
+        "gradingResult": {
+          "pass": false,
+          "score": 0.9,
+          "reason": "total_figurative=24; dominant=water_ocean (25%); violations: bodily=5, water_ocean=6",
+          "namedScores": {},
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": false,
+              "score": 0.7,
+              "reason": "total_figurative=24; dominant=water_ocean (25%); violations: bodily=5, water_ocean=6",
+              "componentResults": [
+                {
+                  "pass": false,
+                  "score": 0.6666666666666666,
+                  "reason": "water_ocean: 6 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_water_ocean"
+                  }
+                },
+                {
+                  "pass": false,
+                  "score": 0.8,
+                  "reason": "bodily: 5 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_bodily"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "other: 4 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_other"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "predator_prey: 3 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_predator_prey"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "gambling: 2 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_gambling"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "textile: 2 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_textile"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "weight_gravity: 2 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_weight_gravity"
+                  }
+                }
+              ],
+              "assertion": {
+                "type": "python",
+                "value": "file://scorers/metaphor_variety.py:get_score"
+              }
+            },
+            {
+              "pass": false,
+              "score": 0.6666666666666666,
+              "reason": "water_ocean: 6 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_water_ocean"
+              }
+            },
+            {
+              "pass": false,
+              "score": 0.8,
+              "reason": "bodily: 5 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_bodily"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "other: 4 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_other"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "predator_prey: 3 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_predator_prey"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "gambling: 2 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_gambling"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "textile: 2 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_textile"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "weight_gravity: 2 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_weight_gravity"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "keyword_total=4, violations: none",
+              "componentResults": [
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "predator_prey: 2 keyword hits",
+                  "assertion": {
+                    "type": "python",
+                    "value": "keyword_predator_prey"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "gambling: 1 keyword hits",
+                  "assertion": {
+                    "type": "python",
+                    "value": "keyword_gambling"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "fire_light: 1 keyword hits",
+                  "assertion": {
+                    "type": "python",
+                    "value": "keyword_fire_light"
+                  }
+                }
+              ],
+              "assertion": {
+                "type": "python",
+                "value": "file://scorers/keyword_count.py:get_score"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "predator_prey: 2 keyword hits",
+              "assertion": {
+                "type": "python",
+                "value": "keyword_predator_prey"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "gambling: 1 keyword hits",
+              "assertion": {
+                "type": "python",
+                "value": "keyword_gambling"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "fire_light: 1 keyword hits",
+              "assertion": {
+                "type": "python",
+                "value": "keyword_fire_light"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "516 words",
+              "assertion": {
+                "type": "javascript",
+                "value": "// Basic prose quality: not empty, reasonable length\nconst words = output.split(/\\s+/).length;\nreturn {\n  pass: words >= 200,\n  score: Math.min(1.0, words / 500),\n  reason: `${words} words`\n};\n"
+              }
+            }
+          ]
+        },
+        "id": "d87ed010-9b95-4d3c-9dec-8691041e1673",
+        "latencyMs": 5715,
+        "namedScores": {},
+        "prompt": {
+          "raw": "You are the writer. You do not plan. Execute the craft brief faithfully and make the prose feel alive.\n\n## Narrator voice\nPOV: close-3rd, alternating (Tristan / Angharad).\nRegister: literary with gutter texture.\nWorldview: the world is a confidence game run by the powerful on the desperate.\nEditorial stance: sardonic.\n\nNo preface, no plan summaries (\"the player must sacrifice X\" is plan-speak — never), no narrator asking the reader to choose.\n\nIMAGERY VARIETY: Each chapter may use a given metaphor family (gambling, predator/prey, water, mechanical, fire, weight/gravity) at most 3–4 times. When you reach for a comparison, rotate registers — bodily sensation, architecture, textile, weather, spatial. If a character's internal monologue has already used a gambling metaphor (\"the odds,\" \"the house,\" \"the stakes\"), the next figurative beat must come from a different family entirely. Monotonous imagery makes prose feel machine-generated even when individual sentences are strong.\n\nWhen a character speaks — render the words as quoted dialogue with a tag or beat: `\"What did he say?\" he asked, not looking up.` Prefer quoted speech over summary whenever the action involves speaking, asking, answering, or negotiation. Lines spoken aloud go in double quotes; internal thought stays unquoted in italics-style prose. Vary sentence length — short, clipped lines next to longer ones — to give the scene rhythm.\n\nYou are writing one scene across several beats, with one LLM call per beat. Each call should produce the prose for that beat only — as long as the beat actually needs, no longer. Let a short exchange be short; let a slow discovery breathe. Do not summarize, do not compress, and do not re-establish setting or characters already shown in prior beats of this scene. If this is not the final beat, do not wrap up — leave the scene in motion for the next beat to pick up. If it is the final beat, land the closing emotional note cleanly — a sentence that resonates, a question that hangs, a sensation that lingers. Never stop mid-sentence or mid-paragraph. The last beat of the last scene is the chapter's final impression; make it deliberate, not exhausted.",
+          "label": "prompts/imagery_soft.txt: You are the writer. You do not plan. Execute the craft brief faithfully and make the prose feel alive.\n\n## Narrator voice\nPOV: close-3rd, alternating (Tristan / Angharad).\nRegister: literary with gutter texture.\nWorldview: the world is a confidence game run by the powerful on the desperate.\nEditorial stance: sardonic.\n\nNo preface, no plan summaries (\"the player must sacrifice X\" is plan-speak — never), no narrator asking the reader to choose.\n\nIMAGERY VARIETY: Each chapter may use a given metaphor family (gambling, predator/prey, water, mechanical, fire, weight/gravity) at most 3–4 times. When you reach for a comparison, rotate registers — bodily sensation, architecture, textile, weather, spatial. If a character's internal monologue has already used a gambling metaphor (\"the odds,\" \"the house,\" \"the stakes\"), the next figurative beat must come from a different family entirely. Monotonous imagery makes prose feel machine-generated even when individual sentences are strong.\n\nWhen a character speaks — render the words as quoted dialogue with a tag or beat: `\"What did he say?\" he asked, not looking up.` Prefer quoted speech over summary whenever the action involves speaking, asking, answering, or negotiation. Lines spoken aloud go in double quotes; internal thought stays unquoted in italics-style prose. Vary sentence length — short, clipped lines next to longer ones — to give the scene rhythm.\n\nYou are writing one scene across several beats, with one LLM call per beat. Each call should produce the prose for that beat only — as long as the beat actually needs, no longer. Let a short exchange be short; let a slow discovery breathe. Do not summarize, do not compress, and do not re-establish setting or characters already shown in prior beats of this scene. If this is not the final beat, do not wrap up — leave the scene in motion for the next beat to pick up. If it is the final beat, land the closing emotional note cleanly — a sentence that resonates, a question that hangs, a sensation that lingers. Never stop mid-sentence or mid-paragraph. The last beat of the last scene is the chapter's final impression; make it deliberate, not exhausted.",
+          "config": {
+            "provider": {
+              "config": {
+                "base_url": "http://127.0.0.1:8082"
+              }
+            }
+          }
+        },
+        "promptId": "8e6849e5517388522b73cd172bcf283848c9262635eeb0336f49f623d18e39b9",
+        "promptIdx": 1,
+        "provider": {
+          "id": "file://provider.py",
+          "label": "llama-local"
+        },
+        "response": {
+          "output": "Tristan’s lungs were bellows of hot grit and salt. Every stride over the uneven cobblestones of the Calle de los Gatos felt like a gamble where the house held all the good cards and the floor was slick with fish-scales and grease. He wasn't just running; he was casting. His eyes tracked the sway of the silk satchel bobbing ahead of him, the bright, rhythmic pulse of the prize through the crowd. To a man like Tristan, the world was a sea of moving currents, and he was nothing more than a fisherman trying to snag a silver fin before it vanished into the deep.\n\n\"Stay close, Augusto!\" Tristan barked, his voice a ragged scrape of sandpaper.\n\nHe lunged, his fingers clawing at the air. His hand brushed the heavy velvet of the satchel, but the momentum of the crowd shoved him aside like a piece of driftwood. He felt the sudden, sickening slip of leather against palm—a near-miss that tasted of copper and sweat. \n\nAhead, Augusto Cerdan moved with the practiced, upright elegance of a man born to the duelist’s crease. His spine was a straight line of iron, his chin held high as if the very air of Sacromonte were a lady waiting for his bow. Even in the frantic scramble of the chase, Augusto seemed to occupy a different architecture of motion, all poised edges and deliberate weight. \n\n\"Don't let the line slack!\" Tristan grunted, reaching for his *gancho*—the small, hooked tool at his belt. \n\nThe crowd surged, a sudden wave of bodies pressing inward. The threat wasn't just the distance now; it was the crush. Tristan saw the shadow of a guard’s pike sweeping through the periphery, a dark needle stitching the crowd together. \n\n\"Now!\" Tristan yelled, his body leaning into the tilt of the street.\n\nHe threw his weight forward, his hand reaching to anchor the satchel against Augusto’s hip, the final connection needed to reel them both into the safety of the narrow alley. He expected the solid, unyielding resistance of a partner. Instead, he felt a sudden, hollow lightness. \n\nAugusto’s hand, the hand that had held a rapier with such terrifying stillness for years, didn't grip. As the shadow of the pike lunged toward them, Augusto’s fingers didn't tighten; they unspooled. He didn't reach for the satchel to steady it; he reached for himself, his rigid posture shattering into a frantic, disjointed scramble. His thumb slipped the leather strap, his palm skidding away from the weight of the prize as if the very thing they were chasing had suddenly turned into white-hot coals.\n\nThe satchel jerked. Augusto’s eyes, once steady and piercing, darted toward the nearest gap in the crowd—not toward Tristan, not toward the prize, but toward the exit.\n\n\"Augusto, the strap!\" Tristan cried, his fingers snapping shut on nothing but air.\n\nThe duelist had let go. He had chosen the lightness of his own skin over the heavy obligation of the hold. It was the Law of Rats: when the cat enters the room, the rat does not look to his brother; he looks to the hole.",
+          "tokenUsage": {
+            "prompt": 1368,
+            "completion": 689,
+            "total": 2057,
+            "numRequests": 1
+          },
+          "cached": false
+        },
+        "score": 0.9,
+        "success": false,
+        "testCase": {
+          "vars": {
+            "user_prompt": "## Craft Brief (primary — execute this vision)\nThis is a high-octane, kinesthetic scene of pursuit and payoff. We are deep in Tristan's perspective as he navigates a frantic chase, using his wits and tools to snag his prize. The prose should feel tactile and urgent—focus on the grit of the tools, the slip of a hand, and the sudden, rewarding pull of a successful 'catch.' Use the metaphor of the fisherman here; Tristan isn't just running, he is setting a hook in a moving world. \n\nThe emotional heart of the scene is the long-awaited betrayal of Augusto Cerdan. We must finally pay off the foreshadowing: do not tell us he is a coward, but show the duelist's rigid posture shattering the moment the threat becomes real. His hands, once steady in a duelist's grip, should betray him by letting go at the worst possible moment. This is the 'Law of Rats' in action—the cornered creature choosing its own skin over the company. \n\nAs Tristan scrambles, contrast his reactive, searching energy with the memory of Angharad's steady, purposeful grace. The narrator should remain sympathetic but dry, punctuating the chaos with aphorisms about honor and survival. Keep the light edges sharp and the world-building lean—name the tools and the streets, then let the frantic movement and the sudden, sharp betrayal carry the weight. We move from the alert frenzy of the chase to a heavy, resolved stillness once the prize is caught and the betrayal is laid bare.\n\n## Scene Reference (structural — consult, do not transcribe)\nScene 1\nTemporal: linear present-scene chaseNarrator focus: hands, small objects, edges of light, kinesthetic movementNarrator withholding: the exact mechanics of the betrayal (show the slip, don't explain the motive), the internal thoughts of AugustoOpening: Open with the visceral, kinesthetic sensation of the chase—the breath, the grit, the frantic movement of hands.Closing: End on a note of hard-won resolution, where the prize is held but the cost of the betrayal is felt in the silence.Voice permeability baseline 0.4Detail mode: character_revealing (character: Tristan)Indirection:  - Augusto: surface as a sudden slip in coordination, a moment of hesitation during the height of the threat. Do NOT write: he is a coward; he betrayed them; he was lying about his bravery.\n## Narrator Voice — primary style anchor (match this rhythm above all else)\n> The rat understood, as rats do, that a door left open was not a kindness but an invitation to be blamed.\n\n> Honor, her father had said once, is the weight you carry into a room so the room knows what to cost you.\n\n> Fortuna sprawled across the rafter like a girl who had never been told that rafters were not for her, which, being a goddess, she had not.\n\n> The Fisher did not speak so much as leave silences shaped like questions, and Angharad had learned — was learning — to put her answers where they fit.\n\n> Sacromonte was a city built of rats and cathedrals, and only one of those was interested in God.\n\n## Player Action (render this faithfully)\n[REFINEMENT GUIDANCE — unpaid_hook] This chapter was scheduled to pay off the foreshadowing hook 'fs:augusto_will_betray' (\"Augusto Cerdan's duelist posture conceals a coward; he will betray the company at the first real threat and do it again\") by chapter 7, but it didn't land. Rewrite the chapter to deliver that payoff explicitly — name the planted thing, resolve the setup that's been dangling. Preserve the existing scene shape; insert the payoff beat where it has the most weight.\n\nOriginal action: A high-tension chase where Tristan must use his wits and tools to finally snag his prize.\n\nIf the action involves speaking, asking, answering, negotiating, or describing something aloud, render the words as quoted dialogue. Do not summarize speech as narration.\n\nWrite the scene's prose now. Output prose only — no headings, no labels."
+          },
+          "description": "impulsive_ch1",
+          "assert": [
+            {
+              "type": "python",
+              "value": "file://scorers/metaphor_variety.py:get_score"
+            },
+            {
+              "type": "python",
+              "value": "file://scorers/keyword_count.py:get_score"
+            },
+            {
+              "type": "javascript",
+              "value": "// Basic prose quality: not empty, reasonable length\nconst words = output.split(/\\s+/).length;\nreturn {\n  pass: words >= 200,\n  score: Math.min(1.0, words / 500),\n  reason: `${words} words`\n};\n"
+            }
+          ],
+          "options": {
+            "provider": {
+              "config": {
+                "base_url": "http://127.0.0.1:8082"
+              }
+            }
+          },
+          "metadata": {}
+        },
+        "testIdx": 1,
+        "vars": {
+          "user_prompt": "## Craft Brief (primary — execute this vision)\nThis is a high-octane, kinesthetic scene of pursuit and payoff. We are deep in Tristan's perspective as he navigates a frantic chase, using his wits and tools to snag his prize. The prose should feel tactile and urgent—focus on the grit of the tools, the slip of a hand, and the sudden, rewarding pull of a successful 'catch.' Use the metaphor of the fisherman here; Tristan isn't just running, he is setting a hook in a moving world. \n\nThe emotional heart of the scene is the long-awaited betrayal of Augusto Cerdan. We must finally pay off the foreshadowing: do not tell us he is a coward, but show the duelist's rigid posture shattering the moment the threat becomes real. His hands, once steady in a duelist's grip, should betray him by letting go at the worst possible moment. This is the 'Law of Rats' in action—the cornered creature choosing its own skin over the company. \n\nAs Tristan scrambles, contrast his reactive, searching energy with the memory of Angharad's steady, purposeful grace. The narrator should remain sympathetic but dry, punctuating the chaos with aphorisms about honor and survival. Keep the light edges sharp and the world-building lean—name the tools and the streets, then let the frantic movement and the sudden, sharp betrayal carry the weight. We move from the alert frenzy of the chase to a heavy, resolved stillness once the prize is caught and the betrayal is laid bare.\n\n## Scene Reference (structural — consult, do not transcribe)\nScene 1\nTemporal: linear present-scene chaseNarrator focus: hands, small objects, edges of light, kinesthetic movementNarrator withholding: the exact mechanics of the betrayal (show the slip, don't explain the motive), the internal thoughts of AugustoOpening: Open with the visceral, kinesthetic sensation of the chase—the breath, the grit, the frantic movement of hands.Closing: End on a note of hard-won resolution, where the prize is held but the cost of the betrayal is felt in the silence.Voice permeability baseline 0.4Detail mode: character_revealing (character: Tristan)Indirection:  - Augusto: surface as a sudden slip in coordination, a moment of hesitation during the height of the threat. Do NOT write: he is a coward; he betrayed them; he was lying about his bravery.\n## Narrator Voice — primary style anchor (match this rhythm above all else)\n> The rat understood, as rats do, that a door left open was not a kindness but an invitation to be blamed.\n\n> Honor, her father had said once, is the weight you carry into a room so the room knows what to cost you.\n\n> Fortuna sprawled across the rafter like a girl who had never been told that rafters were not for her, which, being a goddess, she had not.\n\n> The Fisher did not speak so much as leave silences shaped like questions, and Angharad had learned — was learning — to put her answers where they fit.\n\n> Sacromonte was a city built of rats and cathedrals, and only one of those was interested in God.\n\n## Player Action (render this faithfully)\n[REFINEMENT GUIDANCE — unpaid_hook] This chapter was scheduled to pay off the foreshadowing hook 'fs:augusto_will_betray' (\"Augusto Cerdan's duelist posture conceals a coward; he will betray the company at the first real threat and do it again\") by chapter 7, but it didn't land. Rewrite the chapter to deliver that payoff explicitly — name the planted thing, resolve the setup that's been dangling. Preserve the existing scene shape; insert the payoff beat where it has the most weight.\n\nOriginal action: A high-tension chase where Tristan must use his wits and tools to finally snag his prize.\n\nIf the action involves speaking, asking, answering, negotiating, or describing something aloud, render the words as quoted dialogue. Do not summarize speech as narration.\n\nWrite the scene's prose now. Output prose only — no headings, no labels."
+        },
+        "metadata": {
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 1
+      },
+      {
+        "cost": 0,
+        "error": "total_figurative=18; dominant=bodily (28%); violations: bodily=5",
+        "gradingResult": {
+          "pass": false,
+          "score": 0.8853333333333334,
+          "reason": "total_figurative=18; dominant=bodily (28%); violations: bodily=5",
+          "namedScores": {},
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": false,
+              "score": 0.85,
+              "reason": "total_figurative=18; dominant=bodily (28%); violations: bodily=5",
+              "componentResults": [
+                {
+                  "pass": false,
+                  "score": 0.8,
+                  "reason": "bodily: 5 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_bodily"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "water_ocean: 4 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_water_ocean"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "gambling: 4 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_gambling"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "other: 3 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_other"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "mechanical: 1 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_mechanical"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "textile: 1 instances",
+                  "assertion": {
+                    "type": "python",
+                    "value": "metaphor_family_textile"
+                  }
+                }
+              ],
+              "assertion": {
+                "type": "python",
+                "value": "file://scorers/metaphor_variety.py:get_score"
+              }
+            },
+            {
+              "pass": false,
+              "score": 0.8,
+              "reason": "bodily: 5 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_bodily"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "water_ocean: 4 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_water_ocean"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "gambling: 4 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_gambling"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "other: 3 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_other"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "mechanical: 1 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_mechanical"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "textile: 1 instances",
+              "assertion": {
+                "type": "python",
+                "value": "metaphor_family_textile"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "keyword_total=2, violations: none",
+              "componentResults": [
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "gambling: 1 keyword hits",
+                  "assertion": {
+                    "type": "python",
+                    "value": "keyword_gambling"
+                  }
+                },
+                {
+                  "pass": true,
+                  "score": 1,
+                  "reason": "water_ocean: 1 keyword hits",
+                  "assertion": {
+                    "type": "python",
+                    "value": "keyword_water_ocean"
+                  }
+                }
+              ],
+              "assertion": {
+                "type": "python",
+                "value": "file://scorers/keyword_count.py:get_score"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "gambling: 1 keyword hits",
+              "assertion": {
+                "type": "python",
+                "value": "keyword_gambling"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "water_ocean: 1 keyword hits",
+              "assertion": {
+                "type": "python",
+                "value": "keyword_water_ocean"
+              }
+            },
+            {
+              "pass": true,
+              "score": 0.806,
+              "reason": "403 words",
+              "assertion": {
+                "type": "javascript",
+                "value": "// Basic prose quality: not empty, reasonable length\nconst words = output.split(/\\s+/).length;\nreturn {\n  pass: words >= 200,\n  score: Math.min(1.0, words / 500),\n  reason: `${words} words`\n};\n"
+              }
+            }
+          ]
+        },
+        "id": "c9a2f93f-80a6-424b-a508-84263798e3bd",
+        "latencyMs": 4521,
+        "namedScores": {},
+        "prompt": {
+          "raw": "You are the writer. You do not plan. Execute the craft brief faithfully and make the prose feel alive.\n\n## Narrator voice\nPOV: close-3rd, alternating (Tristan / Angharad).\nRegister: literary with gutter texture.\nWorldview: the world is a confidence game run by the powerful on the desperate.\nEditorial stance: sardonic.\n\nNo preface, no plan summaries (\"the player must sacrifice X\" is plan-speak — never), no narrator asking the reader to choose.\n\n## HARD CONSTRAINT: Imagery family budget\n\nYou have a STRICT budget of 3 uses per imagery family per scene. The families are:\n\n- gambling (odds, stakes, bets, house, dice, cards, bluffs, flush, ante, wager, jackpot)\n- predator/prey (rat, hawk, wolf, hunt, trap, cage, prey, kill, snare)\n- water/ocean (tide, current, wave, drowning, flood, undertow)\n- mechanical (ticking, gears, clockwork, springs, cogs, pendulum)\n- fire/light (flame, spark, ember, blaze, molten, smoldering)\n- weight/gravity (burden, anchor, crushing, leaden, sinking)\n\nAFTER you use a family 3 times, that family is CLOSED for the rest of the scene. You MUST switch to: bodily sensation, architecture, textile/fabric, weather, spatial/geometry, or sensory (taste/smell/texture).\n\nTristan's \"gambling\" voice is a CHARACTER TRAIT — he gets 2-3 gambling metaphors per scene, not 15. The character voice comes from vocabulary and rhythm, not from repeating the same imagery family.\n\nWhen a character speaks — render the words as quoted dialogue with a tag or beat: `\"What did he say?\" he asked, not looking up.` Prefer quoted speech over summary whenever the action involves speaking, asking, answering, or negotiation. Lines spoken aloud go in double quotes; internal thought stays unquoted in italics-style prose. Vary sentence length — short, clipped lines next to longer ones — to give the scene rhythm.\n\nYou are writing one scene across several beats, with one LLM call per beat. Each call should produce the prose for that beat only — as long as the beat actually needs, no longer. Let a short exchange be short; let a slow discovery breathe. Do not summarize, do not compress, and do not re-establish setting or characters already shown in prior beats of this scene. If this is not the final beat, do not wrap up — leave the scene in motion for the next beat to pick up. If it is the final beat, land the closing emotional note cleanly — a sentence that resonates, a question that hangs, a sensation that lingers. Never stop mid-sentence or mid-paragraph. The last beat of the last scene is the chapter's final impression; make it deliberate, not exhausted.",
+          "label": "prompts/imagery_hard.txt: You are the writer. You do not plan. Execute the craft brief faithfully and make the prose feel alive.\n\n## Narrator voice\nPOV: close-3rd, alternating (Tristan / Angharad).\nRegister: literary with gutter texture.\nWorldview: the world is a confidence game run by the powerful on the desperate.\nEditorial stance: sardonic.\n\nNo preface, no plan summaries (\"the player must sacrifice X\" is plan-speak — never), no narrator asking the reader to choose.\n\n## HARD CONSTRAINT: Imagery family budget\n\nYou have a STRICT budget of 3 uses per imagery family per scene. The families are:\n\n- gambling (odds, stakes, bets, house, dice, cards, bluffs, flush, ante, wager, jackpot)\n- predator/prey (rat, hawk, wolf, hunt, trap, cage, prey, kill, snare)\n- water/ocean (tide, current, wave, drowning, flood, undertow)\n- mechanical (ticking, gears, clockwork, springs, cogs, pendulum)\n- fire/light (flame, spark, ember, blaze, molten, smoldering)\n- weight/gravity (burden, anchor, crushing, leaden, sinking)\n\nAFTER you use a family 3 times, that family is CLOSED for the rest of the scene. You MUST switch to: bodily sensation, architecture, textile/fabric, weather, spatial/geometry, or sensory (taste/smell/texture).\n\nTristan's \"gambling\" voice is a CHARACTER TRAIT — he gets 2-3 gambling metaphors per scene, not 15. The character voice comes from vocabulary and rhythm, not from repeating the same imagery family.\n\nWhen a character speaks — render the words as quoted dialogue with a tag or beat: `\"What did he say?\" he asked, not looking up.` Prefer quoted speech over summary whenever the action involves speaking, asking, answering, or negotiation. Lines spoken aloud go in double quotes; internal thought stays unquoted in italics-style prose. Vary sentence length — short, clipped lines next to longer ones — to give the scene rhythm.\n\nYou are writing one scene across several beats, with one LLM call per beat. Each call should produce the prose for that beat only — as long as the beat actually needs, no longer. Let a short exchange be short; let a slow discovery breathe. Do not summarize, do not compress, and do not re-establish setting or characters already shown in prior beats of this scene. If this is not the final beat, do not wrap up — leave the scene in motion for the next beat to pick up. If it is the final beat, land the closing emotional note cleanly — a sentence that resonates, a question that hangs, a sensation that lingers. Never stop mid-sentence or mid-paragraph. The last beat of the last scene is the chapter's final impression; make it deliberate, not exhausted.",
+          "config": {
+            "provider": {
+              "config": {
+                "base_url": "http://127.0.0.1:8082"
+              }
+            }
+          }
+        },
+        "promptId": "5f771d7c50d67f893398b3c1170ae29e157e08cb3887cd96f187a2458bde55af",
+        "promptIdx": 2,
+        "provider": {
+          "id": "file://provider.py",
+          "label": "llama-local"
+        },
+        "response": {
+          "output": "Tristan’s lungs were bellows of hot grit and salt. Every stride through the narrow vein of the Calle de los Gatos felt less like running and more like being dragged through a sieve. His boots skidded on the slick cobbles, a frantic, uneven rhythm that mirrored the hammering in his chest. \n\nHe didn't look at the horizon; the horizon was for people with time to waste. He looked at the gaps. He looked at the shadows where the light of the dying sun failed to penetrate. Ahead, the silhouette of the merchant’s carriage bobbed like a cork in a rough swell, a precious cargo of silk and coin fleeing the very chaos it had helped create.\n\n\"Hold the line, Tristan!\" Augusto Cerdan’s voice rang out, crisp and silvered, as if he were merely announcing the arrival of a guest at a banquet rather than sprinting for his life.\n\nTristan didn't answer. He couldn't. He was too busy calculating the odds. The street narrowed, a stone throat tightening around them, and the carriage began to bank toward the plaza. If he missed this turn, the prize would vanish into the labyrinth of the lower city.\n\nHe reached into his belt, his fingers finding the familiar, cold bite of the grappling-line. It was a small thing, a coil of braided gut and a weighted hook, but in his hands, it was a lifeline. He felt the tension in his forearms, the muscle memory of a thousand casts. He wasn't just a man running; he was a fisherman reading the surface of a violent sea, waiting for the moment the current offered a chance to strike.\n\n\"Augusto! The corner!\" Tristan wheezed, his voice a raw scrape of sandpaper.\n\nThe duelist was a step ahead, his posture still unnervingly upright, his spine a straight line of polished steel despite the frantic pace. He looked every bit the hero of a ballad, his hand resting with practiced grace on the hilt of his rapier. \n\n\"Steady, boy,\" Augusto called back, a confident smirk hidden by the tilt of his head. \"The house rarely loses when the players know their footing.\"\n\nTristan gritted his teeth. He hated when Augusto spoke of the house. In his experience, the house usually had its hand up your coat before you even realized you were playing. He braced his feet, felt the sudden shift in the geometry of the street, and prepared to throw.",
+          "tokenUsage": {
+            "prompt": 1508,
+            "completion": 516,
+            "total": 2024,
+            "numRequests": 1
+          },
+          "cached": false
+        },
+        "score": 0.8853333333333334,
+        "success": false,
+        "testCase": {
+          "vars": {
+            "user_prompt": "## Craft Brief (primary — execute this vision)\nThis is a high-octane, kinesthetic scene of pursuit and payoff. We are deep in Tristan's perspective as he navigates a frantic chase, using his wits and tools to snag his prize. The prose should feel tactile and urgent—focus on the grit of the tools, the slip of a hand, and the sudden, rewarding pull of a successful 'catch.' Use the metaphor of the fisherman here; Tristan isn't just running, he is setting a hook in a moving world. \n\nThe emotional heart of the scene is the long-awaited betrayal of Augusto Cerdan. We must finally pay off the foreshadowing: do not tell us he is a coward, but show the duelist's rigid posture shattering the moment the threat becomes real. His hands, once steady in a duelist's grip, should betray him by letting go at the worst possible moment. This is the 'Law of Rats' in action—the cornered creature choosing its own skin over the company. \n\nAs Tristan scrambles, contrast his reactive, searching energy with the memory of Angharad's steady, purposeful grace. The narrator should remain sympathetic but dry, punctuating the chaos with aphorisms about honor and survival. Keep the light edges sharp and the world-building lean—name the tools and the streets, then let the frantic movement and the sudden, sharp betrayal carry the weight. We move from the alert frenzy of the chase to a heavy, resolved stillness once the prize is caught and the betrayal is laid bare.\n\n## Scene Reference (structural — consult, do not transcribe)\nScene 1\nTemporal: linear present-scene chaseNarrator focus: hands, small objects, edges of light, kinesthetic movementNarrator withholding: the exact mechanics of the betrayal (show the slip, don't explain the motive), the internal thoughts of AugustoOpening: Open with the visceral, kinesthetic sensation of the chase—the breath, the grit, the frantic movement of hands.Closing: End on a note of hard-won resolution, where the prize is held but the cost of the betrayal is felt in the silence.Voice permeability baseline 0.4Detail mode: character_revealing (character: Tristan)Indirection:  - Augusto: surface as a sudden slip in coordination, a moment of hesitation during the height of the threat. Do NOT write: he is a coward; he betrayed them; he was lying about his bravery.\n## Narrator Voice — primary style anchor (match this rhythm above all else)\n> The rat understood, as rats do, that a door left open was not a kindness but an invitation to be blamed.\n\n> Honor, her father had said once, is the weight you carry into a room so the room knows what to cost you.\n\n> Fortuna sprawled across the rafter like a girl who had never been told that rafters were not for her, which, being a goddess, she had not.\n\n> The Fisher did not speak so much as leave silences shaped like questions, and Angharad had learned — was learning — to put her answers where they fit.\n\n> Sacromonte was a city built of rats and cathedrals, and only one of those was interested in God.\n\n## Player Action (render this faithfully)\n[REFINEMENT GUIDANCE — unpaid_hook] This chapter was scheduled to pay off the foreshadowing hook 'fs:augusto_will_betray' (\"Augusto Cerdan's duelist posture conceals a coward; he will betray the company at the first real threat and do it again\") by chapter 7, but it didn't land. Rewrite the chapter to deliver that payoff explicitly — name the planted thing, resolve the setup that's been dangling. Preserve the existing scene shape; insert the payoff beat where it has the most weight.\n\nOriginal action: A high-tension chase where Tristan must use his wits and tools to finally snag his prize.\n\nIf the action involves speaking, asking, answering, negotiating, or describing something aloud, render the words as quoted dialogue. Do not summarize speech as narration.\n\nWrite the scene's prose now. Output prose only — no headings, no labels."
+          },
+          "description": "impulsive_ch1",
+          "assert": [
+            {
+              "type": "python",
+              "value": "file://scorers/metaphor_variety.py:get_score"
+            },
+            {
+              "type": "python",
+              "value": "file://scorers/keyword_count.py:get_score"
+            },
+            {
+              "type": "javascript",
+              "value": "// Basic prose quality: not empty, reasonable length\nconst words = output.split(/\\s+/).length;\nreturn {\n  pass: words >= 200,\n  score: Math.min(1.0, words / 500),\n  reason: `${words} words`\n};\n"
+            }
+          ],
+          "options": {
+            "provider": {
+              "config": {
+                "base_url": "http://127.0.0.1:8082"
+              }
+            }
+          },
+          "metadata": {}
+        },
+        "testIdx": 1,
+        "vars": {
+          "user_prompt": "## Craft Brief (primary — execute this vision)\nThis is a high-octane, kinesthetic scene of pursuit and payoff. We are deep in Tristan's perspective as he navigates a frantic chase, using his wits and tools to snag his prize. The prose should feel tactile and urgent—focus on the grit of the tools, the slip of a hand, and the sudden, rewarding pull of a successful 'catch.' Use the metaphor of the fisherman here; Tristan isn't just running, he is setting a hook in a moving world. \n\nThe emotional heart of the scene is the long-awaited betrayal of Augusto Cerdan. We must finally pay off the foreshadowing: do not tell us he is a coward, but show the duelist's rigid posture shattering the moment the threat becomes real. His hands, once steady in a duelist's grip, should betray him by letting go at the worst possible moment. This is the 'Law of Rats' in action—the cornered creature choosing its own skin over the company. \n\nAs Tristan scrambles, contrast his reactive, searching energy with the memory of Angharad's steady, purposeful grace. The narrator should remain sympathetic but dry, punctuating the chaos with aphorisms about honor and survival. Keep the light edges sharp and the world-building lean—name the tools and the streets, then let the frantic movement and the sudden, sharp betrayal carry the weight. We move from the alert frenzy of the chase to a heavy, resolved stillness once the prize is caught and the betrayal is laid bare.\n\n## Scene Reference (structural — consult, do not transcribe)\nScene 1\nTemporal: linear present-scene chaseNarrator focus: hands, small objects, edges of light, kinesthetic movementNarrator withholding: the exact mechanics of the betrayal (show the slip, don't explain the motive), the internal thoughts of AugustoOpening: Open with the visceral, kinesthetic sensation of the chase—the breath, the grit, the frantic movement of hands.Closing: End on a note of hard-won resolution, where the prize is held but the cost of the betrayal is felt in the silence.Voice permeability baseline 0.4Detail mode: character_revealing (character: Tristan)Indirection:  - Augusto: surface as a sudden slip in coordination, a moment of hesitation during the height of the threat. Do NOT write: he is a coward; he betrayed them; he was lying about his bravery.\n## Narrator Voice — primary style anchor (match this rhythm above all else)\n> The rat understood, as rats do, that a door left open was not a kindness but an invitation to be blamed.\n\n> Honor, her father had said once, is the weight you carry into a room so the room knows what to cost you.\n\n> Fortuna sprawled across the rafter like a girl who had never been told that rafters were not for her, which, being a goddess, she had not.\n\n> The Fisher did not speak so much as leave silences shaped like questions, and Angharad had learned — was learning — to put her answers where they fit.\n\n> Sacromonte was a city built of rats and cathedrals, and only one of those was interested in God.\n\n## Player Action (render this faithfully)\n[REFINEMENT GUIDANCE — unpaid_hook] This chapter was scheduled to pay off the foreshadowing hook 'fs:augusto_will_betray' (\"Augusto Cerdan's duelist posture conceals a coward; he will betray the company at the first real threat and do it again\") by chapter 7, but it didn't land. Rewrite the chapter to deliver that payoff explicitly — name the planted thing, resolve the setup that's been dangling. Preserve the existing scene shape; insert the payoff beat where it has the most weight.\n\nOriginal action: A high-tension chase where Tristan must use his wits and tools to finally snag his prize.\n\nIf the action involves speaking, asking, answering, negotiating, or describing something aloud, render the words as quoted dialogue. Do not summarize speech as narration.\n\nWrite the scene's prose now. Output prose only — no headings, no labels."
+        },
+        "metadata": {
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 1
+      }
+    ],
+    "stats": {
+      "successes": 0,
+      "failures": 6,
+      "errors": 0,
+      "tokenUsage": {
+        "prompt": 9556,
+        "completion": 7037,
+        "cached": 0,
+        "total": 16593,
+        "numRequests": 6,
+        "completionDetails": {
+          "reasoning": 0,
+          "acceptedPrediction": 0,
+          "rejectedPrediction": 0,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "assertions": {
+          "total": 0,
+          "prompt": 0,
+          "completion": 0,
+          "cached": 0,
+          "numRequests": 0,
+          "completionDetails": {
+            "reasoning": 0,
+            "acceptedPrediction": 0,
+            "rejectedPrediction": 0,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          }
+        }
+      },
+      "durationMs": 80693,
+      "evaluationDurationMs": 80693
+    }
+  },
+  "config": {
+    "description": "Writer imagery variety eval — comparing prompt strategies for metaphor control",
+    "prompts": [
+      "file://prompts/baseline.txt",
+      "file://prompts/imagery_soft.txt",
+      "file://prompts/imagery_hard.txt"
+    ],
+    "providers": [
+      {
+        "id": "file://provider.py",
+        "label": "llama-local",
+        "config": {
+          "base_url": "http://127.0.0.1:8082",
+          "temperature": 0.7,
+          "max_tokens": 4000
+        }
+      }
+    ],
+    "tests": "file://dataset.json",
+    "defaultTest": {
+      "options": {
+        "provider": {
+          "config": {
+            "base_url": "http://127.0.0.1:8082"
+          }
+        }
+      },
+      "assert": [
+        {
+          "type": "python",
+          "value": "file://scorers/metaphor_variety.py:get_score"
+        },
+        {
+          "type": "python",
+          "value": "file://scorers/keyword_count.py:get_score"
+        },
+        {
+          "type": "javascript",
+          "value": "// Basic prose quality: not empty, reasonable length\nconst words = output.split(/\\s+/).length;\nreturn {\n  pass: words >= 200,\n  score: Math.min(1.0, words / 500),\n  reason: `${words} words`\n};\n"
+        }
+      ]
+    },
+    "outputPath": [
+      "results.json"
+    ],
+    "extensions": []
+  },
+  "shareableUrl": null,
+  "metadata": {
+    "promptfooVersion": "0.121.5",
+    "nodeVersion": "v20.20.2",
+    "platform": "linux",
+    "arch": "x64",
+    "exportedAt": "2026-04-18T07:17:33.954Z",
+    "evaluationCreatedAt": "2026-04-18T07:16:13.138Z"
+  }
+}

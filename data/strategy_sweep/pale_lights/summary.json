@@ -1,0 +1,185 @@
+{
+  "seed": "seeds/pale_lights.json",
+  "action": "Tristan takes the cabinet job Abuela set him - slipping into the Azulejo hostel in the Estebra District at third watch to lift a locked cabinet from a stranger's room.",
+  "strategies": [
+    "per_beat",
+    "scene",
+    "one_shot",
+    "refine",
+    "expand"
+  ],
+  "results": [
+    {
+      "strategy": "per_beat",
+      "ok": true,
+      "prose_path": "data/strategy_sweep/pale_lights/per_beat.prose.txt",
+      "words": 5588,
+      "seconds": 82.5,
+      "heuristics": {
+        "sentence_variance": 0.39852669849304284,
+        "dialogue_ratio": 0.08660099156525658,
+        "pacing": 0.48043758043758045,
+        "sensory_density": 0.9074601339307222
+      },
+      "judge_scores": {
+        "tension_execution": {
+          "score": 0.8,
+          "rationale": "The chapter follows a sharp escalation from the quiet, high-stakes tension of the heist to the frantic, multi-layered chase at the docks, closing with the protagonist successfully boarding the ship just as the primary antagonist and the prize begin to separate."
+        },
+        "emotional_trajectory": {
+          "score": 0.9,
+          "rationale": "The chapter moves from tense focus (the heist) to a sense of discovery and weight (the papers), then to frantic urgency (the docks), and finally to a determined, coiled readiness (boarding the ship)."
+        },
+        "choice_hook_quality": {
+          "score": 0.7,
+          "rationale": "The chapter ends with Tristan on the ship, having successfully transitioned from thief to hunter, implying the immediate choice of how to approach the noblewoman without being caught by the Watch or Cozme."
+        },
+        "update_self_containment": {
+          "score": 0.7,
+          "rationale": "The chapter grounds the reader well in the setting and the immediate stakes of the heist, though a reader might need a tiny bit of context to understand the specific significance of the 'Hoja Roja' or 'Abuela' without prior chapters."
+        },
+        "voice_distinctiveness": {
+          "score": 0.8,
+          "rationale": "The prose uses a consistent, evocative gambling/oceanic metaphor system (the 'ticking' in the head, the 'mountain' and 'rat' imagery) that unifies the scenes and characterizes the POV."
+        },
+        "thematic_presence": {
+          "score": 0.9,
+          "rationale": "The theme of gambling/chance is woven into the very fabric of the prose, from the internal 'ticking' of the protagonist to Fortuna's dialogue and the way the heist is described as a 'bad beat'."
+        },
+        "subtext_presence": {
+          "score": 0.6,
+          "rationale": "Subtext is strong in the relationship between Tristan and Fortuna, where her theatricality masks the true danger, and in the way the 'Hoja Roja' seal transforms a simple theft into a cosmic shift in Tristan's life."
+        },
+        "interiority_depth": {
+          "score": 0.7,
+          "rationale": "The reader is deeply embedded in Tristan's sensory experience\u2014the 'ticking' in his head and the physical sensation of the 'Spinster's Milk'\u2014which provides a clear cognitive filter for the world."
+        }
+      },
+      "judge_latency_s": 7.41
+    },
+    {
+      "strategy": "scene",
+      "ok": true,
+      "prose_path": "data/strategy_sweep/pale_lights/scene.prose.txt",
+      "words": 828,
+      "seconds": 30.1,
+      "heuristics": {
+        "sentence_variance": 0.311530461840776,
+        "dialogue_ratio": 0.10581445061992305,
+        "pacing": 0.5410777834265379,
+        "sensory_density": 0.95
+      },
+      "judge_error": "Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "strategy": "one_shot",
+      "ok": true,
+      "prose_path": "data/strategy_sweep/pale_lights/one_shot.prose.txt",
+      "words": 626,
+      "seconds": 6.9,
+      "heuristics": {
+        "sentence_variance": 0.25860818319674483,
+        "dialogue_ratio": 0.08140845070422535,
+        "pacing": 0.6242000901306894,
+        "sensory_density": 0.95
+      },
+      "judge_scores": {
+        "tension_execution": {
+          "score": 0.5,
+          "rationale": "The chapter follows a single clear arc of rising tension from a stealthy approach to a near-miss during the lock-picking, resolving with a successful grab and a momentary reprieve."
+        },
+        "emotional_trajectory": {
+          "score": 0.6,
+          "rationale": "The chapter moves from a state of frantic anxiety to intense, focused stillness, finally landing on a sense of quiet, watchful relief."
+        },
+        "choice_hook_quality": {
+          "score": 0.3,
+          "rationale": "The hook is a vague 'what now?' as Tristan has secured the prize but has not yet faced the decision of how to escape the room."
+        },
+        "update_self_containment": {
+          "score": 0.7,
+          "rationale": "The chapter immediately grounds the reader in the setting and the protagonist's goal, closing on a complete and satisfying beat of the heist's success."
+        },
+        "voice_distinctiveness": {
+          "score": 0.6,
+          "rationale": "The prose maintains a consistent tactile voice through a recurring repertoire of weight and movement imagery, such as 'mountain of a man' and 'liquid retreat'."
+        },
+        "thematic_presence": {
+          "score": 0.6,
+          "rationale": "The theme of luck and chance is actively worked through the presence of the goddess Fortuna and metaphors like 'the house is winning' and 'tipping the scales'."
+        },
+        "subtext_presence": {
+          "score": 0.3,
+          "rationale": "While the action is mostly literal, the casual, bickering dynamic between Tristan and Fortuna implies a long-standing and intimate partnership."
+        },
+        "interiority_depth": {
+          "score": 0.6,
+          "rationale": "The reader is embedded in Tristan's sensory experience, feeling the 'ticking' in his head and the physical strain of holding his breath."
+        }
+      },
+      "judge_latency_s": 24.97
+    },
+    {
+      "strategy": "refine",
+      "ok": true,
+      "prose_path": "data/strategy_sweep/pale_lights/refine.prose.txt",
+      "words": 613,
+      "seconds": 13.3,
+      "heuristics": {
+        "sentence_variance": 0.35626162634997033,
+        "dialogue_ratio": 0.07632488479262672,
+        "pacing": 0.5794313230910343,
+        "sensory_density": 0.95
+      },
+      "judge_error": "Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "strategy": "expand",
+      "ok": true,
+      "prose_path": "data/strategy_sweep/pale_lights/expand.prose.txt",
+      "words": 3043,
+      "seconds": 49.9,
+      "heuristics": {
+        "sentence_variance": 0.37783230325613215,
+        "dialogue_ratio": 0.04362961243908099,
+        "pacing": 0.5672400167356236,
+        "sensory_density": 0.95
+      },
+      "judge_scores": {
+        "tension_execution": {
+          "score": 0.7,
+          "rationale": "The chapter begins with the high-pressure heist of the parchment, moves into the intellectual tension of deciphering the secret, and culminates in the physical race to catch the Bluebell, where the stakes shift from mere theft to a direct confrontation with a nemesis."
+        },
+        "emotional_trajectory": {
+          "score": 0.9,
+          "rationale": "The chapter moves from the frantic, claustrophobic tension of the heist (entry) to the bitter, revelatory realization of Abuela's manipulation (midpoint), ending in a high-stakes, purposeful rush toward the docks (exit)."
+        },
+        "choice_hook_quality": {
+          "score": 0.7,
+          "rationale": "The chapter ends with a clear, high-stakes choice: stay in the safety of the Murk or leap onto the departing Bluebell to chase both a noblewoman and a long-awaited enemy."
+        },
+        "update_self_containment": {
+          "score": 0.7,
+          "rationale": "The chapter effectively grounds the reader in the Estebra District and the heist, though a new reader might need a moment to grasp the specific weight of 'Abuela' or 'the List' without prior context."
+        },
+        "voice_distinctiveness": {
+          "score": 0.6,
+          "rationale": "The prose has a consistent, rhythmic quality, particularly through the recurring 'ticking' motif and the sensory interplay between Tristan's grounded reality and Fortuna's shimmering, divine presence."
+        },
+        "thematic_presence": {
+          "score": 0.6,
+          "rationale": "The theme of fate versus agency is worked through the 'ticking' of Fortuna's odds and Tristan's resentment at being a 'piece on a board' guided by Abuela."
+        },
+        "subtext_presence": {
+          "score": 0.6,
+          "rationale": "Subtext is strongest in the relationship with Abuela, where her 'teaching' is revealed to be a form of masterful, silent manipulation that Tristan only realizes after the fact."
+        },
+        "interiority_depth": {
+          "score": 0.6,
+          "rationale": "The reader is deeply embedded in Tristan's sensory experience and his specific cognitive filter, such as how he perceives the 'ticking' of probability and his private, bitter reactions to Fortuna."
+        }
+      },
+      "judge_latency_s": 6.65
+    }
+  ]
+}
