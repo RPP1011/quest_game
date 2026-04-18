@@ -54,7 +54,8 @@ def sm(tmp_path):
     conn.close()
 
 
-def test_diversity_different_actions(sm):
+@pytest.mark.asyncio
+async def test_diversity_different_actions(sm):
     """Different actions → low action Jaccard → high diversity."""
     sm.save_rollout_chapter(RolloutChapter(
         rollout_id="r1", chapter_index=1,
@@ -66,12 +67,13 @@ def test_diversity_different_actions(sm):
         player_action="observe the enemy from the shadows carefully",
         prose="Cozme watched from the dark. The silence pressed.",
     ))
-    result = measure_rollout_diversity(sm, "r1", "r2", "q1")
+    result = await measure_rollout_diversity(sm, "r1", "r2", "q1")
     assert result["aggregate"]["action_jaccard_mean"] < 0.3
     assert result["interpretation"]["action_diversity"] in ("moderate", "high")
 
 
-def test_diversity_identical_actions(sm):
+@pytest.mark.asyncio
+async def test_diversity_identical_actions(sm):
     """Identical actions → high Jaccard → low diversity."""
     action = "charge the enemy head-on"
     prose = "Tristan charged. Cozme fell."
@@ -83,6 +85,6 @@ def test_diversity_identical_actions(sm):
         rollout_id="r2", chapter_index=1,
         player_action=action, prose=prose,
     ))
-    result = measure_rollout_diversity(sm, "r1", "r2", "q1")
+    result = await measure_rollout_diversity(sm, "r1", "r2", "q1")
     assert result["aggregate"]["action_jaccard_mean"] == 1.0
     assert result["aggregate"]["prose_4gram_jaccard_mean"] == 1.0

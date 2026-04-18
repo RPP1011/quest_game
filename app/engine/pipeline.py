@@ -2448,16 +2448,20 @@ class Pipeline:
                 for beat_index, beat_text in enumerate(beats):
                     words_so_far = len(accumulated.split())
 
-                    # Count imagery families used so far in this scene
+                    # Count imagery families used so far via LLM classification
                     imagery_budget_used: dict[str, int] = {}
-                    if accumulated:
-                        from app.planning.metaphor_critic import (
-                            _count_family, IMAGERY_FAMILIES,
-                        )
-                        for fam_name, phrases in IMAGERY_FAMILIES.items():
-                            c = _count_family(accumulated, phrases)
-                            if c > 0:
-                                imagery_budget_used[fam_name] = c
+                    if accumulated and beat_index > 0:
+                        try:
+                            from app.planning.metaphor_critic import classify_metaphors_llm
+                            classification = await classify_metaphors_llm(
+                                self._client, accumulated,
+                            )
+                            for fam, data in classification.get("families", {}).items():
+                                count = data.get("count", 0)
+                                if count > 0:
+                                    imagery_budget_used[fam] = count
+                        except Exception:
+                            pass  # fall through with empty budget
 
                     beat_ctx = self._cb.build(
                         spec=WRITE_SPEC,

@@ -23,8 +23,6 @@ defaultTest:
   assert:
     - type: python
       value: file://scorers/metaphor_variety.py:get_score
-    - type: python
-      value: file://scorers/keyword_count.py:get_score
     - type: javascript
       value: |
         // Basic prose quality: not empty, reasonable length

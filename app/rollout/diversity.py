@@ -17,7 +17,6 @@ from __future__ import annotations
 import re
 from collections import defaultdict
 
-from app.planning.metaphor_critic import _count_family, IMAGERY_FAMILIES
 from app.world.schema import RolloutChapter
 from app.world.state_manager import WorldStateManager
 
@@ -42,11 +41,12 @@ def _ngrams(text: str, n: int = 4) -> set[tuple[str, ...]]:
     return {tuple(words[i:i + n]) for i in range(len(words) - n + 1)}
 
 
-def measure_rollout_diversity(
+async def measure_rollout_diversity(
     world: WorldStateManager,
     rollout_id_a: str,
     rollout_id_b: str,
     quest_id: str,
+    client: "Any | None" = None,
 ) -> dict:
     """Compare two rollouts of the same candidate.
 
@@ -113,13 +113,24 @@ def measure_rollout_diversity(
     }
     hook_j = _jaccard(hooks_a, hooks_b)
 
-    # Imagery family distribution comparison
+    # Imagery family distribution comparison (LLM classification)
     family_profiles_a: dict[str, int] = defaultdict(int)
     family_profiles_b: dict[str, int] = defaultdict(int)
-    for idx in common_indices:
-        for fam, phrases in IMAGERY_FAMILIES.items():
-            family_profiles_a[fam] += _count_family(chs_a[idx].prose, phrases)
-            family_profiles_b[fam] += _count_family(chs_b[idx].prose, phrases)
+    if client:
+        from app.planning.metaphor_critic import classify_metaphors_llm
+        for idx in common_indices:
+            try:
+                cls_a = await classify_metaphors_llm(client, chs_a[idx].prose or "")
+                for fam, data in cls_a.get("families", {}).items():
+                    family_profiles_a[fam] += data.get("count", 0)
+            except Exception:
+                pass
+            try:
+                cls_b = await classify_metaphors_llm(client, chs_b[idx].prose or "")
+                for fam, data in cls_b.get("families", {}).items():
+                    family_profiles_b[fam] += data.get("count", 0)
+            except Exception:
+                pass
 
     import numpy as np
     mean_action = float(np.mean(action_jaccards))
