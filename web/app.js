@@ -55,6 +55,7 @@ async function selectQuest(qid) {
   document.getElementById('no-quest-state').hidden = true;
   document.getElementById('quest-view').hidden = false;
   document.getElementById('world-toggle').hidden = false;
+  document.getElementById('rollouts-toggle').hidden = false;
   document.getElementById('quest-title').textContent = humanizeTitle(qid);
   document.getElementById('header-context').textContent = humanizeTitle(qid);
   try {
@@ -765,6 +766,205 @@ function renderSkeleton(skel) {
     generateOutline(skel.candidate_id);
   };
 }
+
+// ---------------------------------------------------------------------------
+// Rollouts drawer
+// ---------------------------------------------------------------------------
+
+let cachedRollouts = null;
+let activeRolloutId = null;
+let rolloutCompareMode = false;
+let rolloutCompareIds = new Set();
+
+function openRolloutsDrawer() {
+  document.getElementById('rollouts-backdrop').hidden = false;
+  document.getElementById('rollouts-drawer').hidden = false;
+  loadRollouts();
+}
+function closeRolloutsDrawer() {
+  document.getElementById('rollouts-backdrop').hidden = true;
+  document.getElementById('rollouts-drawer').hidden = true;
+}
+
+async function loadRollouts() {
+  if (!state.currentQuest) return;
+  try {
+    cachedRollouts = await fetchJSON(`/api/quests/${state.currentQuest}/rollouts`);
+  } catch (err) {
+    document.getElementById('rollouts-content').innerHTML =
+      `<p class="muted">Failed to load rollouts: ${escapeHtml(err.message)}</p>`;
+    return;
+  }
+  renderRolloutsNav();
+  if (cachedRollouts.length && !activeRolloutId) {
+    showRollout(cachedRollouts[0].id);
+  }
+}
+
+function renderRolloutsNav() {
+  const nav = document.getElementById('rollouts-nav');
+  if (!cachedRollouts || !cachedRollouts.length) {
+    nav.innerHTML = '<div class="rollouts-empty">No rollouts yet.</div>';
+    return;
+  }
+  let html = '<div class="rollouts-nav-bar">';
+  for (const r of cachedRollouts) {
+    const active = r.id === activeRolloutId ? ' active' : '';
+    const statusCls = r.status === 'complete' ? 'done' : (r.status === 'running' ? 'running' : 'pending');
+    html += `<button class="rollout-tab${active}" data-rid="${escapeHtml(r.id)}" onclick="showRollout('${escapeHtml(r.id)}')">
+      <span class="rt-profile">${escapeHtml(r.profile_id)}</span>
+      <span class="rt-progress">${r.chapters_complete || 0}/${r.total_chapters_target} ch</span>
+      <span class="rt-status ${statusCls}">${r.status}</span>
+    </button>`;
+  }
+  html += `<button class="rollout-tab compare-toggle${rolloutCompareMode ? ' active' : ''}" onclick="toggleCompareMode()">Compare</button>`;
+  html += '</div>';
+  if (rolloutCompareMode && cachedRollouts.length >= 2) {
+    html += '<div class="compare-select">';
+    for (const r of cachedRollouts) {
+      const checked = rolloutCompareIds.has(r.id) ? ' checked' : '';
+      html += `<label class="compare-check"><input type="checkbox" value="${escapeHtml(r.id)}"${checked} onchange="updateCompare(this)"> ${escapeHtml(r.profile_id)} (${escapeHtml(r.id.slice(0,10))})</label>`;
+    }
+    html += '</div>';
+  }
+  nav.innerHTML = html;
+}
+
+function toggleCompareMode() {
+  rolloutCompareMode = !rolloutCompareMode;
+  rolloutCompareIds.clear();
+  renderRolloutsNav();
+  if (!rolloutCompareMode && activeRolloutId) {
+    showRollout(activeRolloutId);
+  } else {
+    document.getElementById('rollouts-content').innerHTML = '<p class="muted">Select two rollouts to compare.</p>';
+  }
+}
+
+function updateCompare(el) {
+  if (el.checked) rolloutCompareIds.add(el.value);
+  else rolloutCompareIds.delete(el.value);
+  if (rolloutCompareIds.size === 2) {
+    const [a, b] = [...rolloutCompareIds];
+    showComparison(a, b);
+  }
+}
+
+async function showRollout(rid) {
+  activeRolloutId = rid;
+  renderRolloutsNav();
+  const box = document.getElementById('rollouts-content');
+  box.innerHTML = '<p class="muted">Loading...</p>';
+  try {
+    const data = await fetchJSON(`/api/quests/${state.currentQuest}/rollouts/${rid}`);
+    renderRolloutDetail(data, box);
+  } catch (err) {
+    box.innerHTML = `<p class="muted">Error: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function renderRolloutDetail(data, box) {
+  const run = data;
+  const chapters = data.chapters || [];
+  let html = `
+    <div class="ro-header">
+      <div class="ro-title">${escapeHtml(run.profile_id)} rollout</div>
+      <div class="ro-meta">${escapeHtml(run.id)} &middot; ${run.status} &middot; ${chapters.length} chapters</div>
+    </div>`;
+
+  for (const ch of chapters.sort((a, b) => a.chapter_index - b.chapter_index)) {
+    const scores = ch.judge_scores || {};
+    const scoreBadges = Object.entries(scores).map(([k, v]) => {
+      const cls = v >= 0.7 ? 'score-good' : (v >= 0.4 ? 'score-mid' : 'score-low');
+      return `<span class="score-badge ${cls}">${escapeHtml(k.replace(/_/g, ' '))} ${(v * 10).toFixed(1)}</span>`;
+    }).join('');
+
+    html += `
+      <details class="ro-chapter" ${ch.chapter_index <= 2 ? 'open' : ''}>
+        <summary>
+          <span class="ro-ch-num">Ch ${ch.chapter_index}</span>
+          <span class="ro-ch-action">${escapeHtml((ch.player_action || '').slice(0, 80))}</span>
+          <span class="ro-ch-words">${ch.prose ? ch.prose.split(/\s+/).length + 'w' : ''}</span>
+        </summary>
+        <div class="ro-ch-body">
+          ${scoreBadges ? `<div class="ro-scores">${scoreBadges}</div>` : ''}
+          <div class="ro-prose">${escapeHtml(ch.prose || '(no prose)')}</div>
+        </div>
+      </details>`;
+  }
+  box.innerHTML = html;
+}
+
+async function showComparison(ridA, ridB) {
+  const box = document.getElementById('rollouts-content');
+  box.innerHTML = '<p class="muted">Loading comparison...</p>';
+  try {
+    const [a, b] = await Promise.all([
+      fetchJSON(`/api/quests/${state.currentQuest}/rollouts/${ridA}`),
+      fetchJSON(`/api/quests/${state.currentQuest}/rollouts/${ridB}`),
+    ]);
+    renderComparison(a, b, box);
+  } catch (err) {
+    box.innerHTML = `<p class="muted">Error: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function renderComparison(dataA, dataB, box) {
+  const runA = dataA;
+  const runB = dataB;
+  const chaptersA = dataA.chapters || [];
+  const chaptersB = dataB.chapters || [];
+  const maxCh = Math.max(chaptersA.length, chaptersB.length);
+
+  let html = `<div class="compare-header">
+    <span class="compare-label-a">${escapeHtml(runA.profile_id)}</span>
+    <span class="compare-vs">vs</span>
+    <span class="compare-label-b">${escapeHtml(runB.profile_id)}</span>
+  </div>`;
+
+  for (let i = 1; i <= maxCh; i++) {
+    const chA = chaptersA.find(c => c.chapter_index === i);
+    const chB = chaptersB.find(c => c.chapter_index === i);
+    html += `<div class="compare-chapter">
+      <div class="compare-ch-heading">Chapter ${i}</div>
+      <div class="compare-pair">
+        <div class="compare-side">
+          <div class="compare-side-label">${escapeHtml(runA.profile_id)}</div>
+          ${chA ? `
+            <div class="compare-action">${escapeHtml((chA.player_action || '').slice(0, 120))}</div>
+            ${renderScoreBadges(chA.judge_scores)}
+            <details class="compare-prose-wrap"><summary>Read prose (${chA.prose ? chA.prose.split(/\s+/).length + 'w' : '0w'})</summary>
+              <div class="ro-prose">${escapeHtml(chA.prose || '')}</div>
+            </details>
+          ` : '<div class="muted">(no chapter)</div>'}
+        </div>
+        <div class="compare-side">
+          <div class="compare-side-label">${escapeHtml(runB.profile_id)}</div>
+          ${chB ? `
+            <div class="compare-action">${escapeHtml((chB.player_action || '').slice(0, 120))}</div>
+            ${renderScoreBadges(chB.judge_scores)}
+            <details class="compare-prose-wrap"><summary>Read prose (${chB.prose ? chB.prose.split(/\s+/).length + 'w' : '0w'})</summary>
+              <div class="ro-prose">${escapeHtml(chB.prose || '')}</div>
+            </details>
+          ` : '<div class="muted">(no chapter)</div>'}
+        </div>
+      </div>
+    </div>`;
+  }
+  box.innerHTML = html;
+}
+
+function renderScoreBadges(scores) {
+  if (!scores || !Object.keys(scores).length) return '';
+  return '<div class="ro-scores">' + Object.entries(scores).map(([k, v]) => {
+    const cls = v >= 0.7 ? 'score-good' : (v >= 0.4 ? 'score-mid' : 'score-low');
+    return `<span class="score-badge ${cls}">${escapeHtml(k.replace(/_/g, ' '))} ${(v * 10).toFixed(1)}</span>`;
+  }).join('') + '</div>';
+}
+
+document.getElementById('rollouts-toggle').onclick = openRolloutsDrawer;
+document.getElementById('rollouts-close').onclick = closeRolloutsDrawer;
+document.getElementById('rollouts-backdrop').onclick = closeRolloutsDrawer;
 
 document.getElementById('world-toggle').onclick = openWorldDrawer;
 document.getElementById('world-close').onclick = closeWorldDrawer;
