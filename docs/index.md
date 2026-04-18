@@ -574,6 +574,7 @@ Iteration notes (the journal to this report's synthesis):
 - [Writer LoRA v1]({{ "/day5-writer-lora-v1.html" | relative_url }})
 - [Phase 2 kickoff — writer LoRA v2]({{ "/phase2-kickoff-lora-v2.html" | relative_url }})
 - [**World seed density → story-rollout architecture**]({{ "/technical-report-2026-04-15-16.html" | relative_url }}) — Phases 1–5, writer fidelity, Pale Lights seed, refinement results
+- [**Full pipeline walkthrough**]({{ "/technical-report-2026-04-18.html" | relative_url }}) — Labeled example: seed → planners → writer → check/revise → score, with eval-validated prompt engineering and rollout comparison
 
 Planning:
 
