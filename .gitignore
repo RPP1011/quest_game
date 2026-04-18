@@ -35,3 +35,5 @@ data/stress_v3/
 data/quests/
 # Length A/B run outputs (local only)
 data/length_ab/
+data/strategy_sweep/
+evals/results.json
