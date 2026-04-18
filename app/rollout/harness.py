@@ -337,6 +337,45 @@ async def run_rollout(
                     rollout_id, chapters_complete=ch_idx,
                 )
 
+                # Structural metrics (best-effort, no LLM cost)
+                try:
+                    from app.scoring.structural_metrics import (
+                        syntactic_compression_ratio, mtld,
+                    )
+                    scr = syntactic_compression_ratio(prose or "")
+                    mtld_score = mtld(prose or "")
+                    main_conn.execute(
+                        "UPDATE rollout_chapters SET syntactic_cr = ?, mtld = ? "
+                        "WHERE rollout_id = ? AND chapter_index = ?",
+                        (scr, mtld_score, rollout_id, ch_idx),
+                    )
+                    main_conn.commit()
+                except Exception:
+                    pass
+
+                # Voice drift monitor (best-effort)
+                try:
+                    from app.scoring.voice_drift import (
+                        function_word_distribution, kl_divergence,
+                    )
+                    current_dist = function_word_distribution(prose or "")
+                    if ch_idx > 1 and completed:
+                        ch1_prose = completed[0].prose or ""
+                        baseline_dist = function_word_distribution(ch1_prose)
+                        kl_base = kl_divergence(current_dist, baseline_dist)
+                        window_proses = [c.prose or "" for c in completed[-3:]]
+                        window_text = " ".join(window_proses)
+                        window_dist = function_word_distribution(window_text)
+                        kl_window = kl_divergence(current_dist, window_dist)
+                        main_conn.execute(
+                            "UPDATE rollout_chapters SET fw_kl_baseline = ?, fw_kl_window = ? "
+                            "WHERE rollout_id = ? AND chapter_index = ?",
+                            (kl_base, kl_window, rollout_id, ch_idx),
+                        )
+                        main_conn.commit()
+                except Exception:
+                    pass
+
                 # Phase 4: KB extraction (always on, no LLM cost)
                 try:
                     trace_dict = json.loads(

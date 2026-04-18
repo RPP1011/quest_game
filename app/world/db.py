@@ -392,6 +392,11 @@ def _apply_additive_migrations(conn: sqlite3.Connection) -> None:
     migrations are append-only and nullable — existing rows remain valid.
     """
     _ensure_column(conn, "narrative", "pov_character_id", "TEXT")
+    _ensure_column(conn, "rollout_chapters", "syntactic_cr", "REAL")
+    _ensure_column(conn, "rollout_chapters", "mtld", "REAL")
+    _ensure_column(conn, "rollout_chapters", "fw_kl_baseline", "REAL")
+    _ensure_column(conn, "rollout_chapters", "fw_kl_window", "REAL")
+    _ensure_column(conn, "rollout_runs", "rollout_mauve", "REAL")
 
 
 def _ensure_column(

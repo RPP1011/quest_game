@@ -77,3 +77,26 @@ def mtld(prose: str, ttr_threshold: float = 0.72) -> float:
     forward = mtld_forward(words, ttr_threshold)
     backward = mtld_forward(words[::-1], ttr_threshold)
     return (forward + backward) / 2
+
+
+def compute_mauve(
+    generated_texts: list[str],
+    reference_texts: list[str],
+) -> float:
+    """MAUVE score between generated and reference text distributions.
+
+    Returns [0, 1]. < 0.7 suggests significant style drift.
+    Needs ~20+ passages per side for stability.
+    """
+    try:
+        import mauve as mauve_lib
+        result = mauve_lib.compute_mauve(
+            p_text=reference_texts,
+            q_text=generated_texts,
+            device_id=-1,  # CPU
+            max_text_length=512,
+            verbose=False,
+        )
+        return float(result.mauve)
+    except Exception:
+        return -1.0  # signal that computation failed
