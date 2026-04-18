@@ -25,29 +25,34 @@ from collections import Counter
 # ---------------------------------------------------------------------------
 
 IMAGERY_FAMILIES: dict[str, list[str]] = {
+    # Gambling: only unambiguous gambling phrases. Removed "the deck"
+    # (ship deck), "the hand" (body part), "the table" (furniture),
+    # "fold/folding" (fabric), "dealt" (generic), "the cut" (wound).
     "gambling": [
-        "the odds", "the house", "the bet", "the dice", "the deck",
-        "the pot", "the hand", "the deal", "the stakes",
-        "roll the die", "rolling the dice", "fold", "folding",
+        "the odds", "the bet", "the dice", "the pot", "the stakes",
+        "roll the die", "rolling the dice", "bad bet", "bad hand",
         "bluff", "bluffing", "ante", "wager", "gamble", "gambler",
-        "winning hand", "losing hand", "bad hand", "bad bet",
-        "high card", "low card", "the table", "coin flip",
-        "coin spinning", "toss of a coin", "played the hand",
-        "stacked deck", "stacked against", "the cut",
-        "dealt", "dealer", "play the floor", "play the hand",
+        "winning hand", "losing hand", "high card", "low card",
+        "coin flip", "coin spinning", "toss of a coin",
+        "played the hand", "stacked deck", "stacked against",
+        "play the hand", "the house always", "the house wins",
+        "the house takes",
     ],
+    # Predator/prey: removed "stalking" (can be literal), "circling"
+    # (can be physical movement)
     "predator_prey": [
         "the rat", "the mouse", "the cat", "the hunter",
         "the prey", "the predator", "the hawk", "the wolf",
         "cornered rat", "cornered animal", "the hunt",
-        "stalking", "circling", "the kill", "the trap",
-        "snared", "the snare", "the cage", "the web",
+        "the kill", "the trap", "snared", "the snare",
+        "the cage", "the web",
     ],
+    # Water/ocean: only figurative uses. On a ship/underwater these
+    # are literal, so this family should be weighted lower for
+    # maritime scenes. For now, keep but note the limitation.
     "water_ocean": [
         "the tide", "the current", "the swell", "the wave",
-        "drowning", "sinking", "the deep", "the depths",
-        "treading water", "the shore", "the surface",
-        "undertow", "whirlpool", "the flood",
+        "drowning", "treading water", "undertow", "the flood",
     ],
     "mechanical": [
         "the ticking", "the gears", "clockwork", "the mechanism",
@@ -55,14 +60,15 @@ IMAGERY_FAMILIES: dict[str, list[str]] = {
         "the mainspring", "the pendulum",
     ],
     "fire_light": [
-        "the flame", "the fire", "burning", "smoldering",
-        "the spark", "the ember", "the blaze", "incandescent",
+        "the flame", "the fire", "smoldering",
+        "the spark", "the ember", "the blaze",
         "white-hot", "molten",
     ],
+    # Weight/gravity: removed "heavy" and "the weight" (too common
+    # as literal descriptors). Only clearly metaphorical uses.
     "weight_gravity": [
-        "the weight", "heavy", "heaviness", "the burden",
-        "the anchor", "anchored", "pulling down", "dragging",
-        "gravity", "sinking feeling", "leaden",
+        "the burden", "the anchor", "anchored", "leaden",
+        "sinking feeling", "crushing weight",
     ],
 }
 
@@ -112,39 +118,60 @@ def check_metaphor_variety(
     issues: list[dict] = []
     for family_name, count in sorted(counts.items(), key=lambda x: -x[1]):
         if count > max_per_family:
-            # Find some example matches for the message
+            # Find ALL matches with surrounding context for specific replacements
             text_lower = prose.lower()
-            examples: list[str] = []
+            all_matches: list[dict] = []
             for phrase in use_families[family_name]:
                 pattern = r"\b" + re.escape(phrase) + r"\b"
                 for m in re.finditer(pattern, text_lower):
-                    # Get surrounding context
-                    start = max(0, m.start() - 20)
-                    end = min(len(prose), m.end() + 20)
-                    examples.append(f"...{prose[start:end]}...")
-                    if len(examples) >= 3:
-                        break
-                if len(examples) >= 3:
-                    break
+                    start = max(0, m.start() - 30)
+                    end = min(len(prose), m.end() + 30)
+                    all_matches.append({
+                        "phrase": phrase,
+                        "context": prose[start:end],
+                        "position": m.start(),
+                    })
+
+            # Sort by position, take excess matches (keep first max_per_family)
+            all_matches.sort(key=lambda x: x["position"])
+            to_replace = all_matches[max_per_family:]
+            examples_to_show = to_replace[:8]
+
+            # Build specific replacement instructions
+            replacement_lines = []
+            for match in examples_to_show:
+                replacement_lines.append(
+                    f'  - "...{match["context"]}..." — replace the '
+                    f'"{match["phrase"]}" imagery with a non-{family_name} '
+                    f"alternative (bodily, architectural, textile, spatial, "
+                    f"or sensory)"
+                )
+
+            suggested_fix = (
+                f"This chapter uses '{family_name}' imagery {count}× "
+                f"(limit: {max_per_family}). Keep the {max_per_family} "
+                f"strongest instances. Replace these specific excess "
+                f"occurrences with imagery from a DIFFERENT register:\n"
+                + "\n".join(replacement_lines)
+                + f"\n\nDo NOT replace with another '{family_name}' phrase. "
+                f"Each replacement must use a completely different imagery "
+                f"family (e.g., bodily sensation, architecture, fabric/textile, "
+                f"weather, animal behavior, or physical space)."
+            )
 
             issues.append({
                 "severity": "warning",
                 "category": "prose_quality",
                 "message": (
                     f"Imagery family '{family_name}' appears {count}× in this "
-                    f"chapter (threshold: {max_per_family}). This creates a "
-                    f"repetitive register. Examples: "
-                    + "; ".join(examples[:3])
+                    f"chapter (limit: {max_per_family}). "
+                    f"{len(to_replace)} occurrences must be replaced with "
+                    f"non-{family_name} imagery."
                 ),
                 "family": family_name,
                 "count": count,
-                "suggested_fix": (
-                    f"Reduce '{family_name}' imagery from {count} to "
-                    f"2–3 instances. Replace excess occurrences with "
-                    f"imagery from other registers (sensory, spatial, "
-                    f"bodily, architectural). Keep the strongest 2–3 "
-                    f"and vary the rest."
-                ),
+                "excess": len(to_replace),
+                "suggested_fix": suggested_fix,
             })
 
     return issues

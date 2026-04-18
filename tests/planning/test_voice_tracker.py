@@ -85,8 +85,8 @@ def test_critic_context_cumulative():
     tracker = CharacterVoiceTracker(
         signatures={"char:tristan": "gambling"},
     )
-    tracker.record_chapter(1, "char:tristan", "the odds the house")
-    tracker.record_chapter(2, "char:tristan", "the odds the bet")
+    tracker.record_chapter(1, "char:tristan", "the odds bad bet the dice")
+    tracker.record_chapter(2, "char:tristan", "the odds the bet gamble")
     ctx = tracker.get_critic_context()
     assert ctx.get("gambling", 0) >= 4
 
@@ -96,7 +96,7 @@ def test_chapter_report():
         signatures={"char:tristan": "gambling"},
         signature_target=3,
     )
-    prose = "the odds shifted. the house always wins. bad bet. the deep water."
+    prose = "the odds shifted. the house always wins. bad bet. the flood came."
     report = tracker.get_chapter_report(1, "char:tristan", prose)
     assert report["signature_family"] == "gambling"
     assert report["signature_count"] >= 3

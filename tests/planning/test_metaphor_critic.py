@@ -28,14 +28,14 @@ def test_no_issue_when_variety():
 
 
 def test_count_family_word_boundary():
-    """'the hand' should match but 'handle' should not."""
+    """'played the hand' should match but 'handle' should not."""
     count = _count_family(
         "He played the hand well. The handle broke.",
         IMAGERY_FAMILIES["gambling"],
     )
-    # "the hand" matches AND "played the hand" matches (both are phrases
-    # in the family). "handle" does NOT match. Total: 2.
-    assert count == 2
+    # "played the hand" matches. "the hand" was removed (too ambiguous).
+    # "handle" does NOT match. Total: 1.
+    assert count == 1
 
 
 def test_threshold_configurable():
