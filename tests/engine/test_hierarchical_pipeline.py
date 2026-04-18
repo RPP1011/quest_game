@@ -33,6 +33,8 @@ _EMPTY_EXTRACT = json.dumps({
 
 _CHECK_CLEAN = '{"issues": []}'
 
+_TYPED_EDIT_EMPTY = '{"edits": []}'
+
 # ---------------------------------------------------------------------------
 # Canned JSON payloads for each hierarchical layer
 # ---------------------------------------------------------------------------
@@ -274,6 +276,8 @@ async def test_hierarchical_pipeline_commits_chapter(world):
         {"kind": "chat", "content": _PROSE_SCENE_1},
         # CHECK
         {"kind": "structured", "content": _CHECK_CLEAN},
+        # TYPED EDIT
+        {"kind": "chat", "content": _TYPED_EDIT_EMPTY},
         # EXTRACT
         {"kind": "structured", "content": _EMPTY_EXTRACT},
     ])
@@ -370,6 +374,7 @@ async def test_hierarchical_pipeline_plants_parallel_post_commit(world):
         {"kind": "chat", "content": _PROSE_SCENE_1},
         {"kind": "chat", "content": _PROSE_SCENE_1},
         {"kind": "structured", "content": _CHECK_CLEAN},
+        {"kind": "chat", "content": _TYPED_EDIT_EMPTY},
         {"kind": "structured", "content": _EMPTY_EXTRACT},
     ])
 
@@ -400,6 +405,7 @@ async def test_hierarchical_pipeline_plants_parallel_post_commit(world):
         {"kind": "chat", "content": _PROSE_SCENE_1},
         {"kind": "chat", "content": _PROSE_SCENE_1},
         {"kind": "structured", "content": _CHECK_CLEAN},
+        {"kind": "chat", "content": _TYPED_EDIT_EMPTY},
         {"kind": "structured", "content": _EMPTY_EXTRACT},
     ])
     pipeline2 = Pipeline(
@@ -506,6 +512,7 @@ async def test_hierarchical_pipeline_threads_pov_entities_to_craft_planner(world
         {"kind": "structured", "content": _CRAFT_JSON},
         {"kind": "chat", "content": _PROSE_SCENE_1},
         {"kind": "structured", "content": _CHECK_CLEAN},
+        {"kind": "chat", "content": _TYPED_EDIT_EMPTY},
         {"kind": "structured", "content": _EMPTY_EXTRACT},
     ])
 
@@ -536,6 +543,7 @@ async def test_hierarchical_pipeline_persists_emotional_beats_post_commit(world)
         {"kind": "chat", "content": _PROSE_SCENE_1},
         {"kind": "chat", "content": _PROSE_SCENE_1},
         {"kind": "structured", "content": _CHECK_CLEAN},
+        {"kind": "chat", "content": _TYPED_EDIT_EMPTY},
         {"kind": "structured", "content": _EMPTY_EXTRACT},
     ])
 

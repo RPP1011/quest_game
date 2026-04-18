@@ -75,6 +75,11 @@ _CHECK_CRITICAL = json.dumps({
 
 _CHECK_CLEAN = json.dumps({"issues": []})
 
+# Both the metaphor-critic pass and the typed-edit pass call client.chat().
+# Tests must include one response per call so the scripted client stays in sync.
+_METAPHOR_CRITIC_EMPTY = '{"families": {}, "total_figurative": 0, "dominant_family": null, "dominant_percentage": 0}'
+_TYPED_EDIT_EMPTY = '{"edits": []}'
+
 _EMPTY_EXTRACT = json.dumps({
     "entity_updates": [], "new_relationships": [],
     "removed_relationships": [], "timeline_events": [],
@@ -195,8 +200,11 @@ async def test_critical_issue_triggers_revise_then_clears(world):
         {"kind": "chat", "content": _PROSE_BAD},
         {"kind": "chat", "content": _PROSE_BAD},  # 2 beats
         {"kind": "structured", "content": _CHECK_CRITICAL},  # initial check finds critical
+        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY},  # classify_metaphors_llm
         {"kind": "chat", "content": _PROSE_FIXED},  # revise output
         {"kind": "structured", "content": _CHECK_CLEAN},   # recheck clean
+        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY},  # classify_metaphors_llm
+        {"kind": "chat", "content": _TYPED_EDIT_EMPTY},    # detect_edits
         {"kind": "structured", "content": _EMPTY_EXTRACT},
     ])
     pipeline = _make_pipeline(world, client)
@@ -215,7 +223,7 @@ async def test_critical_issue_triggers_revise_then_clears(world):
 
 @pytest.mark.asyncio
 async def test_critical_persists_through_two_revises_then_flags(world):
-    """Two revise attempts both fail to clear critical → outcome=flagged_qm."""
+    """All MAX_REVISE_ATTEMPTS (4) fail to clear critical → outcome=flagged_qm."""
     client = ScriptedClient([
         {"kind": "structured", "content": _DRAMATIC_JSON},
         {"kind": "structured", "content": _EMOTIONAL_JSON},
@@ -223,19 +231,28 @@ async def test_critical_persists_through_two_revises_then_flags(world):
         {"kind": "chat", "content": _PROSE_BAD},
         {"kind": "chat", "content": _PROSE_BAD},
         {"kind": "structured", "content": _CHECK_CRITICAL},  # check 1
+        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY},  # classify_metaphors_llm after check 1
         {"kind": "chat", "content": _PROSE_BAD},             # revise 1 (still bad)
         {"kind": "structured", "content": _CHECK_CRITICAL},  # check 2
+        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY},  # classify_metaphors_llm after check 2
         {"kind": "chat", "content": _PROSE_BAD},             # revise 2 (still bad)
-        {"kind": "structured", "content": _CHECK_CRITICAL},  # check 3 (final)
-        # No extract — outcome=flagged_qm should still commit narrative
-        # but extract is gated to committed-only in the existing flow
+        {"kind": "structured", "content": _CHECK_CRITICAL},  # check 3
+        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY},  # classify_metaphors_llm after check 3
+        {"kind": "chat", "content": _PROSE_BAD},             # revise 3 (still bad)
+        {"kind": "structured", "content": _CHECK_CRITICAL},  # check 4
+        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY},  # classify_metaphors_llm after check 4
+        {"kind": "chat", "content": _PROSE_BAD},             # revise 4 (still bad)
+        {"kind": "structured", "content": _CHECK_CRITICAL},  # check 5 (final — budget exhausted)
+        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY},  # classify_metaphors_llm after check 5
+        {"kind": "chat", "content": _TYPED_EDIT_EMPTY},    # detect_edits (best-effort)
+        # No extract — gated on not has_critical
     ])
     pipeline = _make_pipeline(world, client)
     out = await pipeline.run(player_action="x", update_number=3)
     assert out.trace.outcome == "flagged_qm"
     stage_names = [s.stage_name for s in out.trace.stages]
-    assert stage_names.count("revise") == 2
-    assert stage_names.count("check") == 3
+    assert stage_names.count("revise") == 4   # MAX_REVISE_ATTEMPTS
+    assert stage_names.count("check") == 5
 
 
 @pytest.mark.asyncio
@@ -248,6 +265,8 @@ async def test_clean_first_check_skips_revise(world):
         {"kind": "chat", "content": _PROSE_BAD},
         {"kind": "chat", "content": _PROSE_BAD},
         {"kind": "structured", "content": _CHECK_CLEAN},  # clean on first check
+        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY},  # classify_metaphors_llm
+        {"kind": "chat", "content": _TYPED_EDIT_EMPTY},    # detect_edits
         {"kind": "structured", "content": _EMPTY_EXTRACT},
     ])
     pipeline = _make_pipeline(world, client)
