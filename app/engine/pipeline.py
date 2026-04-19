@@ -642,6 +642,18 @@ class Pipeline:
                     trace_id=trace.trace_id,
                 )
 
+            # Consolidate clusters of short metaphors into developed ones
+            try:
+                from app.engine.typed_edits import consolidate_metaphor_clusters
+                final_class = await classify_metaphors_llm(
+                    self._client, prose,
+                )
+                prose = await consolidate_metaphor_clusters(
+                    self._client, prose, final_class,
+                )
+            except Exception:
+                pass  # consolidation is best-effort
+
             # General prose quality edits (single pass)
             gen_edits = await detect_edits(self._client, prose)
             if gen_edits:

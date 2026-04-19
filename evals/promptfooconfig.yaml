@@ -2,8 +2,8 @@ description: "Writer imagery variety eval — comparing prompt strategies for me
 
 prompts:
   - file://prompts/baseline.txt
-  - file://prompts/imagery_soft.txt
   - file://prompts/imagery_hard.txt
+  - file://prompts/imagery_developed.txt
 
 providers:
   - id: file://provider.py
