@@ -208,6 +208,14 @@ async def _score_single_dim(
     """Score a single dimension in isolation."""
     import re
 
+    # Truncate long chapters to avoid blowing context window.
+    # Keep first 1500 words + last 500 words for representative sample.
+    words = chapter_text.split()
+    if len(words) > 2500:
+        first = " ".join(words[:1500])
+        last = " ".join(words[-500:])
+        chapter_text = first + "\n\n[...]\n\n" + last
+
     rubric = _load_rubric(dim)
     prompt = (
         f"{rubric}\n\n"

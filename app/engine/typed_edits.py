@@ -196,6 +196,94 @@ def persist_edits(
     conn.commit()
 
 
+async def remove_weak_metaphors(
+    client: "InferenceClient",
+    prose: str,
+    classification: dict,
+    target_per_1000: float = 8.0,
+) -> str:
+    """Remove the weakest metaphors to bring density toward target.
+
+    Identifies short (< 8 word) figurative phrases that add atmosphere
+    but not meaning, and rewrites those sentences literally.
+    """
+    from app.runtime.client import ChatMessage
+
+    total_words = len(prose.split())
+    total_fig = classification.get("total_figurative", 0)
+    current_per_1000 = total_fig / max(total_words, 1) * 1000
+
+    if current_per_1000 <= target_per_1000:
+        return prose
+
+    # How many to remove
+    target_count = int(total_words / 1000 * target_per_1000)
+    to_remove = total_fig - target_count
+    if to_remove <= 0:
+        return prose
+
+    # Collect all quotes with word counts, sorted shortest first
+    all_quotes: list[dict] = []
+    for fam, data in classification.get("families", {}).items():
+        for q in data.get("quotes", []):
+            all_quotes.append({"quote": q, "family": fam, "words": len(q.split())})
+    all_quotes.sort(key=lambda x: x["words"])
+
+    # Take the shortest ones up to the removal target
+    to_strip = all_quotes[:min(to_remove, 10)]
+    if not to_strip:
+        return prose
+
+    lines = []
+    for item in to_strip:
+        lines.append(f'- "{item["quote"]}" ({item["family"]}, {item["words"]}w)')
+
+    prompt = (
+        "Rewrite the sentences containing these figurative phrases to be LITERAL "
+        "instead. Remove the metaphor/simile and express the same idea in plain, "
+        "concrete language. Keep the sentence's meaning and narrative function.\n\n"
+        "Phrases to make literal:\n"
+        + "\n".join(lines)
+        + "\n\nFor each, output a JSON edit with original_text (the full sentence "
+        "containing the phrase, copied exactly from the text) and replacement "
+        "(the sentence rewritten literally).\n\n"
+        "Output JSON only:\n"
+        '{"edits": [{"original_text": "full original sentence", '
+        '"replacement": "literal rewrite", "edit_type": "forced_metaphor", '
+        '"reason": "metaphor density reduction"}]}\n\n'
+        f"TEXT:\n{prose}"
+    )
+
+    try:
+        raw = await client.chat(
+            messages=[ChatMessage(role="user", content=prompt)],
+            max_tokens=3000,
+            temperature=0.2,
+            thinking=False,
+        )
+
+        content = raw.strip()
+        if content.startswith("```"):
+            content = "\n".join(content.split("\n")[1:])
+        if content.endswith("```"):
+            content = content.rsplit("```", 1)[0]
+
+        parsed = json.loads(content.strip())
+        edits = parsed.get("edits", parsed) if isinstance(parsed, dict) else parsed
+
+        result = prose
+        for e in edits:
+            if not isinstance(e, dict):
+                continue
+            orig = e.get("original_text", "")
+            repl = e.get("replacement", "")
+            if orig and repl and orig in result:
+                result = result.replace(orig, repl, 1)
+        return result
+    except Exception:
+        return prose
+
+
 _CONSOLIDATE_PROMPT_PATH = Path(__file__).resolve().parent.parent.parent / "prompts" / "stages" / "typed_edit" / "consolidate.j2"
 
 # Imagery families to rotate through when consolidating

@@ -654,6 +654,19 @@ class Pipeline:
             except Exception:
                 pass  # consolidation is best-effort
 
+            # Remove weakest metaphors if density is still too high
+            try:
+                from app.engine.typed_edits import remove_weak_metaphors
+                density_class = await classify_metaphors_llm(
+                    self._client, prose,
+                )
+                prose = await remove_weak_metaphors(
+                    self._client, prose, density_class,
+                    target_per_1000=8.0,
+                )
+            except Exception:
+                pass  # removal is best-effort
+
             # General prose quality edits (single pass)
             gen_edits = await detect_edits(self._client, prose)
             if gen_edits:
