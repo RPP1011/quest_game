@@ -198,7 +198,6 @@ async def test_critical_issue_triggers_revise_then_clears(world):
         {"kind": "structured", "content": _EMOTIONAL_JSON},
         {"kind": "structured", "content": _CRAFT_JSON},
         {"kind": "chat", "content": _PROSE_BAD},             # beat 0
-        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY}, # imagery classification
         {"kind": "chat", "content": _PROSE_BAD},             # beat 1
         {"kind": "structured", "content": _CHECK_CRITICAL},  # initial check finds critical
         {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY}, # classify_metaphors_llm
@@ -223,38 +222,28 @@ async def test_critical_issue_triggers_revise_then_clears(world):
 
 
 @pytest.mark.asyncio
-async def test_critical_persists_through_two_revises_then_flags(world):
-    """All MAX_REVISE_ATTEMPTS (4) fail to clear critical → outcome=flagged_qm."""
+async def test_critical_persists_through_revise_then_flags(world):
+    """MAX_REVISE_ATTEMPTS (1) fails to clear critical → outcome=flagged_qm."""
     client = ScriptedClient([
         {"kind": "structured", "content": _DRAMATIC_JSON},
         {"kind": "structured", "content": _EMOTIONAL_JSON},
         {"kind": "structured", "content": _CRAFT_JSON},
         {"kind": "chat", "content": _PROSE_BAD},             # beat 0
-        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY}, # imagery classification
         {"kind": "chat", "content": _PROSE_BAD},             # beat 1
         {"kind": "structured", "content": _CHECK_CRITICAL},  # check 1
-        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY},  # classify_metaphors_llm after check 1
+        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY}, # classify_metaphors_llm
         {"kind": "chat", "content": _PROSE_BAD},             # revise 1 (still bad)
-        {"kind": "structured", "content": _CHECK_CRITICAL},  # check 2
-        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY},  # classify_metaphors_llm after check 2
-        {"kind": "chat", "content": _PROSE_BAD},             # revise 2 (still bad)
-        {"kind": "structured", "content": _CHECK_CRITICAL},  # check 3
-        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY},  # classify_metaphors_llm after check 3
-        {"kind": "chat", "content": _PROSE_BAD},             # revise 3 (still bad)
-        {"kind": "structured", "content": _CHECK_CRITICAL},  # check 4
-        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY},  # classify_metaphors_llm after check 4
-        {"kind": "chat", "content": _PROSE_BAD},             # revise 4 (still bad)
-        {"kind": "structured", "content": _CHECK_CRITICAL},  # check 5 (final — budget exhausted)
-        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY},  # classify_metaphors_llm after check 5
-        {"kind": "chat", "content": _TYPED_EDIT_EMPTY},    # detect_edits (best-effort)
+        {"kind": "structured", "content": _CHECK_CRITICAL},  # check 2 (budget exhausted)
+        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY}, # classify_metaphors_llm
+        {"kind": "chat", "content": _TYPED_EDIT_EMPTY},      # detect_edits
         # No extract — gated on not has_critical
     ])
     pipeline = _make_pipeline(world, client)
     out = await pipeline.run(player_action="x", update_number=3)
     assert out.trace.outcome == "flagged_qm"
     stage_names = [s.stage_name for s in out.trace.stages]
-    assert stage_names.count("revise") == 4   # MAX_REVISE_ATTEMPTS
-    assert stage_names.count("check") == 5
+    assert stage_names.count("revise") == 1   # MAX_REVISE_ATTEMPTS
+    assert stage_names.count("check") == 2
 
 
 @pytest.mark.asyncio
@@ -265,7 +254,6 @@ async def test_clean_first_check_skips_revise(world):
         {"kind": "structured", "content": _EMOTIONAL_JSON},
         {"kind": "structured", "content": _CRAFT_JSON},
         {"kind": "chat", "content": _PROSE_BAD},             # beat 0
-        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY}, # imagery classification
         {"kind": "chat", "content": _PROSE_BAD},             # beat 1
         {"kind": "structured", "content": _CHECK_CLEAN},     # clean on first check
         {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY}, # classify_metaphors_llm

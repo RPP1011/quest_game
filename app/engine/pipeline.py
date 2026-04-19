@@ -601,7 +601,7 @@ class Pipeline:
         # issues used to be skip-and-commit ('flagged_qm'), which let real
         # world-rule violations land in committed prose. Now we loop until
         # the issues clear or we exhaust the budget.
-        MAX_REVISE_ATTEMPTS = 4
+        MAX_REVISE_ATTEMPTS = 1
         revise_attempts = 0
         while (check_out.has_critical or check_out.has_fixable) and \
                 revise_attempts < MAX_REVISE_ATTEMPTS:
@@ -2521,12 +2521,11 @@ class Pipeline:
                 for beat_index, beat_text in enumerate(beats):
                     words_so_far = len(accumulated.split())
 
-                    # Refresh budget via LLM classification.
-                    # Every beat for the first 6 beats (where tics establish),
-                    # then every 3 beats after that.
+                    # Refresh budget via LLM classification every 4 beats.
+                    # The post-write edit pass handles fine-grained cleanup.
                     should_classify = (
                         accumulated
-                        and (beat_index < 6 or beat_index % 3 == 0)
+                        and beat_index % 4 == 0
                     )
                     if should_classify:
                         try:
