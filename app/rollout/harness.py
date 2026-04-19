@@ -226,6 +226,9 @@ async def run_rollout(
                         )
 
             for ch_idx in range(start_index, run.total_chapters_target + 1):
+                import time as _time
+                _ch_start = _time.time()
+                print(f"  [{rollout_id}] ch{ch_idx}/{run.total_chapters_target} starting...")
                 # Decide the action for this chapter
                 if ch_idx == 1:
                     sk_ch1 = None
@@ -336,6 +339,24 @@ async def run_rollout(
                 main_sm.update_rollout(
                     rollout_id, chapters_complete=ch_idx,
                 )
+
+                _ch_elapsed = _time.time() - _ch_start
+                print(f"  [{rollout_id}] ch{ch_idx} done in {_ch_elapsed:.0f}s ({len((prose or '').split())}w)")
+
+                # Export chapter as readable artifact
+                try:
+                    artifact_dir = rollout_dir / "artifacts"
+                    artifact_dir.mkdir(exist_ok=True)
+                    artifact_path = artifact_dir / f"ch{ch_idx}.txt"
+                    with open(artifact_path, "w") as _af:
+                        _af.write(f"# Chapter {ch_idx} | {len((prose or '').split())}w\n")
+                        _af.write(f"# Action: {player_action}\n")
+                        _af.write(f"# Rollout: {rollout_id} | Profile: {profile.id}\n")
+                        _af.write("# ---\n\n")
+                        _af.write(prose or "")
+                    print(f"  ch{ch_idx}: {len((prose or '').split())}w -> {artifact_path}")
+                except Exception:
+                    pass
 
                 # Structural metrics (best-effort, no LLM cost)
                 try:
