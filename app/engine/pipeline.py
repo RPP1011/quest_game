@@ -2445,23 +2445,30 @@ class Pipeline:
                 # this scene.
                 scene_parts: list[str] = []
                 accumulated = ""
+                # Initialize budget visible from beat 0 so the writer
+                # sees the constraint from the very first beat.
+                imagery_budget_used: dict[str, int] = {
+                    "gambling": 0, "predator_prey": 0,
+                    "water_ocean": 0, "mechanical": 0,
+                    "fire_light": 0, "weight_gravity": 0,
+                }
                 for beat_index, beat_text in enumerate(beats):
                     words_so_far = len(accumulated.split())
 
-                    # Count imagery families used so far via LLM classification
-                    imagery_budget_used: dict[str, int] = {}
-                    if accumulated and beat_index > 0:
+                    # Refresh budget via LLM classification every 3 beats.
+                    if accumulated and beat_index % 3 == 0:
                         try:
                             from app.planning.metaphor_critic import classify_metaphors_llm
                             classification = await classify_metaphors_llm(
                                 self._client, accumulated,
                             )
+                            imagery_budget_used = {}
                             for fam, data in classification.get("families", {}).items():
                                 count = data.get("count", 0)
                                 if count > 0:
                                     imagery_budget_used[fam] = count
                         except Exception:
-                            pass  # fall through with empty budget
+                            pass  # keep previous budget
 
                     beat_ctx = self._cb.build(
                         spec=WRITE_SPEC,
