@@ -121,15 +121,20 @@ async def detect_metaphor_edits(
     prose: str,
     classification: dict,
     max_per_family: int = 3,
+    rewrite_client: "InferenceClient | None" = None,
 ) -> list[dict]:
     """Generate targeted edits for over-budget imagery families.
 
     For each excess metaphor: finds the containing sentence in Python,
     sends only that sentence to the model for rewriting. The model
     never sees the full chapter during edits.
+
+    If rewrite_client is provided, uses it for the rewrites (e.g. a
+    fast CPU model). Classification must still use the main client.
     """
     import asyncio
     from app.runtime.client import ChatMessage
+    rw_client = rewrite_client or client
 
     families = classification.get("families", {})
     excess: list[dict] = []
@@ -171,7 +176,7 @@ async def detect_metaphor_edits(
             f'Original: {target["sentence"]}'
         )
         try:
-            raw = await client.chat(
+            raw = await rw_client.chat(
                 messages=[ChatMessage(role="user", content=prompt)],
                 max_tokens=200,
                 temperature=0.4,
@@ -224,6 +229,7 @@ async def remove_weak_metaphors(
     prose: str,
     classification: dict,
     target_per_1000: float = 8.0,
+    rewrite_client: "InferenceClient | None" = None,
 ) -> str:
     """Remove the weakest metaphors to bring density toward target.
 
@@ -232,6 +238,7 @@ async def remove_weak_metaphors(
     """
     import asyncio
     from app.runtime.client import ChatMessage
+    rw_client = rewrite_client or client
 
     total_words = len(prose.split())
     total_fig = classification.get("total_figurative", 0)
@@ -284,7 +291,7 @@ async def remove_weak_metaphors(
             f'Original: {target["sentence"]}'
         )
         try:
-            raw = await client.chat(
+            raw = await rw_client.chat(
                 messages=[ChatMessage(role="user", content=prompt)],
                 max_tokens=200,
                 temperature=0.3,

@@ -618,6 +618,17 @@ class Pipeline:
                 detect_edits, detect_metaphor_edits, apply_edits, persist_edits,
             )
             from app.planning.metaphor_critic import classify_metaphors_llm
+            from app.runtime.client import InferenceClient as _IC
+
+            # Use LFM 1.2B on CPU for fast rewrites if available
+            _rewrite_client = None
+            try:
+                _rw = _IC(base_url="http://127.0.0.1:8083", timeout=30.0, retries=1)
+                import httpx
+                httpx.get("http://127.0.0.1:8083/v1/models", timeout=2.0)
+                _rewrite_client = _rw
+            except Exception:
+                pass  # fall back to main client
 
             # Multi-pass metaphor reduction (up to 3 passes)
             for _edit_pass in range(3):
@@ -633,6 +644,7 @@ class Pipeline:
                 met_edits = await detect_metaphor_edits(
                     self._client, prose, classification,
                     max_per_family=scaled_budget,
+                    rewrite_client=_rewrite_client,
                 )
                 if not met_edits:
                     break
@@ -663,6 +675,7 @@ class Pipeline:
                 prose = await remove_weak_metaphors(
                     self._client, prose, density_class,
                     target_per_1000=8.0,
+                    rewrite_client=_rewrite_client,
                 )
             except Exception:
                 pass  # removal is best-effort
