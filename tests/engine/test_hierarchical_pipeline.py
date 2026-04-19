@@ -35,6 +35,8 @@ _CHECK_CLEAN = '{"issues": []}'
 
 _TYPED_EDIT_EMPTY = '{"edits": []}'
 
+_IMAGERY_CLASSIFICATION_EMPTY = '{"families": {}, "total_figurative": 0, "dominant_family": "none", "dominant_percentage": 0}'
+
 # ---------------------------------------------------------------------------
 # Canned JSON payloads for each hierarchical layer
 # ---------------------------------------------------------------------------
@@ -271,11 +273,16 @@ async def test_hierarchical_pipeline_commits_chapter(world):
         {"kind": "structured", "content": _EMOTIONAL_JSON},
         # CraftPlanner call
         {"kind": "structured", "content": _CRAFT_JSON},
-        # WRITE: one call per beat (2 beats in _DRAMATIC_JSON).
+        # WRITE: beat 0
         {"kind": "chat", "content": _PROSE_SCENE_1},
+        # LLM imagery classification (fires every beat for first 6 beats)
+        {"kind": "chat", "content": _IMAGERY_CLASSIFICATION_EMPTY},
+        # WRITE: beat 1
         {"kind": "chat", "content": _PROSE_SCENE_1},
         # CHECK
         {"kind": "structured", "content": _CHECK_CLEAN},
+        # LLM metaphor critic (inject_heuristic_issues)
+        {"kind": "chat", "content": _IMAGERY_CLASSIFICATION_EMPTY},
         # TYPED EDIT
         {"kind": "chat", "content": _TYPED_EDIT_EMPTY},
         # EXTRACT
@@ -372,8 +379,10 @@ async def test_hierarchical_pipeline_plants_parallel_post_commit(world):
         {"kind": "structured", "content": _EMOTIONAL_JSON},
         {"kind": "structured", "content": _CRAFT_JSON_WITH_PARALLEL_PLANT},
         {"kind": "chat", "content": _PROSE_SCENE_1},
+        {"kind": "chat", "content": _IMAGERY_CLASSIFICATION_EMPTY},
         {"kind": "chat", "content": _PROSE_SCENE_1},
         {"kind": "structured", "content": _CHECK_CLEAN},
+        {"kind": "chat", "content": _IMAGERY_CLASSIFICATION_EMPTY},
         {"kind": "chat", "content": _TYPED_EDIT_EMPTY},
         {"kind": "structured", "content": _EMPTY_EXTRACT},
     ])
@@ -403,8 +412,10 @@ async def test_hierarchical_pipeline_plants_parallel_post_commit(world):
         {"kind": "structured", "content": _EMOTIONAL_JSON},
         {"kind": "structured", "content": _CRAFT_JSON_WITH_PARALLEL_PLANT},
         {"kind": "chat", "content": _PROSE_SCENE_1},
+        {"kind": "chat", "content": _IMAGERY_CLASSIFICATION_EMPTY},
         {"kind": "chat", "content": _PROSE_SCENE_1},
         {"kind": "structured", "content": _CHECK_CLEAN},
+        {"kind": "chat", "content": _IMAGERY_CLASSIFICATION_EMPTY},
         {"kind": "chat", "content": _TYPED_EDIT_EMPTY},
         {"kind": "structured", "content": _EMPTY_EXTRACT},
     ])
@@ -511,7 +522,11 @@ async def test_hierarchical_pipeline_threads_pov_entities_to_craft_planner(world
         {"kind": "structured", "content": _EMOTIONAL_JSON},
         {"kind": "structured", "content": _CRAFT_JSON},
         {"kind": "chat", "content": _PROSE_SCENE_1},
+        # CHECK
         {"kind": "structured", "content": _CHECK_CLEAN},
+        # LLM metaphor critic (inject_heuristic_issues)
+        {"kind": "chat", "content": _IMAGERY_CLASSIFICATION_EMPTY},
+        # TYPED EDIT
         {"kind": "chat", "content": _TYPED_EDIT_EMPTY},
         {"kind": "structured", "content": _EMPTY_EXTRACT},
     ])
@@ -541,8 +556,10 @@ async def test_hierarchical_pipeline_persists_emotional_beats_post_commit(world)
         {"kind": "structured", "content": _EMOTIONAL_JSON},
         {"kind": "structured", "content": _CRAFT_JSON},
         {"kind": "chat", "content": _PROSE_SCENE_1},
+        {"kind": "chat", "content": _IMAGERY_CLASSIFICATION_EMPTY},
         {"kind": "chat", "content": _PROSE_SCENE_1},
         {"kind": "structured", "content": _CHECK_CLEAN},
+        {"kind": "chat", "content": _IMAGERY_CLASSIFICATION_EMPTY},
         {"kind": "chat", "content": _TYPED_EDIT_EMPTY},
         {"kind": "structured", "content": _EMPTY_EXTRACT},
     ])

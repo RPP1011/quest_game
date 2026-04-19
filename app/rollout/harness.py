@@ -221,8 +221,8 @@ async def run_rollout(
                 # Replay completed chapters into the voice tracker
                 for c in completed:
                     if c.prose:
-                        voice_tracker.record_chapter(
-                            c.chapter_index, "char:tristan", c.prose,
+                        await voice_tracker.record_chapter(
+                            client, c.chapter_index, "char:tristan", c.prose,
                         )
 
             for ch_idx in range(start_index, run.total_chapters_target + 1):
@@ -280,7 +280,7 @@ async def run_rollout(
                 prior_choices = list(out.choices or [])
 
                 # Record this chapter's imagery in the voice tracker
-                voice_tracker.record_chapter(ch_idx, pov_id, prose or "")
+                await voice_tracker.record_chapter(client, ch_idx, pov_id, prose or "")
 
                 # Opening-pattern critic
                 opening_issues = check_opening_repetition(

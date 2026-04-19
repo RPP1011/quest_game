@@ -612,14 +612,54 @@ class Pipeline:
             check_out = await self._run_check(trace, plan_like_dict, prose)
             await self._inject_heuristic_issues(check_out, prose)
 
-        # Typed edit pass — surgical prose-quality fixes after the revise loop
+        # Typed edit pass — targeted metaphor replacement + general prose fixes
         try:
-            from app.engine.typed_edits import detect_edits, apply_edits, persist_edits
-            edits = await detect_edits(self._client, prose)
-            if edits:
-                prose = apply_edits(prose, edits)
+            from app.engine.typed_edits import (
+                detect_edits, detect_metaphor_edits, apply_edits, persist_edits,
+            )
+            from app.planning.metaphor_critic import classify_metaphors_llm
+
+            # Multi-pass metaphor reduction (up to 3 passes)
+            for _edit_pass in range(3):
+                try:
+                    classification = await classify_metaphors_llm(
+                        self._client, prose,
+                    )
+                except Exception:
+                    break
+                # Scale budget: 1.5 per 1000 words, min 3
+                word_count = len(prose.split())
+                scaled_budget = max(3, int(word_count / 1000 * 1.5))
+                met_edits = await detect_metaphor_edits(
+                    self._client, prose, classification,
+                    max_per_family=scaled_budget,
+                )
+                if not met_edits:
+                    break
+                prose = apply_edits(prose, met_edits)
                 persist_edits(
-                    self._world._conn, edits,
+                    self._world._conn, met_edits,
+                    trace_id=trace.trace_id,
+                )
+
+            # Consolidate clusters of short metaphors into developed ones
+            try:
+                from app.engine.typed_edits import consolidate_metaphor_clusters
+                final_class = await classify_metaphors_llm(
+                    self._client, prose,
+                )
+                prose = await consolidate_metaphor_clusters(
+                    self._client, prose, final_class,
+                )
+            except Exception:
+                pass  # consolidation is best-effort
+
+            # General prose quality edits (single pass)
+            gen_edits = await detect_edits(self._client, prose)
+            if gen_edits:
+                prose = apply_edits(prose, gen_edits)
+                persist_edits(
+                    self._world._conn, gen_edits,
                     trace_id=trace.trace_id,
                 )
         except Exception:
@@ -2445,8 +2485,37 @@ class Pipeline:
                 # this scene.
                 scene_parts: list[str] = []
                 accumulated = ""
+                # Initialize budget visible from beat 0 so the writer
+                # sees the constraint from the very first beat.
+                imagery_budget_used: dict[str, int] = {
+                    "gambling": 0, "predator_prey": 0,
+                    "water_ocean": 0, "mechanical": 0,
+                    "fire_light": 0, "weight_gravity": 0,
+                }
                 for beat_index, beat_text in enumerate(beats):
                     words_so_far = len(accumulated.split())
+
+                    # Refresh budget via LLM classification.
+                    # Every beat for the first 6 beats (where tics establish),
+                    # then every 3 beats after that.
+                    should_classify = (
+                        accumulated
+                        and (beat_index < 6 or beat_index % 3 == 0)
+                    )
+                    if should_classify:
+                        try:
+                            from app.planning.metaphor_critic import classify_metaphors_llm
+                            classification = await classify_metaphors_llm(
+                                self._client, accumulated,
+                            )
+                            imagery_budget_used = {}
+                            for fam, data in classification.get("families", {}).items():
+                                count = data.get("count", 0)
+                                if count > 0:
+                                    imagery_budget_used[fam] = count
+                        except Exception:
+                            pass  # keep previous budget
+
                     beat_ctx = self._cb.build(
                         spec=WRITE_SPEC,
                         stage_name="write",
@@ -2471,6 +2540,7 @@ class Pipeline:
                             "words_so_far": words_so_far,
                             "narrator": self._narrator,
                             "scene_entities": scene_entities,
+                            "imagery_budget_used": imagery_budget_used,
                         },
                     )
                     t0 = time.perf_counter()

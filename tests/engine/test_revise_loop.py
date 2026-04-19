@@ -197,14 +197,15 @@ async def test_critical_issue_triggers_revise_then_clears(world):
         {"kind": "structured", "content": _DRAMATIC_JSON},
         {"kind": "structured", "content": _EMOTIONAL_JSON},
         {"kind": "structured", "content": _CRAFT_JSON},
-        {"kind": "chat", "content": _PROSE_BAD},
-        {"kind": "chat", "content": _PROSE_BAD},  # 2 beats
+        {"kind": "chat", "content": _PROSE_BAD},             # beat 0
+        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY}, # imagery classification
+        {"kind": "chat", "content": _PROSE_BAD},             # beat 1
         {"kind": "structured", "content": _CHECK_CRITICAL},  # initial check finds critical
-        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY},  # classify_metaphors_llm
-        {"kind": "chat", "content": _PROSE_FIXED},  # revise output
-        {"kind": "structured", "content": _CHECK_CLEAN},   # recheck clean
-        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY},  # classify_metaphors_llm
-        {"kind": "chat", "content": _TYPED_EDIT_EMPTY},    # detect_edits
+        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY}, # classify_metaphors_llm
+        {"kind": "chat", "content": _PROSE_FIXED},           # revise output
+        {"kind": "structured", "content": _CHECK_CLEAN},     # recheck clean
+        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY}, # classify_metaphors_llm
+        {"kind": "chat", "content": _TYPED_EDIT_EMPTY},      # detect_edits
         {"kind": "structured", "content": _EMPTY_EXTRACT},
     ])
     pipeline = _make_pipeline(world, client)
@@ -228,8 +229,9 @@ async def test_critical_persists_through_two_revises_then_flags(world):
         {"kind": "structured", "content": _DRAMATIC_JSON},
         {"kind": "structured", "content": _EMOTIONAL_JSON},
         {"kind": "structured", "content": _CRAFT_JSON},
-        {"kind": "chat", "content": _PROSE_BAD},
-        {"kind": "chat", "content": _PROSE_BAD},
+        {"kind": "chat", "content": _PROSE_BAD},             # beat 0
+        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY}, # imagery classification
+        {"kind": "chat", "content": _PROSE_BAD},             # beat 1
         {"kind": "structured", "content": _CHECK_CRITICAL},  # check 1
         {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY},  # classify_metaphors_llm after check 1
         {"kind": "chat", "content": _PROSE_BAD},             # revise 1 (still bad)
@@ -262,11 +264,12 @@ async def test_clean_first_check_skips_revise(world):
         {"kind": "structured", "content": _DRAMATIC_JSON},
         {"kind": "structured", "content": _EMOTIONAL_JSON},
         {"kind": "structured", "content": _CRAFT_JSON},
-        {"kind": "chat", "content": _PROSE_BAD},
-        {"kind": "chat", "content": _PROSE_BAD},
-        {"kind": "structured", "content": _CHECK_CLEAN},  # clean on first check
-        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY},  # classify_metaphors_llm
-        {"kind": "chat", "content": _TYPED_EDIT_EMPTY},    # detect_edits
+        {"kind": "chat", "content": _PROSE_BAD},             # beat 0
+        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY}, # imagery classification
+        {"kind": "chat", "content": _PROSE_BAD},             # beat 1
+        {"kind": "structured", "content": _CHECK_CLEAN},     # clean on first check
+        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY}, # classify_metaphors_llm
+        {"kind": "chat", "content": _TYPED_EDIT_EMPTY},      # detect_edits
         {"kind": "structured", "content": _EMPTY_EXTRACT},
     ])
     pipeline = _make_pipeline(world, client)
