@@ -92,6 +92,30 @@ async def detect_edits(
         return []
 
 
+def _find_sentence(prose: str, quote: str) -> tuple[int, int, str] | None:
+    """Find the sentence in prose that contains the given quote.
+
+    Returns (start, end, sentence_text) or None if not found.
+    """
+    import re
+    idx = prose.lower().find(quote.lower())
+    if idx < 0:
+        return None
+    # Walk backwards to sentence start
+    start = idx
+    while start > 0 and prose[start - 1] not in ".!?\n":
+        start -= 1
+    if start > 0 and prose[start] == " ":
+        start += 1
+    # Walk forward to sentence end
+    end = idx + len(quote)
+    while end < len(prose) and prose[end] not in ".!?\n":
+        end += 1
+    if end < len(prose):
+        end += 1  # include the punctuation
+    return start, end, prose[start:end]
+
+
 async def detect_metaphor_edits(
     client: "InferenceClient",
     prose: str,
@@ -100,76 +124,75 @@ async def detect_metaphor_edits(
 ) -> list[dict]:
     """Generate targeted edits for over-budget imagery families.
 
-    Takes the LLM classifier output and asks the model to replace
-    specific excess quotes with non-gambling alternatives.
+    For each excess metaphor: finds the containing sentence in Python,
+    sends only that sentence to the model for rewriting. The model
+    never sees the full chapter during edits.
     """
+    import asyncio
     from app.runtime.client import ChatMessage
 
     families = classification.get("families", {})
-    excess_quotes: list[dict] = []
+    excess: list[dict] = []
     for family_name, data in families.items():
         count = data.get("count", 0)
         if count <= max_per_family:
             continue
         quotes = data.get("quotes", [])
-        # Keep first max_per_family, replace the rest
         for quote in quotes[max_per_family:]:
-            excess_quotes.append({"family": family_name, "quote": quote})
+            excess.append({"family": family_name, "quote": quote})
 
-    if not excess_quotes:
+    if not excess:
         return []
 
-    # Build a targeted prompt
-    lines = []
-    for eq in excess_quotes[:12]:  # cap at 12 edits
-        lines.append(f'- FIND: "{eq["quote"]}" (family: {eq["family"]})')
+    # Find sentences containing each excess quote (Python, no LLM)
+    targets: list[dict] = []
+    for eq in excess[:12]:
+        found = _find_sentence(prose, eq["quote"])
+        if found:
+            start, end, sentence = found
+            targets.append({
+                "family": eq["family"],
+                "quote": eq["quote"],
+                "span_start": start,
+                "span_end": end,
+                "sentence": sentence,
+            })
 
-    prompt = (
-        "Replace each of the following metaphors/figurative phrases in the text. "
-        "Each replacement must use a DIFFERENT imagery family — bodily sensation, "
-        "architecture, textile, spatial, weather, or sensory. Keep the same meaning "
-        "and approximate length. Do NOT use the same family as the original.\n\n"
-        + "\n".join(lines)
-        + "\n\nFor each, find the phrase in the text and output a JSON edit with "
-        "span_start, span_end, original_text (the exact text at that span in the "
-        "chapter), edit_type (always \"forced_metaphor\"), reason, and replacement.\n\n"
-        "Output JSON only:\n"
-        '{"edits": [{"span_start": N, "span_end": N, "original_text": "...", '
-        '"edit_type": "forced_metaphor", "reason": "...", "replacement": "..."}]}\n\n'
-        f"TEXT:\n{prose}"
-    )
-
-    raw = await client.chat(
-        messages=[ChatMessage(role="user", content=prompt)],
-        max_tokens=4000,
-        temperature=0.2,
-        thinking=False,
-    )
-
-    content = raw.strip()
-    if content.startswith("```"):
-        content = "\n".join(content.split("\n")[1:])
-    if content.endswith("```"):
-        content = content.rsplit("```", 1)[0]
-
-    try:
-        parsed = json.loads(content.strip())
-        edits = parsed.get("edits", parsed) if isinstance(parsed, dict) else parsed
-        valid = []
-        for e in edits:
-            if (isinstance(e, dict)
-                    and "original_text" in e and "replacement" in e
-                    and e.get("edit_type") == "forced_metaphor"):
-                # Find the actual span in the prose
-                orig = e["original_text"]
-                idx = prose.find(orig)
-                if idx >= 0:
-                    e["span_start"] = idx
-                    e["span_end"] = idx + len(orig)
-                    valid.append(e)
-        return valid
-    except (json.JSONDecodeError, TypeError):
+    if not targets:
         return []
+
+    # Rewrite each sentence individually (parallel, small calls)
+    async def _rewrite_one(target: dict) -> dict | None:
+        prompt = (
+            f'Rewrite this sentence, replacing the "{target["family"]}" '
+            f'metaphor with a different imagery family (bodily, architectural, '
+            f'textile, spatial, weather, or sensory). Keep the same meaning '
+            f'and approximate length. Output ONLY the rewritten sentence.\n\n'
+            f'Original: {target["sentence"]}'
+        )
+        try:
+            raw = await client.chat(
+                messages=[ChatMessage(role="user", content=prompt)],
+                max_tokens=200,
+                temperature=0.4,
+                thinking=False,
+            )
+            rewritten = raw.strip().strip('"')
+            if len(rewritten) > 10 and rewritten != target["sentence"]:
+                return {
+                    "span_start": target["span_start"],
+                    "span_end": target["span_end"],
+                    "original_text": target["sentence"],
+                    "replacement": rewritten,
+                    "edit_type": "forced_metaphor",
+                    "reason": f'{target["family"]} over budget',
+                }
+        except Exception:
+            pass
+        return None
+
+    results = await asyncio.gather(*[_rewrite_one(t) for t in targets])
+    return [r for r in results if r is not None]
 
 
 def persist_edits(
@@ -204,9 +227,10 @@ async def remove_weak_metaphors(
 ) -> str:
     """Remove the weakest metaphors to bring density toward target.
 
-    Identifies short (< 8 word) figurative phrases that add atmosphere
-    but not meaning, and rewrites those sentences literally.
+    Finds sentences containing the shortest metaphors (in Python),
+    sends each sentence individually to the model for literal rewriting.
     """
+    import asyncio
     from app.runtime.client import ChatMessage
 
     total_words = len(prose.split())
@@ -216,72 +240,72 @@ async def remove_weak_metaphors(
     if current_per_1000 <= target_per_1000:
         return prose
 
-    # How many to remove
     target_count = int(total_words / 1000 * target_per_1000)
     to_remove = total_fig - target_count
     if to_remove <= 0:
         return prose
 
-    # Collect all quotes with word counts, sorted shortest first
+    # Collect all quotes sorted shortest first
     all_quotes: list[dict] = []
     for fam, data in classification.get("families", {}).items():
         for q in data.get("quotes", []):
             all_quotes.append({"quote": q, "family": fam, "words": len(q.split())})
     all_quotes.sort(key=lambda x: x["words"])
 
-    # Take the shortest ones up to the removal target
-    to_strip = all_quotes[:min(to_remove, 10)]
-    if not to_strip:
+    # Find sentences for the shortest quotes (Python, no LLM)
+    targets: list[dict] = []
+    seen_spans: set[tuple[int, int]] = set()
+    for item in all_quotes:
+        if len(targets) >= min(to_remove, 10):
+            break
+        found = _find_sentence(prose, item["quote"])
+        if found:
+            start, end, sentence = found
+            if (start, end) not in seen_spans:
+                seen_spans.add((start, end))
+                targets.append({
+                    "quote": item["quote"],
+                    "family": item["family"],
+                    "span_start": start,
+                    "span_end": end,
+                    "sentence": sentence,
+                })
+
+    if not targets:
         return prose
 
-    lines = []
-    for item in to_strip:
-        lines.append(f'- "{item["quote"]}" ({item["family"]}, {item["words"]}w)')
-
-    prompt = (
-        "Rewrite the sentences containing these figurative phrases to be LITERAL "
-        "instead. Remove the metaphor/simile and express the same idea in plain, "
-        "concrete language. Keep the sentence's meaning and narrative function.\n\n"
-        "Phrases to make literal:\n"
-        + "\n".join(lines)
-        + "\n\nFor each, output a JSON edit with original_text (the full sentence "
-        "containing the phrase, copied exactly from the text) and replacement "
-        "(the sentence rewritten literally).\n\n"
-        "Output JSON only:\n"
-        '{"edits": [{"original_text": "full original sentence", '
-        '"replacement": "literal rewrite", "edit_type": "forced_metaphor", '
-        '"reason": "metaphor density reduction"}]}\n\n'
-        f"TEXT:\n{prose}"
-    )
-
-    try:
-        raw = await client.chat(
-            messages=[ChatMessage(role="user", content=prompt)],
-            max_tokens=3000,
-            temperature=0.2,
-            thinking=False,
+    # Rewrite each sentence literally (parallel, small calls)
+    async def _literalize(target: dict) -> tuple[int, int, str, str] | None:
+        prompt = (
+            f'Rewrite this sentence literally — remove the figurative language '
+            f'and express the same idea in plain, concrete terms. '
+            f'Keep the meaning and approximately the same length. '
+            f'Output ONLY the rewritten sentence.\n\n'
+            f'Original: {target["sentence"]}'
         )
+        try:
+            raw = await client.chat(
+                messages=[ChatMessage(role="user", content=prompt)],
+                max_tokens=200,
+                temperature=0.3,
+                thinking=False,
+            )
+            rewritten = raw.strip().strip('"')
+            if len(rewritten) > 10 and rewritten != target["sentence"]:
+                return (target["span_start"], target["span_end"],
+                        target["sentence"], rewritten)
+        except Exception:
+            pass
+        return None
 
-        content = raw.strip()
-        if content.startswith("```"):
-            content = "\n".join(content.split("\n")[1:])
-        if content.endswith("```"):
-            content = content.rsplit("```", 1)[0]
+    results = await asyncio.gather(*[_literalize(t) for t in targets])
+    valid = [r for r in results if r is not None]
 
-        parsed = json.loads(content.strip())
-        edits = parsed.get("edits", parsed) if isinstance(parsed, dict) else parsed
-
-        result = prose
-        for e in edits:
-            if not isinstance(e, dict):
-                continue
-            orig = e.get("original_text", "")
-            repl = e.get("replacement", "")
-            if orig and repl and orig in result:
-                result = result.replace(orig, repl, 1)
-        return result
-    except Exception:
-        return prose
+    # Apply in reverse order
+    result = prose
+    for start, end, original, replacement in sorted(valid, key=lambda x: x[0], reverse=True):
+        result = result[:start] + replacement + result[end:]
+    return result
 
 
 _CONSOLIDATE_PROMPT_PATH = Path(__file__).resolve().parent.parent.parent / "prompts" / "stages" / "typed_edit" / "consolidate.j2"
