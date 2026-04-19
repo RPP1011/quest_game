@@ -1,0 +1,30 @@
+description: "Edit pass eval — test metaphor reduction on saved chapter prose"
+
+prompts:
+  - "Apply targeted metaphor edits"
+
+providers:
+  - id: file://edit_pass_provider.py
+    label: "edit-pass"
+    config:
+      base_url: "http://127.0.0.1:8082"
+
+tests: file://edit_pass_dataset.json
+
+defaultTest:
+  options:
+    provider:
+      config:
+        base_url: "http://127.0.0.1:8082"
+  assert:
+    - type: python
+      value: file://scorers/metaphor_variety.py:get_score
+    - type: javascript
+      value: |
+        // Prose should not be empty and should be similar length to input
+        const words = output.split(/\s+/).length;
+        return {
+          pass: words >= 200,
+          score: Math.min(1.0, words / 500),
+          reason: `${words} words`
+        };
