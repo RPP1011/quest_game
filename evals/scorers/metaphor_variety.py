@@ -38,7 +38,9 @@ def get_score(output: str, context: dict) -> dict:
     dominant = classification.get("dominant_family", "none")
     dominant_pct = classification.get("dominant_percentage", 0)
 
-    max_per_family = 4
+    # Scale budget with output length: 3 per 1000 words, min 4
+    word_count = len(output.split())
+    max_per_family = max(4, int(word_count / 1000 * 3))
     violations = []
     for name, data in families.items():
         count = data.get("count", 0)

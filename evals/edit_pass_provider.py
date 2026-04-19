@@ -41,18 +41,33 @@ async def _run_edit_pass(base_url: str, strategy_prompt: str, prose: str) -> dic
     # Step 1: classify the input prose
     pre_classification = await classify_metaphors_llm(client, prose)
 
-    # Step 2: generate targeted edits
-    edits = await detect_metaphor_edits(
-        client, prose, pre_classification, max_per_family=3,
-    )
+    # Step 2-3: multi-pass metaphor reduction (up to 3 passes)
+    edited = prose
+    total_edits = 0
+    for _pass in range(3):
+        try:
+            classification = await classify_metaphors_llm(client, edited)
+        except Exception:
+            break
+        edits = await detect_metaphor_edits(
+            client, edited, classification, max_per_family=3,
+        )
+        if not edits:
+            break
+        edited = apply_edits(edited, edits)
+        total_edits += len(edits)
 
-    # Step 3: apply edits
-    edited = apply_edits(prose, edits) if edits else prose
+    # Final classification
+    try:
+        post_classification = await classify_metaphors_llm(client, edited)
+    except Exception:
+        post_classification = {}
 
     return {
         "output": edited,
         "metadata": {
-            "edits_applied": len(edits),
+            "edits_applied": total_edits,
             "pre_classification": pre_classification,
+            "post_classification": post_classification,
         },
     }
