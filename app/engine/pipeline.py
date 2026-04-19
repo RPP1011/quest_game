@@ -2455,8 +2455,14 @@ class Pipeline:
                 for beat_index, beat_text in enumerate(beats):
                     words_so_far = len(accumulated.split())
 
-                    # Refresh budget via LLM classification every 3 beats.
-                    if accumulated and beat_index % 3 == 0:
+                    # Refresh budget via LLM classification.
+                    # Every beat for the first 6 beats (where tics establish),
+                    # then every 3 beats after that.
+                    should_classify = (
+                        accumulated
+                        and (beat_index < 6 or beat_index % 3 == 0)
+                    )
+                    if should_classify:
                         try:
                             from app.planning.metaphor_critic import classify_metaphors_llm
                             classification = await classify_metaphors_llm(

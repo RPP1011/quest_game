@@ -273,8 +273,11 @@ async def test_hierarchical_pipeline_commits_chapter(world):
         {"kind": "structured", "content": _EMOTIONAL_JSON},
         # CraftPlanner call
         {"kind": "structured", "content": _CRAFT_JSON},
-        # WRITE: beat 0 + beat 1 (2 beats, no classification — fires every 3 beats)
+        # WRITE: beat 0
         {"kind": "chat", "content": _PROSE_SCENE_1},
+        # LLM imagery classification (fires every beat for first 6 beats)
+        {"kind": "chat", "content": _IMAGERY_CLASSIFICATION_EMPTY},
+        # WRITE: beat 1
         {"kind": "chat", "content": _PROSE_SCENE_1},
         # CHECK
         {"kind": "structured", "content": _CHECK_CLEAN},
@@ -376,6 +379,7 @@ async def test_hierarchical_pipeline_plants_parallel_post_commit(world):
         {"kind": "structured", "content": _EMOTIONAL_JSON},
         {"kind": "structured", "content": _CRAFT_JSON_WITH_PARALLEL_PLANT},
         {"kind": "chat", "content": _PROSE_SCENE_1},
+        {"kind": "chat", "content": _IMAGERY_CLASSIFICATION_EMPTY},
         {"kind": "chat", "content": _PROSE_SCENE_1},
         {"kind": "structured", "content": _CHECK_CLEAN},
         {"kind": "chat", "content": _IMAGERY_CLASSIFICATION_EMPTY},
@@ -408,6 +412,7 @@ async def test_hierarchical_pipeline_plants_parallel_post_commit(world):
         {"kind": "structured", "content": _EMOTIONAL_JSON},
         {"kind": "structured", "content": _CRAFT_JSON_WITH_PARALLEL_PLANT},
         {"kind": "chat", "content": _PROSE_SCENE_1},
+        {"kind": "chat", "content": _IMAGERY_CLASSIFICATION_EMPTY},
         {"kind": "chat", "content": _PROSE_SCENE_1},
         {"kind": "structured", "content": _CHECK_CLEAN},
         {"kind": "chat", "content": _IMAGERY_CLASSIFICATION_EMPTY},
@@ -551,6 +556,7 @@ async def test_hierarchical_pipeline_persists_emotional_beats_post_commit(world)
         {"kind": "structured", "content": _EMOTIONAL_JSON},
         {"kind": "structured", "content": _CRAFT_JSON},
         {"kind": "chat", "content": _PROSE_SCENE_1},
+        {"kind": "chat", "content": _IMAGERY_CLASSIFICATION_EMPTY},
         {"kind": "chat", "content": _PROSE_SCENE_1},
         {"kind": "structured", "content": _CHECK_CLEAN},
         {"kind": "chat", "content": _IMAGERY_CLASSIFICATION_EMPTY},

@@ -198,7 +198,7 @@ async def test_critical_issue_triggers_revise_then_clears(world):
         {"kind": "structured", "content": _EMOTIONAL_JSON},
         {"kind": "structured", "content": _CRAFT_JSON},
         {"kind": "chat", "content": _PROSE_BAD},             # beat 0
-
+        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY}, # imagery classification
         {"kind": "chat", "content": _PROSE_BAD},             # beat 1
         {"kind": "structured", "content": _CHECK_CRITICAL},  # initial check finds critical
         {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY}, # classify_metaphors_llm
@@ -230,7 +230,7 @@ async def test_critical_persists_through_two_revises_then_flags(world):
         {"kind": "structured", "content": _EMOTIONAL_JSON},
         {"kind": "structured", "content": _CRAFT_JSON},
         {"kind": "chat", "content": _PROSE_BAD},             # beat 0
-
+        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY}, # imagery classification
         {"kind": "chat", "content": _PROSE_BAD},             # beat 1
         {"kind": "structured", "content": _CHECK_CRITICAL},  # check 1
         {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY},  # classify_metaphors_llm after check 1
@@ -265,7 +265,7 @@ async def test_clean_first_check_skips_revise(world):
         {"kind": "structured", "content": _EMOTIONAL_JSON},
         {"kind": "structured", "content": _CRAFT_JSON},
         {"kind": "chat", "content": _PROSE_BAD},             # beat 0
-
+        {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY}, # imagery classification
         {"kind": "chat", "content": _PROSE_BAD},             # beat 1
         {"kind": "structured", "content": _CHECK_CLEAN},     # clean on first check
         {"kind": "chat", "content": _METAPHOR_CRITIC_EMPTY}, # classify_metaphors_llm
