@@ -627,9 +627,9 @@ class Pipeline:
                     )
                 except Exception:
                     break
-                # Scale budget with chapter length: 3 per 1000 words, min 3
+                # Scale budget: 1.5 per 1000 words, min 3
                 word_count = len(prose.split())
-                scaled_budget = max(3, int(word_count / 1000 * 3))
+                scaled_budget = max(3, int(word_count / 1000 * 1.5))
                 met_edits = await detect_metaphor_edits(
                     self._client, prose, classification,
                     max_per_family=scaled_budget,
